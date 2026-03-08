@@ -1,0 +1,223 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import {
+  Users, Package, ShoppingBag, GitBranch, Paintbrush, Shield, Menu,
+  UserPlus, Eye, EyeOff, ChevronRight, Circle,
+} from 'lucide-react';
+
+interface TenantUser {
+  id: number;
+  email: string | null;
+  username: string;
+  saasRole: string | null;
+  isActive: boolean;
+  lastActiveAt: string | null;
+  createdAt: string;
+  branch: { id: string; name: string } | null;
+}
+
+interface TenantDetail {
+  id: string;
+  name: string;
+  subdomain: string;
+  primaryColor: string;
+  secondaryColor: string;
+  logoUrl: string | null;
+  isActive: boolean;
+  createdAt: string;
+  _count: { users: number; products: number; sales: number; branches: number };
+}
+
+function isOnline(lastActiveAt: string | null) {
+  if (!lastActiveAt) return false;
+  return Date.now() - new Date(lastActiveAt).getTime() < 5 * 60 * 1000;
+}
+
+export default function TenantDetailPage() {
+  const { tenantId } = useParams<{ tenantId: string }>();
+  const [tenant, setTenant] = useState<TenantDetail | null>(null);
+  const [users, setUsers] = useState<TenantUser[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/super-admin/tenants/${tenantId}/detail`).then(r => r.json()),
+      fetch(`/api/super-admin/tenants/${tenantId}/users`).then(r => r.json()),
+    ]).then(([t, u]) => {
+      setTenant(t);
+      setUsers(Array.isArray(u) ? u : []);
+      setLoading(false);
+    });
+  }, [tenantId]);
+
+  const toggleUser = async (userId: number, isActive: boolean) => {
+    await fetch(`/api/super-admin/tenants/${tenantId}/users/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isActive: !isActive }),
+    });
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, isActive: !isActive } : u));
+  };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64 text-slate-400">Loading tenant...</div>;
+  }
+
+  if (!tenant) {
+    return <div className="flex items-center justify-center h-64 text-slate-400">Tenant not found.</div>;
+  }
+
+  const onlineCount = users.filter(u => u.isActive && isOnline(u.lastActiveAt)).length;
+
+  const stats = [
+    { label: 'Users', value: tenant._count.users, icon: Users, color: 'text-indigo-500' },
+    { label: 'Online Now', value: onlineCount, icon: Circle, color: 'text-emerald-500' },
+    { label: 'Products', value: tenant._count.products, icon: Package, color: 'text-amber-500' },
+    { label: 'Sales', value: tenant._count.sales, icon: ShoppingBag, color: 'text-rose-500' },
+    { label: 'Branches', value: tenant._count.branches, icon: GitBranch, color: 'text-cyan-500' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-4">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold"
+            style={{ background: tenant.primaryColor }}
+          >
+            {tenant.name.charAt(0)}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{tenant.name}</h1>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${tenant.isActive ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400'}`}>
+                {tenant.isActive ? 'Active' : 'Disabled'}
+              </span>
+            </div>
+            <p className="text-sm text-slate-400 mt-0.5">
+              <code>{tenant.subdomain}</code> &middot; Created {new Date(tenant.createdAt).toLocaleDateString()}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-5 gap-3">
+        {stats.map((s, i) => (
+          <div key={i} className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+            <s.icon size={16} className={`${s.color} mb-2`} />
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">{s.value}</p>
+            <p className="text-[11px] text-slate-400">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: 'Branding', href: `/super-admin/tenants/${tenantId}/branding`, icon: Paintbrush, bg: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300' },
+          { label: 'Permissions', href: `/super-admin/tenants/${tenantId}/permissions`, icon: Shield, bg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
+          { label: 'Menus', href: `/super-admin/tenants/${tenantId}/menus`, icon: Menu, bg: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300' },
+          { label: 'Create User', href: `/super-admin/tenants/${tenantId}/users/new`, icon: UserPlus, bg: 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300' },
+        ].map(a => (
+          <Link key={a.href} href={a.href} className={`${a.bg} rounded-xl p-4 flex items-center gap-3 hover:opacity-80 transition-opacity`}>
+            <a.icon size={18} />
+            <span className="text-sm font-bold">{a.label}</span>
+            <ChevronRight size={14} className="ml-auto opacity-50" />
+          </Link>
+        ))}
+      </div>
+
+      {/* View As (Impersonation) */}
+      <div className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+        <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3">View Dashboard As</h3>
+        <p className="text-xs text-slate-400 mb-4">Preview what each role sees in this tenant&apos;s dashboard.</p>
+        <div className="flex gap-3">
+          {(['MANAGER', 'MCA', 'NES'] as const).map(role => (
+            <Link
+              key={role}
+              href={`/super-admin/impersonate?tenantId=${tenantId}&role=${role}`}
+              className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-sm font-semibold text-slate-700 dark:text-slate-300 rounded-lg transition-colors"
+            >
+              View as {role}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Users Table */}
+      <div className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-white">Users ({users.length})</h3>
+          <Link
+            href={`/super-admin/tenants/${tenantId}/users/new`}
+            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            <UserPlus size={13} /> Add User
+          </Link>
+        </div>
+        <table className="w-full text-left">
+          <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
+            <tr>
+              {['User', 'Role', 'Branch', 'Status', 'Activity', 'Actions'].map(h => (
+                <th key={h} className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {users.map(user => {
+              const online = isOnline(user.lastActiveAt);
+              return (
+                <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                  <td className="px-6 py-3">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{user.email || user.username}</p>
+                    <p className="text-[11px] text-slate-400">ID: {user.id}</p>
+                  </td>
+                  <td className="px-6 py-3">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                      {user.saasRole || user.username}
+                    </span>
+                  </td>
+                  <td className="px-6 py-3 text-xs text-slate-500 dark:text-slate-400">
+                    {user.branch?.name || '—'}
+                  </td>
+                  <td className="px-6 py-3">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${user.isActive ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400'}`}>
+                      {user.isActive ? 'Active' : 'Disabled'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-3">
+                    {online ? (
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Online
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400">
+                        {user.lastActiveAt ? new Date(user.lastActiveAt).toLocaleString() : 'Never'}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-3">
+                    <button
+                      onClick={() => toggleUser(user.id, user.isActive)}
+                      className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-400"
+                      title={user.isActive ? 'Disable user' : 'Enable user'}
+                    >
+                      {user.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {users.length === 0 && (
+          <div className="p-12 text-center text-slate-400 text-sm">No users in this tenant yet.</div>
+        )}
+      </div>
+    </div>
+  );
+}

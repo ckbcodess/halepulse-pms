@@ -39,3 +39,21 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# SQLite database (local dev only — never commit real data)
+prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db-shm
+prisma/*.db-wal
+
+# Claude Code internal files
+.claude/
+.agents/
+skills-lock.json
+
+# Debug / planning artifacts
+PLAN.md
+import_error.log
+scripts/check-*.js

@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PharmNext — Multi-Tenant Pharmacy Management SaaS
 
-## Getting Started
+A Next.js 16 + Prisma + NextAuth multi-tenant pharmacy management system.
 
-First, run the development server:
+---
+
+## Local Setup
 
 ```bash
+# 1. Install dependencies
+npm install
+
+# 2. Copy environment config
+cp .env.example .env
+# Edit .env with your values
+
+# 3. Run database migrations
+npx prisma migrate dev
+
+# 4. Seed the database (creates super admin, demo tenant, default users)
+npx tsx prisma/seed.ts
+
+# 5. Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Role Hierarchy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+SUPER_ADMIN  — Full system access. Manages all tenants, users, branding, permissions.
+    └── MANAGER  — Full access within their tenant. Can manage users, branches, reports.
+          ├── MCA  — Inventory and order management. Limited to operational tasks.
+          └── NES  — Read-only access. Can view inventory, reports, and patients.
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Default Development Credentials
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Email | Password | Role |
+|---|---|---|
+| superadmin@system.com | Admin@1234 | SUPER_ADMIN |
+| manager@demo.com | Manager@1234 | MANAGER |
+| mca@demo.com | Mca@1234 | MCA |
+| nes@demo.com | Nes@1234 | NES |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Creating a New Tenant
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Log in as superadmin@system.com
+2. Navigate to **Super Admin → Tenants → New Tenant**
+3. Fill in company name, subdomain, and brand colors
+4. On submit, a default Manager account is created and a temporary password is shown **once**
+5. Share credentials with the tenant manager
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Running Migrations
+
+```bash
+# Apply pending migrations
+npx prisma migrate dev
+
+# Reset database (WARNING: deletes all data)
+npx prisma migrate reset
+
+# Open Prisma Studio (visual DB browser)
+npx prisma studio
+
+# Re-seed after reset
+npx tsx prisma/seed.ts
+```
+
+## Switching to PostgreSQL
+
+1. Install PostgreSQL and create a database
+2. Update .env: DATABASE_URL="postgresql://user:password@localhost:5432/pharmacy_db"
+3. In prisma/schema.prisma, change provider = "sqlite" to provider = "postgresql"
+4. Run: npx prisma migrate dev --name init
+
+---
+
+## Project Structure
+
+```
+src/
+  app/
+    (main pages: /, /pos, /inventory, /customers)
+    dashboard/         — Role dashboards (manager, mca, nes)
+    super-admin/       — Super admin control panel
+    api/               — API routes
+    login/             — Login page
+  components/
+    layout/            — Sidebar, TopHeader, AppShell, SuperAdminSidebar
+  lib/
+    auth/              — NextAuth config, session helpers, role guards
+    audit/             — Audit log writer
+    branding/          — Tenant branding fetcher
+    menus/             — Role-based menu loader
+    permissions/       — Permission checker
+  types/
+    next-auth.d.ts     — Session type extensions
+prisma/
+  schema.prisma        — Database schema
+  seed.ts              — Seed script
+```

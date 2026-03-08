@@ -1,0 +1,195 @@
+// Prisma Schema — Multi-Tenant Pharmacy SaaS
+// Strategy: purely additive — all existing models are EXTENDED with nullable new fields.
+// No existing tables are dropped. No existing columns are removed or changed.
+// For PostgreSQL production: change provider to "postgresql" and update DATABASE_URL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  MANAGER
+  MCA
+  NES
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXISTING MODELS — extended with nullable new fields only
+// All existing columns and behaviour are PRESERVED.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model User {
+  // ── Existing fields (unchanged) ──
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String   // Legacy MD5 hash — kept for existing session compatibility
+  role      String   // Legacy: Admin, Manager, Seller
+  contact   String?
+  createdAt DateTime @default(now())
+
+  // ── New nullable fields (additive only — existing rows get NULL) ──
+  email        String?  @unique    // Used by NextAuth credentials provider
+  passwordHash String?             // bcrypt hash for new auth system
+  saasRole     Role?               // SUPER_ADMIN | MANAGER | MCA | NES
+  tenantId     String?             // FK to Tenant (nullable — super admin has no tenant)
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id])
+  branchId     String?             // FK to Branch (optional)
+  branch       Branch?  @relation(fields: [branchId], references: [id])
+  isActive     Boolean  @default(true)
+  lastActiveAt DateTime?           // Updated on each authenticated request (heartbeat)
+}
+
+model Product {
+  // ── Existing fields (unchanged) ──
+  id          Int       @id @default(autoincrement())
+  name        String
+  category    String
+  price       Float
+  costPrice   Float?
+  stockQty    Int       @default(0)
+  expiryDate  DateTime?
+  description String?
+  saleItems   SaleItem[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // ── New nullable field ──
+  tenantId String?
+  tenant   Tenant?  @relation(fields: [tenantId], references: [id])
+}
+
+model Category {
+  // ── Existing fields (unchanged) ──
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  // ── New nullable field ──
+  tenantId String?
+}
+
+model Customer {
+  // ── Existing fields (unchanged) ──
+  id            Int      @id @default(autoincrement())
+  name          String
+  phone         String?  @unique
+  loyaltyPoints Int      @default(0)
+  sales         Sale[]
+  createdAt     DateTime @default(now())
+
+  // ── New nullable field ──
+  tenantId String?
+  tenant   Tenant?  @relation(fields: [tenantId], references: [id])
+}
+
+model Sale {
+  // ── Existing fields (unchanged) ──
+  id          Int       @id @default(autoincrement())
+  totalAmount Float
+  discount    Float     @default(0)
+  paymentType String
+  status      String
+  customerId  Int?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  items       SaleItem[]
+  sellerId    Int       // Plain Int — no new FK relation added to avoid migration risk
+  createdAt   DateTime  @default(now())
+
+  // ── New nullable field ──
+  tenantId String?
+  tenant   Tenant?  @relation(fields: [tenantId], references: [id])
+}
+
+model SaleItem {
+  // ── Existing fields (unchanged) ──
+  id        Int     @id @default(autoincrement())
+  saleId    Int
+  sale      Sale    @relation(fields: [saleId], references: [id])
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NEW MODELS — multi-tenant SaaS infrastructure (all brand-new tables)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Tenant {
+  id             String   @id @default(cuid())
+  name           String
+  subdomain      String   @unique
+  primaryColor   String   @default("#6366f1")
+  secondaryColor String   @default("#8b5cf6")
+  logoUrl        String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  users           User[]
+  products        Product[]
+  customers       Customer[]
+  sales           Sale[]
+  branches        Branch[]
+  rolePermissions RolePermission[]
+  menuConfigs     MenuConfig[]
+  auditLogs       AuditLog[]
+}
+
+model Branch {
+  id       String  @id @default(cuid())
+  name     String
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  address  String?
+  phone    String?
+  isActive Boolean @default(true)
+
+  users User[]
+}
+
+model Permission {
+  id       String @id @default(cuid())
+  key      String @unique
+  label    String
+  category String
+}
+
+model RolePermission {
+  id            String @id @default(cuid())
+  tenantId      String
+  tenant        Tenant @relation(fields: [tenantId], references: [id])
+  role          Role
+  permissionKey String
+
+  @@unique([tenantId, role, permissionKey])
+}
+
+model MenuConfig {
+  id        String @id @default(cuid())
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  role      Role
+  menuItems String // JSON array: [{ key, label, path, visible }]
+
+  @@unique([tenantId, role])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  // userId stored as string (Int cast to string for existing users, cuid for future)
+  // No Prisma @relation here — avoids Int/String type mismatch with legacy User.id
+  userId    String
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  action    String
+  metadata  String?  // JSON string
+  createdAt DateTime @default(now())
+  ipAddress String?
+}
