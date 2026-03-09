@@ -7,12 +7,20 @@ import TopHeader from './TopHeader';
 // Paths that render without the sidebar shell
 const NO_SHELL_PREFIXES = ['/login', '/super-admin'];
 
-interface AppShellProps {
-  children: React.ReactNode;
-  session:  Session | null;
+interface MenuItem {
+  key:     string;
+  label:   string;
+  path:    string;
+  visible: boolean;
 }
 
-export default function AppShell({ children, session }: AppShellProps) {
+interface AppShellProps {
+  children:  React.ReactNode;
+  session:   Session | null;
+  menuItems: MenuItem[];
+}
+
+export default function AppShell({ children, session, menuItems }: AppShellProps) {
   const pathname = usePathname();
 
   const hideShell =
@@ -25,7 +33,7 @@ export default function AppShell({ children, session }: AppShellProps) {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar user={session.user} />
+      <Sidebar user={session.user} menuItems={menuItems} />
       <main className="flex-1 flex flex-col overflow-hidden relative bg-white dark:bg-[#0a0a0c]">
         <TopHeader user={session.user} />
         <div className="flex-1 overflow-y-auto">

@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, ShoppingCart, Package, Users,
-  Settings, LogOut, FileText, Search as SearchIcon,
+  Settings, LogOut, FileText, Search as SearchIcon, UserCog,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -15,6 +15,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   customers:  Users,
   reports:    FileText,
   settings:   Settings,
+  users:      UserCog,
 };
 
 interface MenuItem {

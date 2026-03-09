@@ -7,24 +7,49 @@ export interface MenuItem {
   visible: boolean;
 }
 
-/** Default menu used when no MenuConfig is found in the database. */
-const DEFAULT_MENU: MenuItem[] = [
-  { key: 'dashboard', label: 'Dashboard',    path: '/',          visible: true  },
-  { key: 'pos',       label: 'Point of Sale', path: '/pos',       visible: true  },
-  { key: 'inventory', label: 'Inventory',    path: '/inventory', visible: true  },
-  { key: 'customers', label: 'Customers',    path: '/customers', visible: true  },
-  { key: 'settings',  label: 'Settings',     path: '/settings',  visible: true  },
+// ── Master list — single source of truth for every possible sidebar item ──────
+// Add new pages here. defaultRoles sets visibility when no DB config exists yet.
+export const MASTER_MENU: (MenuItem & { defaultRoles: string[] })[] = [
+  { key: 'dashboard', label: 'Dashboard',    path: '/',          visible: true, defaultRoles: ['MANAGER','MCA','NES'] },
+  { key: 'pos',       label: 'Point of Sale', path: '/pos',       visible: true, defaultRoles: ['MANAGER','MCA']       },
+  { key: 'inventory', label: 'Inventory',    path: '/inventory', visible: true, defaultRoles: ['MANAGER','MCA','NES'] },
+  { key: 'customers', label: 'Customers',    path: '/customers', visible: true, defaultRoles: ['MANAGER','MCA']       },
+  { key: 'reports',   label: 'Reports',      path: '/reports',   visible: true, defaultRoles: ['MANAGER','NES']       },
+  { key: 'settings',  label: 'Settings',     path: '/settings',  visible: true, defaultRoles: ['MANAGER']             },
+  { key: 'users',     label: 'Team',         path: '/users',     visible: true, defaultRoles: ['MANAGER']             },
 ];
 
 /**
- * Returns the visible menu items for a user.
+ * Merges stored DB items against MASTER_MENU.
+ * - Items already in DB → keep stored visibility
+ * - Items new to MASTER_MENU not yet in DB → apply role-based default
+ * This means adding a new page to MASTER_MENU is all that's needed — no DB migration.
+ */
+function mergeWithMaster(stored: MenuItem[], role: string): MenuItem[] {
+  const storedMap = new Map(stored.map(i => [i.key, i]));
+  return MASTER_MENU.map(master => {
+    if (storedMap.has(master.key)) {
+      const s = storedMap.get(master.key)!;
+      return { key: master.key, label: master.label, path: master.path, visible: s.visible };
+    }
+    return { key: master.key, label: master.label, path: master.path, visible: master.defaultRoles.includes(role) };
+  });
+}
+
+function defaultsForRole(role: string): MenuItem[] {
+  return MASTER_MENU.map(m => ({
+    key: m.key, label: m.label, path: m.path,
+    visible: m.defaultRoles.includes(role),
+  }));
+}
+
+/**
+ * Returns visible menu items for a user.
  *
  * Resolution order:
- *   1. DynamicMenuConfig lookup (if dynamicRoleId provided)
- *   2. Legacy MenuConfig lookup (fallback by enum role + tenantId)
- *   3. DEFAULT_MENU (if no config exists at all)
- *
- * Always filters by tenantId to prevent cross-tenant menu leakage.
+ *   1. DynamicMenuConfig (if dynamicRoleId provided)
+ *   2. Legacy MenuConfig merged against MASTER_MENU
+ *   3. Role defaults from MASTER_MENU (no DB config at all)
  */
 export async function getMenuForUser(
   role: string,
@@ -33,24 +58,24 @@ export async function getMenuForUser(
 ): Promise<MenuItem[]> {
   if (!tenantId) return [];
 
-  // Strategy 1: Dynamic menu config (preferred)
+  // Strategy 1: Dynamic menu config (preferred path)
   if (dynamicRoleId) {
     const dynamicConfig = await prisma.dynamicMenuConfig.findUnique({
       where: { dynamicRoleId_tenantId: { dynamicRoleId, tenantId } },
     });
     if (dynamicConfig) {
       const items: MenuItem[] = JSON.parse(dynamicConfig.menuItems);
-      return items.filter(i => i.visible);
+      return mergeWithMaster(items, role).filter(i => i.visible);
     }
   }
 
-  // Strategy 2: Legacy menu config (fallback)
+  // Strategy 2: Legacy MenuConfig — merge so new pages always appear
   const config = await prisma.menuConfig.findUnique({
     where: { tenantId_role: { tenantId, role: role as any } },
   });
 
-  if (!config) return DEFAULT_MENU.filter(i => i.visible);
+  if (!config) return defaultsForRole(role).filter(i => i.visible);
 
-  const items: MenuItem[] = JSON.parse(config.menuItems);
-  return items.filter(i => i.visible);
+  const stored: MenuItem[] = JSON.parse(config.menuItems);
+  return mergeWithMaster(stored, role).filter(i => i.visible);
 }
