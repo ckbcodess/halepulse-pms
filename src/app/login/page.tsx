@@ -2,9 +2,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn, getSession } from 'next-auth/react';
+import Link from 'next/link';
 
 export default function LoginPage() {
-  const [email, setEmail]           = useState('');
+  const [businessId, setBusinessId] = useState('');
+  const [username, setUsername]     = useState('');
   const [password, setPassword]     = useState('');
   const [error, setError]           = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -15,20 +17,39 @@ export default function LoginPage() {
     setIsSubmitting(true);
     setError('');
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn('client-credentials', {
+        businessId,
+        username,
+        password,
+        redirect: false,
+      });
 
-    if (result?.ok) {
-      const session = await getSession();
-      const role = (session?.user as any)?.role;
-      const destination = role === 'SUPER_ADMIN' ? '/super-admin' : '/';
-      router.push(destination);
-      router.refresh();
-    } else {
-      setError('Invalid email or password.');
+      if (result?.error) {
+        // Check if it's a lockout error message
+        if (result.error.includes('Account locked')) {
+          setError(result.error);
+        } else {
+          setError('Invalid Business ID, username, or password.');
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (result?.ok) {
+        const session = await getSession();
+        if (session?.user?.mustChangePassword) {
+          router.push('/change-password');
+        } else {
+          router.push('/');
+        }
+        router.refresh();
+      } else {
+        setError('Invalid Business ID, username, or password.');
+        setIsSubmitting(false);
+      }
+    } catch {
+      setError('An unexpected error occurred. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -69,7 +90,7 @@ export default function LoginPage() {
 
           <div className="mb-10">
             <h2 className="text-3xl font-black text-slate-950 tracking-tight mb-2">Sign in</h2>
-            <p className="text-slate-500 font-medium">Please enter your credentials.</p>
+            <p className="text-slate-500 font-medium">Enter your business credentials to continue.</p>
           </div>
 
           {error && (
@@ -78,18 +99,32 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-1.5">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                Email
+                Business ID
               </label>
               <input
-                type="email"
+                type="text"
                 required
-                autoComplete="email"
+                placeholder="PH-00001"
+                autoComplete="organization"
+                className="w-full px-4 py-3 bg-white border border-slate-200/60 rounded-md focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-mono font-medium tracking-wider"
+                value={businessId}
+                onChange={(e) => setBusinessId(e.target.value.toUpperCase())}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                Username
+              </label>
+              <input
+                type="text"
+                required
+                autoComplete="username"
                 className="w-full px-4 py-3 bg-white border border-slate-200/60 rounded-md focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
             <div className="space-y-1.5">
@@ -109,22 +144,31 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-800 text-white font-bold py-3.5 rounded-md transition-all mt-4 flex justify-center items-center gap-2"
+              className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-800 text-white font-bold py-3.5 rounded-md transition-all mt-2 flex justify-center items-center gap-2"
             >
               {isSubmitting ? (
                 <>Authenticating<span className="animate-pulse">...</span></>
               ) : (
-                'Sign In →'
+                'Sign In \u2192'
               )}
             </button>
           </form>
 
-          <div className="mt-10 space-y-1 text-xs text-slate-400 font-medium border-t border-slate-200 pt-6">
+          <div className="mt-8 text-center">
+            <Link
+              href="/sp-login"
+              className="text-xs text-slate-400 hover:text-emerald-600 transition-colors font-medium"
+            >
+              System Administrator? Sign in here
+            </Link>
+          </div>
+
+          <div className="mt-8 space-y-1 text-xs text-slate-400 font-medium border-t border-slate-200 pt-6">
             <p className="font-semibold text-slate-500 mb-2">Development accounts:</p>
-            <p><code className="bg-slate-100 px-1 py-0.5 rounded">superadmin@system.com</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Admin@1234</code></p>
-            <p><code className="bg-slate-100 px-1 py-0.5 rounded">manager@demo.com</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Manager@1234</code></p>
-            <p><code className="bg-slate-100 px-1 py-0.5 rounded">mca@demo.com</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Mca@1234</code></p>
-            <p><code className="bg-slate-100 px-1 py-0.5 rounded">nes@demo.com</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Nes@1234</code></p>
+            <p className="font-semibold text-emerald-600 mb-1">Business ID: <code className="bg-emerald-50 px-1.5 py-0.5 rounded">PH-00001</code></p>
+            <p><code className="bg-slate-100 px-1 py-0.5 rounded">manager</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Manager@1234</code> <span className="text-slate-300">(Business Admin)</span></p>
+            <p><code className="bg-slate-100 px-1 py-0.5 rounded">pharmacist</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Mca@1234</code> <span className="text-slate-300">(Pharmacist)</span></p>
+            <p><code className="bg-slate-100 px-1 py-0.5 rounded">viewer</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Nes@1234</code> <span className="text-slate-300">(Viewer)</span></p>
           </div>
         </div>
       </div>

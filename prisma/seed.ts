@@ -1,6 +1,9 @@
 /**
  * Seed script — creates SaaS infrastructure alongside existing data.
  * Safe to re-run (all upserts). Does NOT touch existing Users/Products/Sales.
+ *
+ * Phase 1: Adds DynamicRoles, expanded permissions, FeatureFlags,
+ *          DynamicRolePermissions, DynamicMenuConfigs, and links users.
  */
 import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -8,10 +11,14 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding SaaS infrastructure...');
+  console.log('🌱 Seeding SaaS infrastructure...\n');
 
-  // ── 1. Permissions ─────────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 1. PERMISSIONS — Legacy flat keys + new dot-notation keys
+  // ═══════════════════════════════════════════════════════════════════════════
+
   const permissions = [
+    // Legacy permissions (kept for backward compatibility)
     { key: 'view_inventory',  label: 'View Inventory',   category: 'Inventory' },
     { key: 'edit_inventory',  label: 'Edit Inventory',   category: 'Inventory' },
     { key: 'view_patients',   label: 'View Patients',    category: 'Patients'  },
@@ -22,54 +29,344 @@ async function main() {
     { key: 'view_reports',    label: 'View Reports',     category: 'Reports'   },
     { key: 'manage_users',    label: 'Manage Users',     category: 'Admin'     },
     { key: 'manage_branches', label: 'Manage Branches',  category: 'Admin'     },
+
+    // New dot-notation permissions (Phase 1 — from spec)
+    // User Management
+    { key: 'user_management.view_users',    label: 'View Users',         category: 'User Management' },
+    { key: 'user_management.create_users',  label: 'Create Users',       category: 'User Management' },
+    { key: 'user_management.edit_users',    label: 'Edit Users',         category: 'User Management' },
+    { key: 'user_management.delete_users',  label: 'Delete Users',       category: 'User Management' },
+    { key: 'user_management.assign_roles',  label: 'Assign Roles',       category: 'User Management' },
+
+    // Inventory
+    { key: 'inventory.stock.view',     label: 'View Stock',         category: 'Inventory' },
+    { key: 'inventory.stock.add',      label: 'Add Stock',          category: 'Inventory' },
+    { key: 'inventory.stock.edit',     label: 'Edit Stock',         category: 'Inventory' },
+    { key: 'inventory.stock.delete',   label: 'Delete Stock',       category: 'Inventory' },
+    { key: 'inventory.stock.transfer', label: 'Transfer Stock',     category: 'Inventory' },
+    { key: 'inventory.expiry.view',    label: 'View Expiry',        category: 'Inventory' },
+    { key: 'inventory.expiry.manage',  label: 'Manage Expiry',      category: 'Inventory' },
+
+    // Sales & Dispensing
+    { key: 'sales.pos.access',      label: 'Access POS',          category: 'Sales & Dispensing' },
+    { key: 'sales.create_sale',     label: 'Create Sale',         category: 'Sales & Dispensing' },
+    { key: 'sales.void_sale',       label: 'Void Sale',           category: 'Sales & Dispensing' },
+    { key: 'sales.apply_discount',  label: 'Apply Discount',      category: 'Sales & Dispensing' },
+    { key: 'sales.view_history',    label: 'View Sales History',  category: 'Sales & Dispensing' },
+    { key: 'dispensing.dispense',   label: 'Dispense Medicine',   category: 'Sales & Dispensing' },
+    { key: 'dispensing.verify',     label: 'Verify Dispensing',   category: 'Sales & Dispensing' },
+
+    // Reporting
+    { key: 'reports.view',       label: 'View Reports',       category: 'Reporting' },
+    { key: 'reports.export',     label: 'Export Reports',      category: 'Reporting' },
+    { key: 'reports.financial',  label: 'Financial Reports',   category: 'Reporting' },
+    { key: 'reports.inventory',  label: 'Inventory Reports',   category: 'Reporting' },
+
+    // Configuration
+    { key: 'config.business_settings',    label: 'Business Settings',    category: 'Configuration' },
+    { key: 'config.branch_management',    label: 'Branch Management',    category: 'Configuration' },
+    { key: 'config.role_management',      label: 'Role Management',      category: 'Configuration' },
+    { key: 'config.integration_settings', label: 'Integration Settings', category: 'Configuration' },
+
+    // Audit
+    { key: 'audit.view_logs',   label: 'View Audit Logs',   category: 'Audit' },
+    { key: 'audit.export_logs', label: 'Export Audit Logs',  category: 'Audit' },
+
+    // Feature Access
+    { key: 'feature.mca_compliance',     label: 'MCA Compliance',     category: 'Feature Access' },
+    { key: 'feature.insurance_billing',  label: 'Insurance Billing',  category: 'Feature Access' },
+    { key: 'feature.advanced_analytics', label: 'Advanced Analytics', category: 'Feature Access' },
   ];
+
   for (const p of permissions) {
     await prisma.permission.upsert({ where: { key: p.key }, update: {}, create: p });
   }
-  console.log(`  ✓ ${permissions.length} permissions`);
+  console.log(`  ✓ ${permissions.length} permissions (legacy + dot-notation)`);
 
-  // ── 2. Demo Tenant ──────────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 2. DEMO TENANT — with new business fields
+  // ═══════════════════════════════════════════════════════════════════════════
+
   const tenant = await prisma.tenant.upsert({
     where:  { subdomain: 'demo' },
-    update: {},
+    update: {
+      businessId:       'PH-00001',
+      legalName:        'Demo Pharmacy (Pty) Ltd',
+      address:          '123 Health Street, Harare, Zimbabwe',
+      licenceNumber:    'PHARM-2026-001',
+      taxVatNumber:     'VAT-ZW-100001',
+      subscriptionTier: 'premium',
+      primaryContact:   'Demo Manager',
+      primaryPhone:     '+263-771-000-001',
+      primaryEmail:     'manager@demo.com',
+    },
     create: {
-      name:           'Demo Pharmacy',
-      subdomain:      'demo',
-      primaryColor:   '#6366f1',
-      secondaryColor: '#8b5cf6',
+      name:             'Demo Pharmacy',
+      subdomain:        'demo',
+      primaryColor:     '#6366f1',
+      secondaryColor:   '#8b5cf6',
+      businessId:       'PH-00001',
+      legalName:        'Demo Pharmacy (Pty) Ltd',
+      address:          '123 Health Street, Harare, Zimbabwe',
+      licenceNumber:    'PHARM-2026-001',
+      taxVatNumber:     'VAT-ZW-100001',
+      subscriptionTier: 'premium',
+      primaryContact:   'Demo Manager',
+      primaryPhone:     '+263-771-000-001',
+      primaryEmail:     'manager@demo.com',
     },
   });
-  console.log(`  ✓ Tenant: ${tenant.name} (${tenant.id})`);
+  console.log(`  ✓ Tenant: ${tenant.name} (${tenant.id}) — Business ID: ${tenant.businessId}`);
 
-  // ── 3. SaaS Users (added alongside existing legacy users) ──────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 3. DYNAMIC ROLES — system roles (isSystem: true)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // System-level Super Admin role (no tenantId — null)
+  // Note: Can't use upsert with null in a @@unique compound key, so use findFirst + create
+  let superAdminRole = await prisma.dynamicRole.findFirst({
+    where: { slug: 'super_admin', tenantId: null },
+  });
+  if (!superAdminRole) {
+    superAdminRole = await prisma.dynamicRole.create({
+      data: {
+        name:        'Super Admin',
+        slug:        'super_admin',
+        description: 'System-wide administrator with cross-tenant access',
+        level:       0,
+        isSystem:    true,
+      },
+    });
+  }
+  console.log(`  ✓ DynamicRole: ${superAdminRole.name} (Level 0, system)`);
+
+  // Tenant-level system roles
+  const tenantRoleDefs = [
+    {
+      slug:        'business_admin',
+      name:        'Business Admin',
+      description: 'Full business-level administrator',
+      level:       1,
+    },
+    {
+      slug:        'manager',
+      name:        'Manager',
+      description: 'Manager with access to assigned modules',
+      level:       2,
+    },
+    {
+      slug:        'pharmacist',
+      name:        'Pharmacist',
+      description: 'Pharmacist with dispensing and inventory access',
+      level:       2,
+    },
+    {
+      slug:        'viewer',
+      name:        'Viewer',
+      description: 'Read-only access for auditing and viewing',
+      level:       3,
+    },
+  ];
+
+  const tenantRoles: Record<string, any> = {};
+  for (const def of tenantRoleDefs) {
+    const role = await prisma.dynamicRole.upsert({
+      where: { tenantId_slug: { tenantId: tenant.id, slug: def.slug } },
+      update: {},
+      create: {
+        tenantId:    tenant.id,
+        name:        def.name,
+        slug:        def.slug,
+        description: def.description,
+        level:       def.level,
+        isSystem:    true,
+      },
+    });
+    tenantRoles[def.slug] = role;
+    console.log(`  ✓ DynamicRole: ${role.name} (Level ${def.level}, tenant)`);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 4. DYNAMIC ROLE PERMISSIONS — map permissions to dynamic roles
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // All new dot-notation permission keys
+  const allNewPermKeys = permissions
+    .filter(p => p.key.includes('.'))
+    .map(p => p.key);
+
+  const dynamicRolePerms: Record<string, string[]> = {
+    // Business Admin gets everything
+    business_admin: allNewPermKeys,
+
+    // Manager gets most operational permissions
+    manager: [
+      'inventory.stock.view', 'inventory.stock.add', 'inventory.stock.edit', 'inventory.stock.transfer',
+      'inventory.expiry.view', 'inventory.expiry.manage',
+      'sales.pos.access', 'sales.create_sale', 'sales.void_sale', 'sales.apply_discount', 'sales.view_history',
+      'dispensing.dispense', 'dispensing.verify',
+      'reports.view', 'reports.export', 'reports.inventory',
+      'user_management.view_users',
+      'audit.view_logs',
+    ],
+
+    // Pharmacist gets dispensing + inventory
+    pharmacist: [
+      'inventory.stock.view', 'inventory.stock.add', 'inventory.stock.edit',
+      'inventory.expiry.view',
+      'sales.pos.access', 'sales.create_sale', 'sales.view_history',
+      'dispensing.dispense', 'dispensing.verify',
+      'reports.view',
+    ],
+
+    // Viewer gets read-only
+    viewer: [
+      'inventory.stock.view', 'inventory.expiry.view',
+      'sales.view_history',
+      'reports.view', 'reports.inventory',
+      'audit.view_logs',
+    ],
+  };
+
+  for (const [roleSlug, permKeys] of Object.entries(dynamicRolePerms)) {
+    const role = tenantRoles[roleSlug];
+    if (!role) continue;
+
+    for (const permissionKey of permKeys) {
+      await prisma.dynamicRolePermission.upsert({
+        where: { dynamicRoleId_permissionKey: { dynamicRoleId: role.id, permissionKey } },
+        update: {},
+        create: {
+          dynamicRoleId: role.id,
+          permissionKey,
+          tenantId:      tenant.id,
+        },
+      });
+    }
+  }
+  console.log('  ✓ DynamicRolePermissions mapped');
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 5. DYNAMIC MENU CONFIGS — per dynamic role
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const allMenuItems = [
+    { key: 'dashboard',  label: 'Dashboard',      path: '/',           icon: 'LayoutDashboard', visible: true  },
+    { key: 'pos',        label: 'Point of Sale',   path: '/pos',        icon: 'ShoppingCart',    visible: true  },
+    { key: 'inventory',  label: 'Inventory',       path: '/inventory',  icon: 'Package',         visible: true  },
+    { key: 'customers',  label: 'Customers',       path: '/customers',  icon: 'Users',           visible: true  },
+    { key: 'reports',    label: 'Reports',         path: '/reports',    icon: 'BarChart3',       visible: false },
+    { key: 'users',      label: 'Users',           path: '/users',      icon: 'UserCog',         visible: false },
+    { key: 'settings',   label: 'Settings',        path: '/settings',   icon: 'Settings',        visible: true  },
+  ];
+
+  const dynamicMenuByRole: Record<string, typeof allMenuItems> = {
+    business_admin: allMenuItems.map(i => ({ ...i, visible: true })),
+    manager:        allMenuItems.map(i => ({ ...i, visible: true })),
+    pharmacist:     allMenuItems.map(i => ({
+      ...i,
+      visible: ['dashboard', 'pos', 'inventory', 'customers'].includes(i.key),
+    })),
+    viewer:         allMenuItems.map(i => ({
+      ...i,
+      visible: ['dashboard', 'inventory', 'reports'].includes(i.key),
+    })),
+  };
+
+  for (const [roleSlug, items] of Object.entries(dynamicMenuByRole)) {
+    const role = tenantRoles[roleSlug];
+    if (!role) continue;
+
+    await prisma.dynamicMenuConfig.upsert({
+      where: { dynamicRoleId_tenantId: { dynamicRoleId: role.id, tenantId: tenant.id } },
+      update: { menuItems: JSON.stringify(items) },
+      create: {
+        dynamicRoleId: role.id,
+        tenantId:      tenant.id,
+        menuItems:     JSON.stringify(items),
+      },
+    });
+  }
+  console.log('  ✓ DynamicMenuConfigs');
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 6. FEATURE FLAGS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const featureFlags = [
+    { key: 'module.pos',                label: 'Point of Sale',       description: 'Core POS functionality',                        category: 'module', isGloballyOn: true  },
+    { key: 'module.inventory',          label: 'Inventory Management',description: 'Stock tracking and management',                  category: 'module', isGloballyOn: true  },
+    { key: 'module.customers',          label: 'Customer Management', description: 'Customer/patient records and loyalty',            category: 'module', isGloballyOn: true  },
+    { key: 'module.reports',            label: 'Reports & Analytics', description: 'Business reports and dashboards',                 category: 'module', isGloballyOn: true  },
+    { key: 'module.mca_compliance',     label: 'MCA Compliance',      description: 'Controlled substance tracking and MCA reporting', category: 'module', isGloballyOn: false },
+    { key: 'module.insurance_billing',  label: 'Insurance Billing',   description: 'Claims processing and third-party billing',       category: 'module', isGloballyOn: false },
+    { key: 'module.advanced_analytics', label: 'Advanced Analytics',  description: 'Advanced dashboards, scheduled reports, AI',       category: 'module', isGloballyOn: false },
+  ];
+
+  const flagRecords: Record<string, any> = {};
+  for (const f of featureFlags) {
+    const flag = await prisma.featureFlag.upsert({
+      where: { key: f.key },
+      update: {},
+      create: f,
+    });
+    flagRecords[f.key] = flag;
+  }
+  console.log(`  ✓ ${featureFlags.length} feature flags`);
+
+  // Enable non-global features for demo tenant
+  const demoEnabledFlags = ['module.mca_compliance']; // Enable MCA for demo
+  for (const flagKey of demoEnabledFlags) {
+    const flag = flagRecords[flagKey];
+    if (!flag) continue;
+    await prisma.tenantFeatureFlag.upsert({
+      where: { tenantId_featureFlagId: { tenantId: tenant.id, featureFlagId: flag.id } },
+      update: { isEnabled: true },
+      create: { tenantId: tenant.id, featureFlagId: flag.id, isEnabled: true },
+    });
+  }
+  console.log('  ✓ TenantFeatureFlags for demo');
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 7. SAAS USERS — with dynamic role linkage
+  // ═══════════════════════════════════════════════════════════════════════════
+
   const usersToCreate = [
     {
-      username:  'superadmin@system.com',
-      email:     'superadmin@system.com',
-      plainPass: 'Admin@1234',
-      saasRole:  Role.SUPER_ADMIN,
-      tenantId:  null,
+      username:         'superadmin@system.com',
+      email:            'superadmin@system.com',
+      businessUsername: 'superadmin',
+      plainPass:        'Admin@1234',
+      saasRole:         Role.SUPER_ADMIN,
+      tenantId:         null as string | null,
+      dynamicRoleId:    superAdminRole.id,
     },
     {
-      username:  'manager@demo.com',
-      email:     'manager@demo.com',
-      plainPass: 'Manager@1234',
-      saasRole:  Role.MANAGER,
-      tenantId:  tenant.id,
+      username:         'manager@demo.com',
+      email:            'manager@demo.com',
+      businessUsername: 'manager',
+      plainPass:        'Manager@1234',
+      saasRole:         Role.MANAGER,
+      tenantId:         tenant.id,
+      dynamicRoleId:    tenantRoles['business_admin'].id, // MANAGER maps to Business Admin
     },
     {
-      username:  'mca@demo.com',
-      email:     'mca@demo.com',
-      plainPass: 'Mca@1234',
-      saasRole:  Role.MCA,
-      tenantId:  tenant.id,
+      username:         'mca@demo.com',
+      email:            'mca@demo.com',
+      businessUsername: 'pharmacist',
+      plainPass:        'Mca@1234',
+      saasRole:         Role.MCA,
+      tenantId:         tenant.id,
+      dynamicRoleId:    tenantRoles['pharmacist'].id, // MCA maps to Pharmacist
     },
     {
-      username:  'nes@demo.com',
-      email:     'nes@demo.com',
-      plainPass: 'Nes@1234',
-      saasRole:  Role.NES,
-      tenantId:  tenant.id,
+      username:         'nes@demo.com',
+      email:            'nes@demo.com',
+      businessUsername: 'viewer',
+      plainPass:        'Nes@1234',
+      saasRole:         Role.NES,
+      tenantId:         tenant.id,
+      dynamicRoleId:    tenantRoles['viewer'].id, // NES maps to Viewer
     },
   ];
 
@@ -77,25 +374,37 @@ async function main() {
     const passwordHash = await bcrypt.hash(u.plainPass, 12);
     await prisma.user.upsert({
       where:  { email: u.email },
-      update: { passwordHash, saasRole: u.saasRole, isActive: true },
-      create: {
-        username:     u.username,
-        password:     'NEXTAUTH_MANAGED', // placeholder — auth uses passwordHash
-        role:         u.saasRole,         // mirror saasRole into legacy field
-        email:        u.email,
+      update: {
         passwordHash,
-        saasRole:     u.saasRole,
-        tenantId:     u.tenantId ?? undefined,
-        isActive:     true,
+        saasRole:         u.saasRole,
+        isActive:         true,
+        dynamicRoleId:    u.dynamicRoleId,
+        businessUsername: u.businessUsername,
+      },
+      create: {
+        username:         u.username,
+        password:         'NEXTAUTH_MANAGED',
+        role:             u.saasRole,
+        email:            u.email,
+        passwordHash,
+        saasRole:         u.saasRole,
+        tenantId:         u.tenantId ?? undefined,
+        isActive:         true,
+        dynamicRoleId:    u.dynamicRoleId,
+        businessUsername: u.businessUsername,
       },
     });
-    console.log(`  ✓ User: ${u.email} (${u.saasRole})`);
+    console.log(`  ✓ User: ${u.email} (${u.saasRole} → ${u.businessUsername})`);
   }
 
-  // ── 4. Default Role Permissions for Demo Tenant ────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 8. LEGACY ROLE PERMISSIONS — kept for backward compatibility
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const legacyPermKeys = permissions.filter(p => !p.key.includes('.')).map(p => p.key);
   const rolePerms: Record<Role, string[]> = {
-    [Role.SUPER_ADMIN]: [], // super admin bypasses role permissions
-    [Role.MANAGER]:     permissions.map(p => p.key),
+    [Role.SUPER_ADMIN]: [],
+    [Role.MANAGER]:     legacyPermKeys,
     [Role.MCA]:         ['view_inventory', 'edit_inventory', 'view_orders', 'create_orders'],
     [Role.NES]:         ['view_inventory', 'view_patients', 'view_orders', 'view_reports'],
   };
@@ -111,23 +420,26 @@ async function main() {
       });
     }
   }
-  console.log('  ✓ Role permissions');
+  console.log('  ✓ Legacy role permissions (backward compat)');
 
-  // ── 5. Default Menu Configs ─────────────────────────────────────────────────
-  const allMenuItems = [
-    { key: 'dashboard',  label: 'Dashboard',     path: '/',           visible: true  },
-    { key: 'pos',        label: 'Point of Sale',  path: '/pos',        visible: true  },
-    { key: 'inventory',  label: 'Inventory',      path: '/inventory',  visible: true  },
-    { key: 'customers',  label: 'Customers',      path: '/customers',  visible: true  },
-    { key: 'reports',    label: 'Reports',        path: '/reports',    visible: false },
-    { key: 'users',      label: 'Users',          path: '/users',      visible: false },
-    { key: 'settings',   label: 'Settings',       path: '/settings',   visible: true  },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 9. LEGACY MENU CONFIGS — kept for backward compatibility
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const legacyMenuItems = [
+    { key: 'dashboard',  label: 'Dashboard',      path: '/',           visible: true  },
+    { key: 'pos',        label: 'Point of Sale',   path: '/pos',        visible: true  },
+    { key: 'inventory',  label: 'Inventory',       path: '/inventory',  visible: true  },
+    { key: 'customers',  label: 'Customers',       path: '/customers',  visible: true  },
+    { key: 'reports',    label: 'Reports',         path: '/reports',    visible: false },
+    { key: 'users',      label: 'Users',           path: '/users',      visible: false },
+    { key: 'settings',   label: 'Settings',        path: '/settings',   visible: true  },
   ];
 
-  const menuByRole: Record<string, typeof allMenuItems> = {
-    [Role.MANAGER]: allMenuItems.map(i => ({ ...i, visible: true })),
-    [Role.MCA]:     allMenuItems.map(i => ({ ...i, visible: ['dashboard','pos','inventory','customers'].includes(i.key) })),
-    [Role.NES]:     allMenuItems.map(i => ({ ...i, visible: ['dashboard','inventory','reports'].includes(i.key) })),
+  const menuByRole: Record<string, typeof legacyMenuItems> = {
+    [Role.MANAGER]: legacyMenuItems.map(i => ({ ...i, visible: true })),
+    [Role.MCA]:     legacyMenuItems.map(i => ({ ...i, visible: ['dashboard','pos','inventory','customers'].includes(i.key) })),
+    [Role.NES]:     legacyMenuItems.map(i => ({ ...i, visible: ['dashboard','inventory','reports'].includes(i.key) })),
   };
 
   for (const [roleStr, items] of Object.entries(menuByRole)) {
@@ -138,14 +450,22 @@ async function main() {
       create: { tenantId: tenant.id, role, menuItems: JSON.stringify(items) },
     });
   }
-  console.log('  ✓ Menu configs');
+  console.log('  ✓ Legacy menu configs (backward compat)');
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DONE
+  // ═══════════════════════════════════════════════════════════════════════════
 
   console.log('\n✅ Seed complete!\n');
   console.log('Default credentials:');
-  console.log('  superadmin@system.com  /  Admin@1234    (SUPER_ADMIN)');
-  console.log('  manager@demo.com       /  Manager@1234  (MANAGER)');
-  console.log('  mca@demo.com           /  Mca@1234      (MCA)');
-  console.log('  nes@demo.com           /  Nes@1234      (NES)');
+  console.log('  Business ID: PH-00001');
+  console.log('  ─────────────────────────────────────────────────────────');
+  console.log('  superadmin@system.com  /  Admin@1234    (Super Admin)');
+  console.log('  manager@demo.com       /  Manager@1234  (Business Admin)');
+  console.log('  mca@demo.com           /  Mca@1234      (Pharmacist)');
+  console.log('  nes@demo.com           /  Nes@1234      (Viewer)');
+  console.log('  ─────────────────────────────────────────────────────────');
+  console.log('  3-field login: PH-00001 + businessUsername + password');
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());

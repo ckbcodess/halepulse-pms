@@ -17,15 +17,34 @@ const DEFAULT_MENU: MenuItem[] = [
 ];
 
 /**
- * Returns the visible menu items for a user's role + tenant combination.
+ * Returns the visible menu items for a user.
+ *
+ * Resolution order:
+ *   1. DynamicMenuConfig lookup (if dynamicRoleId provided)
+ *   2. Legacy MenuConfig lookup (fallback by enum role + tenantId)
+ *   3. DEFAULT_MENU (if no config exists at all)
+ *
  * Always filters by tenantId to prevent cross-tenant menu leakage.
  */
 export async function getMenuForUser(
   role: string,
   tenantId: string | null,
+  dynamicRoleId?: string | null,
 ): Promise<MenuItem[]> {
   if (!tenantId) return [];
 
+  // Strategy 1: Dynamic menu config (preferred)
+  if (dynamicRoleId) {
+    const dynamicConfig = await prisma.dynamicMenuConfig.findUnique({
+      where: { dynamicRoleId_tenantId: { dynamicRoleId, tenantId } },
+    });
+    if (dynamicConfig) {
+      const items: MenuItem[] = JSON.parse(dynamicConfig.menuItems);
+      return items.filter(i => i.visible);
+    }
+  }
+
+  // Strategy 2: Legacy menu config (fallback)
   const config = await prisma.menuConfig.findUnique({
     where: { tenantId_role: { tenantId, role: role as any } },
   });
