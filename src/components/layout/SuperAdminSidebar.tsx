@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, Building2, LogOut, Shield, Activity, Plus,
-  Users, Paintbrush, ShieldCheck, Menu,
+  Users, Paintbrush, ShieldCheck, Menu, GitBranch,
 } from 'lucide-react';
 
 const MAIN_NAV = [
@@ -17,6 +17,7 @@ const MAIN_NAV = [
 const TENANT_SUB_NAV = [
   { label: 'Details',     suffix: '',              icon: Building2    },
   { label: 'Users',       suffix: '/users/new',    icon: Users        },
+  { label: 'Branches',    suffix: '/branches',     icon: GitBranch    },
   { label: 'Branding',    suffix: '/branding',     icon: Paintbrush   },
   { label: 'Permissions', suffix: '/permissions',  icon: ShieldCheck  },
   { label: 'Menus',       suffix: '/menus',        icon: Menu         },

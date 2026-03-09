@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
-import { User, Phone, Award, Search } from "lucide-react";
+import { User, Phone, Award, Search, ArrowRight } from "lucide-react";
+import Link from 'next/link';
 
 export default async function CustomersPage({
   searchParams,
@@ -54,14 +55,14 @@ export default async function CustomersPage({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {customers.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={c.id} className="hover:bg-slate-50 transition-colors group">
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
+                      <Link href={`/customers/${c.id}`} className="flex items-center gap-3">
                         <div className="bg-blue-100 p-2 rounded-full text-blue-600">
                           <User size={16} />
                         </div>
-                        <p className="font-semibold text-slate-800">{c.name}</p>
-                      </div>
+                        <p className="font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">{c.name}</p>
+                      </Link>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-600">
                       <div className="flex items-center gap-2">
@@ -76,7 +77,10 @@ export default async function CustomersPage({
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right text-xs text-slate-400">
-                      {new Date(c.createdAt).toLocaleDateString()}
+                      <div className="flex items-center justify-end gap-2">
+                        {new Date(c.createdAt).toLocaleDateString()}
+                        <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 text-blue-500 transition-opacity" />
+                      </div>
                     </td>
                   </tr>
                 ))}

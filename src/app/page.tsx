@@ -112,7 +112,7 @@ export default async function Dashboard() {
             <div className="lg:col-span-3 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-2xl flex flex-col">
               <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 flex justify-between items-center">
                 <h4 className="text-[17px] font-semibold text-slate-900 dark:text-white tracking-tight">Recent Transactions</h4>
-                <button className="bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-white/5 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">View report</button>
+                <Link href="/reports?tab=sales" className="bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-white/5 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">View report</Link>
               </div>
 
               <div className="flex-1 flex flex-col px-2 pb-4">
@@ -151,7 +151,7 @@ export default async function Dashboard() {
             <div className="lg:col-span-2 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-2xl flex flex-col">
               <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 flex justify-between items-center">
                 <h4 className="text-[17px] font-semibold text-slate-900 dark:text-white tracking-tight">Inventory Alerts</h4>
-                <button className="bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-white/5 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">View report</button>
+                <Link href="/reports?tab=sales" className="bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-white/5 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">View report</Link>
               </div>
 
               <div className="p-4 space-y-1 min-h-[300px] flex flex-col">
