@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { getTenantContext } from '@/lib/auth/getTenantContext';
 import InventoryView from './InventoryView';
 
 export default async function InventoryPage({
@@ -6,12 +7,14 @@ export default async function InventoryPage({
 }: {
   searchParams: Promise<{ q?: string; filter?: string }>;
 }) {
+  const { tenantId } = await getTenantContext();
   const params = await searchParams;
   const query = params.q || '';
   const filter = params.filter || 'all';
 
   const products = await prisma.product.findMany({
     where: {
+      tenantId,
       AND: [
         { name: { contains: query.toUpperCase() } },
         filter === 'low' ? { stockQty: { lte: 5 } } : {},
@@ -19,7 +22,7 @@ export default async function InventoryPage({
       ]
     },
     orderBy: { name: 'asc' },
-    take: 100 // Limit for performance, search handles the rest
+    take: 100
   });
 
   // Convert Date objects to ISO strings for safe passing to Client Components

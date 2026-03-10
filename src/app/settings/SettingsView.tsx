@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Building2, Phone, Mail, User, FileText, Shield, Check, Loader2, Lock } from 'lucide-react';
+import { toast } from 'sonner';
 
 type TenantSettings = {
   id: string;
@@ -62,8 +63,10 @@ export default function SettingsView({
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      toast.success('Settings saved successfully');
     } catch (err: any) {
       setError(err.message);
+      toast.error(err.message || 'Failed to save settings');
     } finally {
       setIsSaving(false);
     }

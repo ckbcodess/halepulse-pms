@@ -1,8 +1,5 @@
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/authOptions';
-import { getImpersonation } from '@/lib/auth/getImpersonation';
-import { redirect } from 'next/navigation';
+import { getTenantContext } from '@/lib/auth/getTenantContext';
 import {
   TrendingUp, Package, Calendar, AlertCircle,
   ShoppingBag, ArrowUpRight, Download, BarChart2, FileText
@@ -14,15 +11,11 @@ export default async function ReportsPage({
 }: {
   searchParams: Promise<{ tab?: string; range?: string }>;
 }) {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect('/login');
+  const { tenantId } = await getTenantContext();
 
   const params = await searchParams;
   const tab = params.tab || 'sales';
   const range = params.range || '30';
-
-  const impersonation = await getImpersonation();
-  const tenantId = impersonation?.tenantId ?? session.user.tenantId ?? null;
 
   // ── Date range ──────────────────────────────────────────────────────────────
   const days = parseInt(range, 10) || 30;
@@ -30,7 +23,7 @@ export default async function ReportsPage({
   rangeStart.setDate(rangeStart.getDate() - days);
   rangeStart.setHours(0, 0, 0, 0);
 
-  const tenantFilter = tenantId ? { tenantId } : {};
+  const tenantFilter = { tenantId };
 
   // ── Sales data ───────────────────────────────────────────────────────────────
   const [salesSummary, totalRevenue, recentSales, topProducts, lowStockProducts, expiringProducts] =

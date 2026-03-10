@@ -1,7 +1,5 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/authOptions';
-import { getImpersonation } from '@/lib/auth/getImpersonation';
-import { redirect, notFound } from 'next/navigation';
+import { getTenantContext } from '@/lib/auth/getTenantContext';
+import { notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { ArrowLeft, Phone, Award, ShoppingBag, Calendar, TrendingUp, User } from 'lucide-react';
 import Link from 'next/link';
@@ -11,16 +9,13 @@ export default async function CustomerDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect('/login');
+  const { tenantId } = await getTenantContext();
 
   const { id } = await params;
   const customerId = parseInt(id, 10);
   if (isNaN(customerId)) notFound();
 
-  const impersonation = await getImpersonation();
-  const tenantId = impersonation?.tenantId ?? session.user.tenantId ?? null;
-  const tenantFilter = tenantId ? { tenantId } : {};
+  const tenantFilter = { tenantId };
 
   const customer = await prisma.customer.findFirst({
     where: { id: customerId, ...tenantFilter },

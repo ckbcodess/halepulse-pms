@@ -5,6 +5,7 @@ import { Search, Filter, AlertCircle, Edit3, PackagePlus, X, Save, Box, ArrowRig
 import { updateProduct, addStock } from '@/app/actions';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function InventoryView({ products, query, filter }: { products: any[], query: string, filter: string }) {
     const router = useRouter();
@@ -40,8 +41,9 @@ export default function InventoryView({ products, query, filter }: { products: a
             });
             setEditingProduct(null);
             router.refresh();
-        } catch (err) {
-            alert("Failed to update product");
+            toast.success('Product updated successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to update product');
         } finally {
             setIsSubmitting(false);
         }
@@ -54,8 +56,9 @@ export default function InventoryView({ products, query, filter }: { products: a
             await addStock(stockingProduct.id, parseInt(addStockQty, 10));
             setStockingProduct(null);
             router.refresh();
-        } catch (err) {
-            alert("Failed to add stock");
+            toast.success('Stock added successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to add stock');
         } finally {
             setIsSubmitting(false);
         }

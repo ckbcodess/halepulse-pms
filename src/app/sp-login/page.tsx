@@ -145,10 +145,12 @@ export default function SPLoginPage() {
             </Link>
           </div>
 
-          <div className="mt-8 space-y-1 text-xs text-slate-500 font-medium border-t border-slate-800 pt-6">
-            <p className="font-semibold text-slate-400 mb-2">Development:</p>
-            <p><code className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">superadmin@system.com</code> / <code className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">Admin@1234</code></p>
-          </div>
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-8 space-y-1 text-xs text-slate-500 font-medium border-t border-slate-800 pt-6">
+              <p className="font-semibold text-slate-400 mb-2">Development:</p>
+              <p><code className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">superadmin@system.com</code> / <code className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">Admin@1234</code></p>
+            </div>
+          )}
         </div>
       </div>
     </div>

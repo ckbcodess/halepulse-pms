@@ -163,13 +163,15 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <div className="mt-8 space-y-1 text-xs text-slate-400 font-medium border-t border-slate-200 pt-6">
-            <p className="font-semibold text-slate-500 mb-2">Development accounts:</p>
-            <p className="font-semibold text-emerald-600 mb-1">Business ID: <code className="bg-emerald-50 px-1.5 py-0.5 rounded">PH-00001</code></p>
-            <p><code className="bg-slate-100 px-1 py-0.5 rounded">manager</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Manager@1234</code> <span className="text-slate-300">(Business Admin)</span></p>
-            <p><code className="bg-slate-100 px-1 py-0.5 rounded">pharmacist</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Mca@1234</code> <span className="text-slate-300">(Pharmacist)</span></p>
-            <p><code className="bg-slate-100 px-1 py-0.5 rounded">viewer</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Nes@1234</code> <span className="text-slate-300">(Viewer)</span></p>
-          </div>
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-8 space-y-1 text-xs text-slate-400 font-medium border-t border-slate-200 pt-6">
+              <p className="font-semibold text-slate-500 mb-2">Development accounts:</p>
+              <p className="font-semibold text-emerald-600 mb-1">Business ID: <code className="bg-emerald-50 px-1.5 py-0.5 rounded">PH-00001</code></p>
+              <p><code className="bg-slate-100 px-1 py-0.5 rounded">manager</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Manager@1234</code></p>
+              <p><code className="bg-slate-100 px-1 py-0.5 rounded">pharmacist</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Mca@1234</code></p>
+              <p><code className="bg-slate-100 px-1 py-0.5 rounded">viewer</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Nes@1234</code></p>
+            </div>
+          )}
         </div>
       </div>
     </div>

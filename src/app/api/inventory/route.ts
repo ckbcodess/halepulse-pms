@@ -1,39 +1,39 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/authOptions';
-import { getImpersonation } from '@/lib/auth/getImpersonation';
+import { getTenantContext } from '@/lib/auth/getTenantContext';
 import prisma from '@/lib/prisma';
+import { createProductSchema } from '@/lib/validation/schemas';
+import { ZodError } from 'zod';
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const impersonation = await getImpersonation();
-  const tenantId = impersonation?.tenantId ?? session.user.tenantId ?? null;
-
   try {
-    const body = await request.json();
-    const { name, category, price, costPrice, stockQty, expiryDate, description } = body;
+    const { tenantId } = await getTenantContext();
 
-    if (!name || !category || price == null || stockQty == null) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
+    const body = await request.json();
+    const parsed = createProductSchema.parse(body);
 
     const product = await prisma.product.create({
       data: {
-        name:        String(name).toUpperCase(),
-        category:    String(category),
-        price:       Number(price),
-        costPrice:   costPrice != null ? Number(costPrice) : null,
-        stockQty:    Number(stockQty),
-        expiryDate:  expiryDate ? new Date(expiryDate) : null,
-        description: description ?? null,
-        ...(tenantId ? { tenantId } : {}),
+        name:        parsed.name,
+        category:    parsed.category,
+        price:       parsed.price,
+        costPrice:   parsed.costPrice ?? null,
+        stockQty:    parsed.stockQty,
+        expiryDate:  parsed.expiryDate ? new Date(parsed.expiryDate) : null,
+        description: parsed.description ?? null,
+        tenantId,
       },
     });
 
     return NextResponse.json({ product }, { status: 201 });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('Inventory API error:', err);
+    if (err instanceof ZodError) {
+      const message = err.issues.map((e: { message: string }) => e.message).join(', ');
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    if (err.message === 'Unauthorized' || err.message === 'No tenant context') {
+      return NextResponse.json({ error: err.message }, { status: 401 });
+    }
+    return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
   }
 }

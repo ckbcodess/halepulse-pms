@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Package, ArrowLeft, Save, Check } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 const CATEGORIES = [
   'Analgesics', 'Antibiotics', 'Antihistamines', 'Antifungals', 'Antivirals',
@@ -56,9 +57,11 @@ export default function NewProductPage() {
       }
 
       setSuccess(true);
+      toast.success('Product created successfully');
       setTimeout(() => router.push('/inventory'), 1500);
     } catch (err: any) {
       setError(err.message);
+      toast.error(err.message || 'Failed to create product');
     } finally {
       setIsSubmitting(false);
     }
