@@ -1,23 +1,19 @@
 'use server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/authOptions';
-
-// ── Auth helpers ──────────────────────────────────────────────────────────────
-
-async function getSessionOrLegacy() {
-  return getServerSession(authOptions);
-}
+import { getTenantContext } from '@/lib/auth/getTenantContext';
+import {
+  updateProductSchema, addStockSchema,
+  createCustomerSchema, processSaleSchema,
+} from '@/lib/validation/schemas';
 
 // ── Products ──────────────────────────────────────────────────────────────────
 
 export async function getProducts(search?: string) {
-  const session = await getSessionOrLegacy();
-  const tenantId = session?.user?.tenantId ?? null;
+  const { tenantId } = await getTenantContext();
 
   return prisma.product.findMany({
     where: {
-      ...(tenantId ? { tenantId } : {}),
+      tenantId,
       ...(search ? { name: { contains: search.toUpperCase() } } : {}),
     },
     take:    search ? 50 : 20,
@@ -26,34 +22,33 @@ export async function getProducts(search?: string) {
 }
 
 export async function updateProduct(id: number, data: { price: number; stockQty: number }) {
-  const session  = await getSessionOrLegacy();
-  const tenantId = session?.user?.tenantId ?? null;
+  const { tenantId } = await getTenantContext();
+  const parsed = updateProductSchema.parse({ id, ...data });
 
   return prisma.product.update({
-    where: { id, ...(tenantId ? { tenantId } : {}) },
-    data,
+    where: { id: parsed.id, tenantId },
+    data: { price: parsed.price, stockQty: parsed.stockQty },
   });
 }
 
 export async function addStock(id: number, quantity: number) {
-  const session  = await getSessionOrLegacy();
-  const tenantId = session?.user?.tenantId ?? null;
+  const { tenantId } = await getTenantContext();
+  const parsed = addStockSchema.parse({ id, quantity });
 
   return prisma.product.update({
-    where: { id, ...(tenantId ? { tenantId } : {}) },
-    data:  { stockQty: { increment: quantity } },
+    where: { id: parsed.id, tenantId },
+    data:  { stockQty: { increment: parsed.quantity } },
   });
 }
 
 // ── Customers ─────────────────────────────────────────────────────────────────
 
 export async function getCustomers(search?: string) {
-  const session  = await getSessionOrLegacy();
-  const tenantId = session?.user?.tenantId ?? null;
+  const { tenantId } = await getTenantContext();
 
   return prisma.customer.findMany({
     where: {
-      ...(tenantId ? { tenantId } : {}),
+      tenantId,
       ...(search ? {
         OR: [
           { name:  { contains: search } },
@@ -66,6 +61,21 @@ export async function getCustomers(search?: string) {
   });
 }
 
+export async function createCustomer(name: string, phone: string) {
+  const { tenantId } = await getTenantContext();
+  const { name: trimmedName, phone: trimmedPhone } = createCustomerSchema.parse({ name, phone });
+
+  // Check for duplicate phone within tenant
+  const existing = await prisma.customer.findFirst({
+    where: { phone: trimmedPhone, tenantId },
+  });
+  if (existing) throw new Error('A customer with this phone number already exists');
+
+  return prisma.customer.create({
+    data: { name: trimmedName, phone: trimmedPhone, tenantId },
+  });
+}
+
 // ── Sales ─────────────────────────────────────────────────────────────────────
 
 export async function processSale(
@@ -73,27 +83,40 @@ export async function processSale(
   total:      number,
   customerId?: number,
 ) {
-  const session  = await getSessionOrLegacy();
-  const tenantId = session?.user?.tenantId ?? null;
+  const { tenantId, userId } = await getTenantContext();
+  const parsed = processSaleSchema.parse({ items, total, customerId });
 
-  // Resolve sellerId: use session user's Int id, or fall back to 1 for legacy
-  let sellerId = 1;
-  if (session?.user?.id) {
-    const parsed = parseInt(session.user.id, 10);
-    if (!isNaN(parsed)) sellerId = parsed;
-  }
+  const sellerId = parseInt(userId, 10);
+  if (isNaN(sellerId)) throw new Error('Invalid user session — please log in again');
 
   return prisma.$transaction(async (tx) => {
+    // ── Pre-flight checks: validate stock and expiry BEFORE sale ──────────
+    for (const item of parsed.items) {
+      const product = await tx.product.findFirst({
+        where: { id: item.id, tenantId },
+      });
+      if (!product) throw new Error(`Product not found (ID: ${item.id})`);
+      if (product.expiryDate && product.expiryDate < new Date()) {
+        throw new Error(`Cannot sell expired product: ${product.name}`);
+      }
+      if (product.stockQty < item.quantity) {
+        throw new Error(
+          `Insufficient stock for ${product.name}: ${product.stockQty} available, ${item.quantity} requested`
+        );
+      }
+    }
+
+    // ── Create sale ──────────────────────────────────────────────────────
     const sale = await tx.sale.create({
       data: {
-        totalAmount: total,
+        totalAmount: parsed.total,
         paymentType: 'Cash',
         status:      'Completed',
         sellerId,
-        ...(tenantId   ? { tenantId }            : {}),
-        ...(customerId ? { customerId }           : {}),
+        tenantId,
+        ...(parsed.customerId ? { customerId: parsed.customerId } : {}),
         items: {
-          create: items.map(item => ({
+          create: parsed.items.map(item => ({
             productId: item.id,
             quantity:  item.quantity,
             price:     item.price,
@@ -102,17 +125,21 @@ export async function processSale(
       },
     });
 
-    if (customerId) {
-      const points = Math.floor(total / 10);
-      await tx.customer.update({
-        where: { id: customerId },
-        data:  { loyaltyPoints: { increment: points } },
-      });
+    // ── Loyalty points ───────────────────────────────────────────────────
+    if (parsed.customerId) {
+      const points = Math.floor(parsed.total / 10);
+      if (points > 0) {
+        await tx.customer.update({
+          where: { id: parsed.customerId },
+          data:  { loyaltyPoints: { increment: points } },
+        });
+      }
     }
 
-    for (const item of items) {
+    // ── Decrement stock (safe — validated above) ─────────────────────────
+    for (const item of parsed.items) {
       await tx.product.update({
-        where: { id: item.id },
+        where: { id: item.id, tenantId },
         data:  { stockQty: { decrement: item.quantity } },
       });
     }
@@ -121,18 +148,15 @@ export async function processSale(
   });
 }
 
-// ── Legacy auth (kept for backward compat — new auth via NextAuth) ─────────────
+// ── Tenant Info ───────────────────────────────────────────────────────────────
 
-import { cookies } from 'next/headers';
-import CryptoJS from 'crypto-js';
+export async function getTenantInfo() {
+  const { tenantId } = await getTenantContext();
 
-export async function login(username: string, passwordmd5: string) {
-  const user = await prisma.user.findUnique({ where: { username } });
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { name: true, address: true, primaryPhone: true, primaryEmail: true },
+  });
 
-  if (user && user.password === passwordmd5) {
-    const cookieStore = await cookies();
-    cookieStore.set('auth', 'true', { path: '/', httpOnly: false });
-    return { success: true, user: { id: user.id, username: user.username, role: user.role } };
-  }
-  return { success: false, message: 'Invalid credentials' };
+  return tenant ?? { name: 'Pharmacy', address: '', primaryPhone: '', primaryEmail: '' };
 }

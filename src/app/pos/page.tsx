@@ -1,8 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react';
-import { getProducts, getCustomers, processSale } from '@/app/actions';
+import { getProducts, getCustomers, processSale, getTenantInfo, createCustomer } from '@/app/actions';
 import { useCartStore } from '@/lib/store';
-import { Search, ShoppingCart, Trash2, UserPlus, UserCheck, Printer, X, Plus, Minus } from "lucide-react";
+import { Search, ShoppingCart, Trash2, UserPlus, UserCheck, Printer, X, Plus, Minus, AlertTriangle } from "lucide-react";
+import { toast } from 'sonner';
 
 export default function POSPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -11,12 +12,26 @@ export default function POSPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [receiptData, setReceiptData] = useState<{ items: any[], total: number, customer: any, saleId: number, date: Date } | null>(null);
+  const [tenantInfo, setTenantInfo] = useState<{ name: string; address: string | null; primaryPhone: string | null }>({ name: 'Pharmacy', address: null, primaryPhone: null });
+  const [processing, setProcessing] = useState(false);
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustName, setNewCustName] = useState('');
+  const [newCustPhone, setNewCustPhone] = useState('');
   const { items, addItem, removeItem, updateQuantity, clearCart, total } = useCartStore();
+
+  // Load tenant info once
+  useEffect(() => {
+    getTenantInfo().then(setTenantInfo).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const fetch = async () => {
-      const data = await getProducts(search);
-      setProducts(data);
+      try {
+        const data = await getProducts(search);
+        setProducts(data);
+      } catch {
+        // silently fail — search will try again
+      }
     };
     const timer = setTimeout(fetch, 300);
     return () => clearTimeout(timer);
@@ -34,8 +49,22 @@ export default function POSPage() {
     }
   }, [customerSearch]);
 
+  const handleAddToCart = (product: any) => {
+    const isExpired = product.expiryDate && new Date(product.expiryDate) < new Date();
+    if (isExpired) {
+      toast.error(`Cannot add expired product: ${product.name}`);
+      return;
+    }
+    if (product.stockQty <= 0) {
+      toast.error(`${product.name} is out of stock`);
+      return;
+    }
+    addItem({ id: product.id, name: product.name, price: product.price, quantity: 1 });
+  };
+
   const handleCompleteSale = async () => {
     if (items.length === 0) return;
+    setProcessing(true);
     try {
       const sale = await processSale(items.map(i => ({ id: i.id, quantity: i.quantity, price: i.price })), total, selectedCustomer?.id);
 
@@ -50,10 +79,36 @@ export default function POSPage() {
       clearCart();
       setSelectedCustomer(null);
       setCustomerSearch('');
-    } catch (e) {
-      alert('Error processing sale');
+      toast.success('Sale completed successfully!');
+
+      // Refresh products to get updated stock
+      const refreshed = await getProducts(search);
+      setProducts(refreshed);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to process sale. Please try again.');
+    } finally {
+      setProcessing(false);
     }
   };
+
+  const handleCreateCustomer = async () => {
+    if (!newCustName.trim() || !newCustPhone.trim()) {
+      toast.error('Name and phone are required');
+      return;
+    }
+    try {
+      const customer = await createCustomer(newCustName, newCustPhone);
+      setSelectedCustomer(customer);
+      setShowNewCustomer(false);
+      setNewCustName('');
+      setNewCustPhone('');
+      toast.success(`Customer "${customer.name}" added`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to create customer');
+    }
+  };
+
+  const now = new Date();
 
   return (
     <>
@@ -84,24 +139,56 @@ export default function POSPage() {
                 </p>
               </div>
             ) : (
-              products.map((product) => (
-                <button
-                  key={product.id}
-                  onClick={() => addItem({ id: product.id, name: product.name, price: product.price, quantity: 1 })}
-                  className="group bg-white dark:bg-[#0a0a0c] p-5 border border-slate-200 dark:border-zinc-800/80 rounded-xl hover:border-slate-300 dark:hover:border-zinc-600 hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors text-left flex flex-col justify-between h-32 active:scale-[0.98]"
-                >
-                  <div>
-                    <h4 className="font-extrabold text-[15px] text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight tracking-tight">{product.name}</h4>
-                    <p className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold mt-1">{product.category}</p>
-                  </div>
-                  <div className="flex justify-between items-end w-full">
-                    <span className="text-indigo-700 dark:text-indigo-400 font-extrabold tracking-tight">₵{product.price.toFixed(2)}</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${product.stockQty <= 5 ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50'}`}>
-                      Stock: {product.stockQty}
-                    </span>
-                  </div>
-                </button>
-              ))
+              products.map((product) => {
+                const isExpired = product.expiryDate && new Date(product.expiryDate) < now;
+                const daysToExpiry = product.expiryDate ? Math.ceil((new Date(product.expiryDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                const isExpiringSoon = daysToExpiry !== null && daysToExpiry > 0 && daysToExpiry <= 30;
+                const isOutOfStock = product.stockQty <= 0;
+
+                return (
+                  <button
+                    key={product.id}
+                    onClick={() => handleAddToCart(product)}
+                    disabled={isExpired || isOutOfStock}
+                    className={`group p-5 border rounded-xl text-left flex flex-col justify-between h-32 active:scale-[0.98] transition-colors relative ${
+                      isExpired
+                        ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50 opacity-60 cursor-not-allowed'
+                        : isOutOfStock
+                          ? 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-zinc-800/50 opacity-50 cursor-not-allowed'
+                          : 'bg-white dark:bg-[#0a0a0c] border-slate-200 dark:border-zinc-800/80 hover:border-slate-300 dark:hover:border-zinc-600 hover:bg-slate-50 dark:hover:bg-zinc-900'
+                    }`}
+                  >
+                    {/* Expiry badges */}
+                    {isExpired && (
+                      <span className="absolute top-2 right-2 text-[9px] px-1.5 py-0.5 rounded bg-rose-600 text-white font-bold uppercase tracking-wider flex items-center gap-1">
+                        <AlertTriangle size={10} /> Expired
+                      </span>
+                    )}
+                    {isExpiringSoon && !isExpired && (
+                      <span className="absolute top-2 right-2 text-[9px] px-1.5 py-0.5 rounded bg-amber-500 text-white font-bold uppercase tracking-wider">
+                        {daysToExpiry}d left
+                      </span>
+                    )}
+
+                    <div>
+                      <h4 className="font-extrabold text-[15px] text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight tracking-tight">{product.name}</h4>
+                      <p className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold mt-1">{product.category}</p>
+                    </div>
+                    <div className="flex justify-between items-end w-full">
+                      <span className="text-indigo-700 dark:text-indigo-400 font-extrabold tracking-tight">₵{product.price.toFixed(2)}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                        isOutOfStock
+                          ? 'bg-rose-100 dark:bg-rose-500/10 text-rose-800 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20'
+                          : product.stockQty <= 5
+                            ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50'
+                      }`}>
+                        {isOutOfStock ? 'Out of Stock' : `Stock: ${product.stockQty}`}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
@@ -123,19 +210,41 @@ export default function POSPage() {
             {/* Customer Selection */}
             <div className="relative">
               {selectedCustomer ? (
-                <div className="bg-indigo-500/10 p-4 rounded-xl border border-indigo-500/20 flex justify-between items-center group transition-colors hover:bg-indigo-500/20">
+                <div className="bg-indigo-50 dark:bg-indigo-500/10 p-4 rounded-xl border border-indigo-200 dark:border-indigo-500/20 flex justify-between items-center group transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                      <UserCheck className="text-indigo-400" size={16} />
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center">
+                      <UserCheck className="text-indigo-600 dark:text-indigo-400" size={16} />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-indigo-50">{selectedCustomer.name}</p>
-                      <p className="text-[10px] text-indigo-400/80 uppercase font-mono tracking-widest mt-0.5">{selectedCustomer.loyaltyPoints} PTS</p>
+                      <p className="text-sm font-bold text-indigo-900 dark:text-indigo-100">{selectedCustomer.name}</p>
+                      <p className="text-[10px] text-indigo-500 dark:text-indigo-400/80 uppercase font-mono tracking-widest mt-0.5">{selectedCustomer.loyaltyPoints} PTS</p>
                     </div>
                   </div>
-                  <button onClick={() => setSelectedCustomer(null)} className="text-indigo-400/50 hover:text-rose-400 bg-black/20 hover:bg-black/40 p-1.5 rounded-lg transition-colors">
+                  <button onClick={() => setSelectedCustomer(null)} className="text-indigo-400 hover:text-rose-500 p-1.5 rounded-lg transition-colors">
                     <X size={14} />
                   </button>
+                </div>
+              ) : showNewCustomer ? (
+                <div className="space-y-2 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Customer</p>
+                  <input
+                    type="text"
+                    placeholder="Customer name"
+                    value={newCustName}
+                    onChange={(e) => setNewCustName(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-zinc-800 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone number"
+                    value={newCustPhone}
+                    onChange={(e) => setNewCustPhone(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-zinc-800 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={handleCreateCustomer} className="flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700">Save</button>
+                    <button onClick={() => { setShowNewCustomer(false); setNewCustName(''); setNewCustPhone(''); }} className="px-3 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</button>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -143,14 +252,14 @@ export default function POSPage() {
                     <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 dark:text-slate-500 dark:group-focus-within:text-white transition-colors" size={16} />
                     <input
                       type="text"
-                      placeholder="Attach customer..."
+                      placeholder="Search or add customer..."
                       className="w-full pl-11 pr-4 py-3 text-sm bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-zinc-800/80 rounded-xl focus:outline-none focus:border-slate-400 dark:focus:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all font-medium"
                       value={customerSearch}
                       onChange={(e) => setCustomerSearch(e.target.value)}
                     />
                   </div>
                   {customers.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 z-10 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl mt-2 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 z-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-2xl mt-2 overflow-hidden">
                       {customers.map((c) => (
                         <button
                           key={c.id}
@@ -159,10 +268,10 @@ export default function POSPage() {
                             setCustomers([]);
                             setCustomerSearch('');
                           }}
-                          className="w-full p-3 text-left hover:bg-slate-800/80 border-b border-slate-800/50 last:border-0 transition-colors flex justify-between items-center group"
+                          className="w-full p-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800/50 last:border-0 transition-colors flex justify-between items-center group"
                         >
                           <div>
-                            <p className="text-sm font-semibold text-slate-200">{c.name}</p>
+                            <p className="text-sm font-semibold text-slate-900 dark:text-slate-200">{c.name}</p>
                             <p className="text-[10px] text-slate-500 font-mono mt-0.5">{c.phone}</p>
                           </div>
                           <Plus size={14} className="text-indigo-500 opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -170,6 +279,12 @@ export default function POSPage() {
                       ))}
                     </div>
                   )}
+                  <button
+                    onClick={() => setShowNewCustomer(true)}
+                    className="mt-2 w-full text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-semibold py-1.5 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Plus size={12} /> New Customer
+                  </button>
                 </>
               )}
             </div>
@@ -192,7 +307,7 @@ export default function POSPage() {
                         <h5 className="text-sm font-bold text-slate-900 dark:text-slate-200 line-clamp-2 leading-tight">{item.name}</h5>
                         <p className="text-[11px] text-slate-500 font-mono mt-1">₵{item.price.toFixed(2)} each</p>
                       </div>
-                      <span className="font-bold text-indigo-600 dark:text-indigo-50 tracking-tight whitespace-nowrap">₵{(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="font-bold text-indigo-600 dark:text-indigo-400 tracking-tight whitespace-nowrap">₵{(item.price * item.quantity).toFixed(2)}</span>
                     </div>
 
                     <div className="flex justify-between items-center mt-1">
@@ -227,32 +342,33 @@ export default function POSPage() {
             </div>
             <button
               onClick={handleCompleteSale}
-              disabled={items.length === 0}
+              disabled={items.length === 0 || processing}
               className="w-full bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-200 disabled:bg-slate-200 dark:disabled:bg-zinc-800 disabled:text-slate-400 dark:disabled:text-slate-600 text-white dark:text-slate-900 font-bold tracking-wide py-4 rounded-xl transition-all active:scale-[0.98] flex justify-center items-center gap-2"
             >
-              Process Transaction
+              {processing ? 'Processing...' : 'Process Transaction'}
             </button>
           </div>
         </div>
-      </div >
+      </div>
 
+      {/* Receipt Modal */}
       {receiptData && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:bg-white print:p-0 transition-all duration-300">
           <div className="bg-white rounded-md w-full max-w-sm overflow-hidden flex flex-col shadow-2xl print:shadow-none print:w-full print:max-w-none animate-in zoom-in-95 duration-200">
             {/* Modal Header - Hidden in print */}
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 print:hidden">
-              <h3 className="font-bold text-slate-900 flex items-center gap-2 text-sm uppercase tracking-widest"><Printer size={16} /> Receipt Protocol</h3>
+              <h3 className="font-bold text-slate-900 flex items-center gap-2 text-sm uppercase tracking-widest"><Printer size={16} /> Receipt</h3>
               <button onClick={() => setReceiptData(null)} className="text-slate-400 hover:text-rose-500 transition-colors">
                 <X size={20} />
               </button>
             </div>
 
             {/* Receipt Content */}
-            <div className="p-8 flex-1 overflow-y-auto w-full text-slate-900 text-sm bg-white font-mono">
+            <div className="print-receipt p-8 flex-1 overflow-y-auto w-full text-slate-900 text-sm bg-white font-mono">
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-black font-sans tracking-tight mb-2">PHARM NEXT</h2>
-                <p className="text-xs text-slate-500 font-mono">123 Health Street, City</p>
-                <p className="text-xs text-slate-500 font-mono">Tel: +123 456 7890</p>
+                <h2 className="text-2xl font-black font-sans tracking-tight mb-2">{tenantInfo.name?.toUpperCase() || 'PHARMACY'}</h2>
+                {tenantInfo.address && <p className="text-xs text-slate-500 font-mono">{tenantInfo.address}</p>}
+                {tenantInfo.primaryPhone && <p className="text-xs text-slate-500 font-mono">Tel: {tenantInfo.primaryPhone}</p>}
               </div>
 
               <div className="border-t border-b border-dotted border-slate-300 py-4 mb-6 space-y-2 text-xs">
@@ -281,7 +397,7 @@ export default function POSPage() {
               </div>
 
               <div className="mt-12 text-center">
-                <p className="text-[10px] uppercase tracking-widest text-slate-400">--- END OF RECEIPT ---</p>
+                <p className="text-[10px] uppercase tracking-widest text-slate-400">Thank you for your patronage</p>
               </div>
             </div>
 
@@ -300,8 +416,7 @@ export default function POSPage() {
             </div>
           </div>
         </div>
-      )
-      }
+      )}
     </>
   );
 }

@@ -71,20 +71,13 @@ export async function POST(req: NextRequest) {
   ];
   await prisma.rolePermission.createMany({ data: rolePermEntries });
 
-  // Seed default menu configs
-  const allMenuItems = [
-    { key: 'dashboard',  label: 'Dashboard',    path: '/',          visible: true  },
-    { key: 'pos',        label: 'Point of Sale', path: '/pos',       visible: true  },
-    { key: 'inventory',  label: 'Inventory',     path: '/inventory', visible: true  },
-    { key: 'customers',  label: 'Customers',     path: '/customers', visible: true  },
-    { key: 'reports',    label: 'Reports',       path: '/reports',   visible: false },
-    { key: 'settings',   label: 'Settings',      path: '/settings',  visible: true  },
-  ];
+  // Seed default menu configs — sourced from MASTER_MENU so new tenants are always in sync
+  const { MASTER_MENU } = await import('@/lib/menus/getMenuForUser');
   await prisma.menuConfig.createMany({
     data: [
-      { tenantId: tenant.id, role: 'MANAGER' as any, menuItems: JSON.stringify(allMenuItems.map(i => ({ ...i, visible: true }))) },
-      { tenantId: tenant.id, role: 'MCA'     as any, menuItems: JSON.stringify(allMenuItems.map(i => ({ ...i, visible: ['dashboard','pos','inventory','customers'].includes(i.key) }))) },
-      { tenantId: tenant.id, role: 'NES'     as any, menuItems: JSON.stringify(allMenuItems.map(i => ({ ...i, visible: ['dashboard','inventory','reports'].includes(i.key) }))) },
+      { tenantId: tenant.id, role: 'MANAGER' as any, menuItems: JSON.stringify(MASTER_MENU.map(i => ({ key: i.key, label: i.label, path: i.path, visible: true }))) },
+      { tenantId: tenant.id, role: 'MCA'     as any, menuItems: JSON.stringify(MASTER_MENU.map(i => ({ key: i.key, label: i.label, path: i.path, visible: ['dashboard','pos','inventory','customers'].includes(i.key) }))) },
+      { tenantId: tenant.id, role: 'NES'     as any, menuItems: JSON.stringify(MASTER_MENU.map(i => ({ key: i.key, label: i.label, path: i.path, visible: ['dashboard','inventory','reports'].includes(i.key) }))) },
     ],
   });
 

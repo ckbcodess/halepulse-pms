@@ -5,10 +5,12 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // ── Always allow: NextAuth internals, login page, static assets ──────────
+  // ── Always allow: NextAuth internals, login pages, static assets ──────────
   if (
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/login') ||
+    pathname.startsWith('/sp-login') ||
+    pathname.startsWith('/change-password') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon.ico')
   ) {
@@ -25,11 +27,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  // ── Force password change ──────────────────────────────────────────────────
+  if (token.mustChangePassword && !pathname.startsWith('/api/auth')) {
+    return NextResponse.redirect(new URL('/change-password', request.url));
+  }
+
   // ── Super-admin route guard ───────────────────────────────────────────────
+  // Check both legacy role string AND new roleLevel
   if (pathname.startsWith('/super-admin')) {
-    if (token.role !== 'SUPER_ADMIN') {
+    const isSuperAdmin = token.role === 'SUPER_ADMIN' || token.roleLevel === 0;
+    if (!isSuperAdmin) {
       return new NextResponse(
-        JSON.stringify({ error: 'Forbidden — SUPER_ADMIN role required' }),
+        JSON.stringify({ error: 'Forbidden — Super Admin required' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } },
       );
     }
@@ -37,7 +46,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Allow super admin impersonation on dashboard routes ──────────────────
-  if (token.role === 'SUPER_ADMIN' && pathname.startsWith('/dashboard')) {
+  const isSuperAdmin = token.role === 'SUPER_ADMIN' || token.roleLevel === 0;
+  if (isSuperAdmin && pathname.startsWith('/dashboard')) {
     const impersonateCookie = request.cookies.get('sa_impersonate')?.value;
     if (impersonateCookie) {
       return NextResponse.next(); // allowed — impersonating a role
@@ -47,7 +57,7 @@ export async function middleware(request: NextRequest) {
 
   // ── Tenant-scoped route guard ────────────────────────────────────────────
   // Non-super-admin users must have a tenantId
-  if (token.role !== 'SUPER_ADMIN' && !token.tenantId) {
+  if (!isSuperAdmin && !token.tenantId) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 

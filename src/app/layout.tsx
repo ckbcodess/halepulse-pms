@@ -2,12 +2,15 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from 'sonner';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 import { getTenantBranding } from '@/lib/branding/getTenantBranding';
 import SessionProvider from '@/components/SessionProvider';
 import AppShell from '@/components/layout/AppShell';
 import HeartbeatProvider from '@/components/layout/HeartbeatProvider';
+import { getMenuForUser } from '@/lib/menus/getMenuForUser';
+import { getImpersonation } from '@/lib/auth/getImpersonation';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
@@ -24,13 +27,23 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   let primaryColor   = '#6366f1';
   let secondaryColor = '#8b5cf6';
 
-  if (session?.user?.tenantId) {
-    const branding = await getTenantBranding(session.user.tenantId);
+  // Resolve impersonation context (super admin previewing a tenant role)
+  const impersonation = await getImpersonation();
+
+  // Effective identity for menu + branding — impersonation overrides session
+  const effectiveTenantId = impersonation?.tenantId ?? session?.user?.tenantId ?? null;
+  const effectiveRole     = impersonation?.role     ?? session?.user?.role     ?? '';
+
+  if (effectiveTenantId) {
+    const branding = await getTenantBranding(effectiveTenantId);
     if (branding) {
       primaryColor   = branding.primaryColor;
       secondaryColor = branding.secondaryColor;
     }
   }
+
+  // Fetch sidebar menu items server-side so the sidebar always reflects the full MASTER_MENU
+  const menuItems = await getMenuForUser(effectiveRole, effectiveTenantId);
 
   const brandingCSS = `
     :root {
@@ -47,8 +60,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <SessionProvider session={session}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+            <Toaster position="top-right" richColors />
             <HeartbeatProvider>
-              <AppShell session={session}>
+              <AppShell session={session} menuItems={menuItems}>
                 {children}
               </AppShell>
             </HeartbeatProvider>

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Filter, AlertCircle, Edit3, PackagePlus, X, Save, Box, ArrowRight } from "lucide-react";
+import { Search, Filter, AlertCircle, Edit3, PackagePlus, X, Save, Box, ArrowRight, Plus } from "lucide-react";
 import { updateProduct, addStock } from '@/app/actions';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function InventoryView({ products, query, filter }: { products: any[], query: string, filter: string }) {
     const router = useRouter();
@@ -39,8 +41,9 @@ export default function InventoryView({ products, query, filter }: { products: a
             });
             setEditingProduct(null);
             router.refresh();
-        } catch (err) {
-            alert("Failed to update product");
+            toast.success('Product updated successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to update product');
         } finally {
             setIsSubmitting(false);
         }
@@ -53,8 +56,9 @@ export default function InventoryView({ products, query, filter }: { products: a
             await addStock(stockingProduct.id, parseInt(addStockQty, 10));
             setStockingProduct(null);
             router.refresh();
-        } catch (err) {
-            alert("Failed to add stock");
+            toast.success('Stock added successfully');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to add stock');
         } finally {
             setIsSubmitting(false);
         }
@@ -67,6 +71,9 @@ export default function InventoryView({ products, query, filter }: { products: a
                     <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Inventory Management</h2>
                     <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm font-medium">Manage stock levels and pricing records across your pharmacy.</p>
                 </div>
+                <Link href="/inventory/new" className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors">
+                    <Plus size={14} /> Add Product
+                </Link>
             </div>
 
             {/* Search & Filter Bar */}
