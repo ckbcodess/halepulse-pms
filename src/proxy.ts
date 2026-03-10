@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── Always allow: NextAuth internals, login pages, static assets ──────────
@@ -33,7 +33,6 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Super-admin route guard ───────────────────────────────────────────────
-  // Check both legacy role string AND new roleLevel
   if (pathname.startsWith('/super-admin')) {
     const isSuperAdmin = token.role === 'SUPER_ADMIN' || token.roleLevel === 0;
     if (!isSuperAdmin) {
@@ -50,13 +49,12 @@ export async function middleware(request: NextRequest) {
   if (isSuperAdmin && pathname.startsWith('/dashboard')) {
     const impersonateCookie = request.cookies.get('sa_impersonate')?.value;
     if (impersonateCookie) {
-      return NextResponse.next(); // allowed — impersonating a role
+      return NextResponse.next();
     }
     return NextResponse.redirect(new URL('/super-admin', request.url));
   }
 
   // ── Tenant-scoped route guard ────────────────────────────────────────────
-  // Non-super-admin users must have a tenantId
   if (!isSuperAdmin && !token.tenantId) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
