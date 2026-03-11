@@ -107,11 +107,12 @@ export default function LoginPage() {
               <input
                 type="text"
                 required
-                placeholder="PH-00001"
+                placeholder="0000"
+                maxLength={4}
                 autoComplete="organization"
                 className="w-full px-4 py-3 bg-white border border-slate-200/60 rounded-md focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-mono font-medium tracking-wider"
                 value={businessId}
-                onChange={(e) => setBusinessId(e.target.value.toUpperCase())}
+                onChange={(e) => setBusinessId(e.target.value.replace(/\D/g, '').slice(0, 4))}
               />
             </div>
             <div className="space-y-1.5">
@@ -166,7 +167,7 @@ export default function LoginPage() {
           {process.env.NODE_ENV === 'development' && (
             <div className="mt-8 space-y-1 text-xs text-slate-400 font-medium border-t border-slate-200 pt-6">
               <p className="font-semibold text-slate-500 mb-2">Development accounts:</p>
-              <p className="font-semibold text-emerald-600 mb-1">Business ID: <code className="bg-emerald-50 px-1.5 py-0.5 rounded">PH-00001</code></p>
+              <p className="font-semibold text-emerald-600 mb-1">Business ID: <code className="bg-emerald-50 px-1.5 py-0.5 rounded">0721</code></p>
               <p><code className="bg-slate-100 px-1 py-0.5 rounded">manager</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Manager@1234</code></p>
               <p><code className="bg-slate-100 px-1 py-0.5 rounded">pharmacist</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Mca@1234</code></p>
               <p><code className="bg-slate-100 px-1 py-0.5 rounded">viewer</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Nes@1234</code></p>

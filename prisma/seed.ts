@@ -90,7 +90,7 @@ async function main() {
   const tenant = await prisma.tenant.upsert({
     where:  { subdomain: 'demo' },
     update: {
-      businessId:       'PH-00001',
+      businessId:       '0721',
       legalName:        'Demo Pharmacy (Pty) Ltd',
       address:          '123 Health Street, Harare, Zimbabwe',
       licenceNumber:    'PHARM-2026-001',
@@ -105,7 +105,7 @@ async function main() {
       subdomain:        'demo',
       primaryColor:     '#6366f1',
       secondaryColor:   '#8b5cf6',
-      businessId:       'PH-00001',
+      businessId:       '0721',
       legalName:        'Demo Pharmacy (Pty) Ltd',
       address:          '123 Health Street, Harare, Zimbabwe',
       licenceNumber:    'PHARM-2026-001',
@@ -458,14 +458,14 @@ async function main() {
 
   console.log('\n✅ Seed complete!\n');
   console.log('Default credentials:');
-  console.log('  Business ID: PH-00001');
+  console.log('  Business ID: 0721');
   console.log('  ─────────────────────────────────────────────────────────');
   console.log('  superadmin@system.com  /  Admin@1234    (Super Admin)');
   console.log('  manager@demo.com       /  Manager@1234  (Business Admin)');
   console.log('  mca@demo.com           /  Mca@1234      (Pharmacist)');
   console.log('  nes@demo.com           /  Nes@1234      (Viewer)');
   console.log('  ─────────────────────────────────────────────────────────');
-  console.log('  3-field login: PH-00001 + businessUsername + password');
+  console.log('  3-field login: 0721 + businessUsername + password');
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());
