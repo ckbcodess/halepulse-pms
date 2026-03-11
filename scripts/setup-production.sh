@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "╔══════════════════════════════════════════╗"
-echo "║   PharmNext — Production Setup           ║"
+echo "║   HalePulse — Production Setup           ║"
 echo "╚══════════════════════════════════════════╝"
 
 # 1. Run migrations

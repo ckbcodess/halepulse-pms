@@ -108,7 +108,7 @@ export default function SettingsView({
         <div>
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Settings</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {tenant.subdomain}.pharmNext.app
+            {tenant.subdomain}.halepulse.app
             <span className={`ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${tierColors[tenant.subscriptionTier] ?? tierColors.basic}`}>
               {tenant.subscriptionTier}
             </span>

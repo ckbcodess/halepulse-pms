@@ -74,7 +74,7 @@ export default function Sidebar({ user, menuItems, isOpen = false, onClose }: Si
               <span className="text-white font-bold text-lg leading-none">✦</span>
             </div>
             <div>
-              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">PharmNext</p>
+              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">HalePulse</p>
               <p className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">
                 {roleLabel[user.role] ?? user.role}
               </p>

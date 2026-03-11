@@ -148,7 +148,7 @@ export default function NewTenantPage() {
             </div>
             <div>
               <p className="text-sm font-bold text-slate-900 dark:text-white">{form.name || 'Company Name'}</p>
-              <p className="text-xs font-mono text-slate-400">{form.subdomain || 'subdomain'}.pharmNext.app</p>
+              <p className="text-xs font-mono text-slate-400">{form.subdomain || 'subdomain'}.halepulse.app</p>
             </div>
           </div>
         </div>

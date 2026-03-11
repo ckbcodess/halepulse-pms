@@ -70,7 +70,7 @@ export default async function Dashboard() {
           <div className="w-16 h-16 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Package size={32} className="text-indigo-500 dark:text-indigo-400" />
           </div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Welcome to PharmNext</h3>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Welcome to HalePulse</h3>
           <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-8 font-medium">
             Your pharmacy system is ready to go. Get started by adding your first products to the inventory database.
           </p>

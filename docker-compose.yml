@@ -5,9 +5,9 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: pharmnext
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-pharmnext_secret}
-      POSTGRES_DB: pharmnext
+      POSTGRES_USER: halepulse
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-halepulse_secret}
+      POSTGRES_DB: halepulse
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -21,7 +21,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://pharmnext:${DB_PASSWORD:-pharmnext_secret}@db:5432/pharmnext?schema=public
+      DATABASE_URL: postgresql://halepulse:${DB_PASSWORD:-halepulse_secret}@db:5432/halepulse?schema=public
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me-in-production}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NODE_ENV: production
