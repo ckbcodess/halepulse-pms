@@ -1,0 +1,26 @@
+commit e665bb9835008b92cd45b3598e82504570fe1641
+Author: Ransford Gyasi <ransfordgyasi98@gmail.com>
+Date:   Mon Mar 9 14:15:58 2026 +0000
+
+    wip: blitzmode experiment - dynamic roles and features
+
+ .../migration.sql                                  | 142 +++++++
+ prisma/schema.prisma                               | 113 +++++-
+ prisma/seed.ts                                     | 444 ++++++++++++++++++---
+ src/app/api/auth/change-password/route.ts          |  73 ++++
+ .../tenants/[tenantId]/permissions/route.ts        |  91 ++++-
+ .../tenants/[tenantId]/roles/[roleId]/route.ts     | 145 +++++++
+ .../super-admin/tenants/[tenantId]/roles/route.ts  |  99 +++++
+ src/app/change-password/page.tsx                   | 164 ++++++++
+ src/app/login/page.tsx                             | 102 +++--
+ src/app/sp-login/page.tsx                          | 156 ++++++++
+ src/lib/auth/authOptions.ts                        | 228 ++++++++++-
+ src/lib/auth/loginSecurity.ts                      |  87 ++++
+ src/lib/auth/requireRole.ts                        |  32 +-
+ src/lib/menus/getMenuForUser.ts                    |  21 +-
+ src/lib/permissions/checkPermission.ts             |  76 +++-
+ src/lib/permissions/permissionMap.ts               |  57 +++
+ src/lib/utils/generateBusinessId.ts                |  22 +
+ src/middleware.ts                                  |  20 +-
+ src/types/next-auth.d.ts                           |  18 +-
+ 19 files changed, 1926 insertions(+), 164 deletions(-)
