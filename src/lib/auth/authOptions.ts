@@ -1,5 +1,6 @@
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import {
@@ -231,10 +232,61 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Provider 4: GOOGLE OAUTH — tenant staff single-click sign-in
+    // Only enabled when GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET are configured.
+    // Uses the enterprise pattern: Google email must match a pre-provisioned
+    // tenant user account. Self-registration is NOT allowed.
+    // ═══════════════════════════════════════════════════════════════════════════
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [GoogleProvider({
+          clientId:     process.env.GOOGLE_CLIENT_ID!,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        })]
+      : []),
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    // ── Google OAuth gate — reject unprovisioned accounts ────────────────────
+    // Self-registration is blocked: only pre-provisioned tenant users may sign in
+    // with Google. Admins must create the account first via Super Admin panel.
+    async signIn({ user, account }) {
+      if (account?.provider === 'google') {
+        if (!user.email) return false;
+        const dbUser = await prisma.user.findFirst({
+          where: { email: user.email, isActive: true, tenantId: { not: null } },
+        });
+        // Redirect back to login with a descriptive error param
+        if (!dbUser) return '/login?error=NotProvisioned';
+      }
+      return true;
+    },
+
+    async jwt({ token, user, account }) {
+      // ── Google OAuth — populate custom JWT fields from DB ─────────────────
+      // account is only present on the initial OAuth callback, so the DB lookup
+      // runs once per sign-in, not on every request.
+      if (account?.provider === 'google' && token.email) {
+        const dbUser = await prisma.user.findFirst({
+          where: { email: token.email, isActive: true },
+          include: { dynamicRole: true, tenant: true },
+        });
+        if (dbUser && dbUser.tenantId) {
+          token.userId             = String(dbUser.id);
+          token.role               = dbUser.saasRole ?? dbUser.dynamicRole?.slug ?? 'viewer';
+          token.tenantId           = dbUser.tenantId;
+          token.branchId           = dbUser.branchId ?? null;
+          token.dynamicRoleId      = dbUser.dynamicRoleId ?? null;
+          token.dynamicRoleSlug    = dbUser.dynamicRole?.slug ?? null;
+          token.roleLevel          = dbUser.dynamicRole?.level ?? 3;
+          token.mustChangePassword = dbUser.mustChangePassword;
+          token.businessId         = dbUser.tenant?.businessId ?? null;
+        }
+        return token;
+      }
+
+      // ── Credentials providers — user object populated on sign-in ──────────
       if (user) {
         token.userId             = user.id;
         token.email              = user.email;
