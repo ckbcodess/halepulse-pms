@@ -111,9 +111,10 @@ model Sale {
   sellerId    Int       // Plain Int — no new FK relation added to avoid migration risk
   createdAt   DateTime  @default(now())
 
-  // ── New nullable field ──
-  tenantId String?
-  tenant   Tenant?  @relation(fields: [tenantId], references: [id])
+  // ── New nullable fields ──
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  clientToken String?  @unique  // Idempotency key: client-generated UUID prevents double-submission
 }
 
 model SaleItem {

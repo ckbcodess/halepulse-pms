@@ -31,17 +31,12 @@ export const createCustomerSchema = z.object({
 });
 
 // ── Sales ─────────────────────────────────────────────────────────────────────
+// Note: price is intentionally excluded from saleItemSchema.
+// The server fetches authoritative prices from the DB — client-supplied prices are ignored.
 
 export const saleItemSchema = z.object({
   id:       z.number().int().positive(),
   quantity: z.number().int().positive('Quantity must be at least 1'),
-  price:    z.number().positive('Price must be positive'),
-});
-
-export const processSaleSchema = z.object({
-  items:      z.array(saleItemSchema).min(1, 'Cart is empty'),
-  total:      z.number().positive('Sale total must be positive'),
-  customerId: z.number().int().positive().optional(),
 });
 
 // ── Settings ──────────────────────────────────────────────────────────────────

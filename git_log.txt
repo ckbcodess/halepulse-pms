@@ -1,0 +1,30 @@
+commit e665bb9835008b92cd45b3598e82504570fe1641
+Author: Ransford Gyasi <ransfordgyasi98@gmail.com>
+Date:   Mon Mar 9 14:15:58 2026 +0000
+
+    wip: blitzmode experiment - dynamic roles and features
+
+commit 5d9d402ad29891b1a7b7afcf5fc5206970d557f0
+Author: Ransford Gyasi <ransfordgyasi98@gmail.com>
+Date:   Sun Mar 8 07:17:25 2026 +0000
+
+    feat: multi-tenant SaaS pharmacy platform with super admin control plane
+    
+    - Full multi-tenant architecture: Tenant, Branch, RolePermission, MenuConfig, AuditLog models
+    - Three-migration additive schema (no data loss): init → multitenant → activity tracking
+    - NextAuth v4 JWT auth with SUPER_ADMIN/MANAGER/MCA/NES role hierarchy
+    - Super admin dashboard: system overview, tenant management, user CRUD, branding editor,
+      permissions matrix, menu visibility controls, audit log, role impersonation
+    - Heartbeat-based online user tracking (60s interval, 5-min threshold)
+    - Cookie-based role impersonation with amber exit banner for training/preview
+    - Core app: POS terminal (Zustand cart), inventory management, customer/loyalty system
+    - Role-scoped dashboards for Manager, MCA, and NES with tenant isolation
+    - Middleware-level JWT route protection with impersonation passthrough
+    
+    Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+commit 1522905fa0373c74e17a44ee4568001a21111713
+Author: Ransford Gyasi <ransfordgyasi98@gmail.com>
+Date:   Fri Mar 6 21:00:29 2026 +0000
+
+    Initial commit from Create Next App

@@ -13,6 +13,17 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding SaaS infrastructure...\n');
 
+  // ── Production credential guard ────────────────────────────────────────────
+  // In production, demo users are only seeded when SEED_DEMO_DATA=true.
+  // Set SEED_DEMO_DATA=false in Vercel when onboarding real pharmacies.
+  const isProduction   = process.env.NODE_ENV === 'production';
+  const seedDemoData   = process.env.SEED_DEMO_DATA !== 'false'; // default: true (safe for dev + staging)
+
+  if (isProduction && !seedDemoData) {
+    console.log('  ⚠ Production mode with SEED_DEMO_DATA=false — skipping demo tenant and demo users.');
+    console.log('    Only permissions and feature flags will be seeded.\n');
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // 1. PERMISSIONS — Legacy flat keys + new dot-notation keys
   // ═══════════════════════════════════════════════════════════════════════════
@@ -84,8 +95,13 @@ async function main() {
   console.log(`  ✓ ${permissions.length} permissions (legacy + dot-notation)`);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 2. DEMO TENANT — with new business fields
+  // 2. DEMO TENANT — only seeded when demo data is enabled
   // ═══════════════════════════════════════════════════════════════════════════
+
+  if (!seedDemoData) {
+    console.log('\n✅ Seed complete (permissions + feature flags only — demo data skipped)\n');
+    return;
+  }
 
   const tenant = await prisma.tenant.upsert({
     where:  { subdomain: 'demo' },
@@ -331,12 +347,22 @@ async function main() {
   // 7. SAAS USERS — with dynamic role linkage
   // ═══════════════════════════════════════════════════════════════════════════
 
+  // In production, SUPER_ADMIN_PASSWORD env var overrides the default.
+  // Always set this before going live with real data.
+  const superAdminPassword = (isProduction && process.env.SUPER_ADMIN_PASSWORD)
+    ? process.env.SUPER_ADMIN_PASSWORD
+    : 'Admin@1234'; // Dev/staging default — CHANGE via SUPER_ADMIN_PASSWORD in production
+
+  if (isProduction && !process.env.SUPER_ADMIN_PASSWORD) {
+    console.warn('  ⚠ WARNING: SUPER_ADMIN_PASSWORD not set — using default "Admin@1234". Set this env var before going live!');
+  }
+
   const usersToCreate = [
     {
       username:         'superadmin@system.com',
       email:            'superadmin@system.com',
       businessUsername: 'superadmin',
-      plainPass:        'Admin@1234',
+      plainPass:        superAdminPassword,
       saasRole:         Role.SUPER_ADMIN,
       tenantId:         null as string | null,
       dynamicRoleId:    superAdminRole.id,

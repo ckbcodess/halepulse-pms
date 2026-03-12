@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import {
   checkLockout,
+  checkIpRateLimit,
   recordFailedAttempt,
   resetFailedAttempts,
   logLoginAttempt,
@@ -25,9 +26,18 @@ export const authOptions: NextAuthOptions = {
         username:   { label: 'Username',    type: 'text' },
         password:   { label: 'Password',    type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.businessId || !credentials?.username || !credentials?.password) {
           return null;
+        }
+
+        // 0. IP-based rate limit — blocks botnet brute force across accounts
+        const ipAddress = (req?.headers?.['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+          || (req?.headers?.['x-real-ip'] as string)
+          || 'unknown';
+        const ipCheck = await checkIpRateLimit(ipAddress);
+        if (ipCheck.blocked) {
+          throw new Error(`Too many failed attempts from this location. Try again in ${ipCheck.retryAfterMinutes} minutes.`);
         }
 
         // 1. Find tenant by Business ID
@@ -113,8 +123,17 @@ export const authOptions: NextAuthOptions = {
         email:    { label: 'Email',    type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) return null;
+
+        // IP-based rate limit on super admin portal — high-value target
+        const ipAddress = (req?.headers?.['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+          || (req?.headers?.['x-real-ip'] as string)
+          || 'unknown';
+        const ipCheck = await checkIpRateLimit(ipAddress);
+        if (ipCheck.blocked) {
+          throw new Error(`Too many failed attempts from this location. Try again in ${ipCheck.retryAfterMinutes} minutes.`);
+        }
 
         const user = await prisma.user.findFirst({
           where: { email: credentials.email },

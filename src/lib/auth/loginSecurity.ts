@@ -1,10 +1,16 @@
 /**
- * Login security utilities: lockout tracking, attempt logging, password validation.
+ * Login security utilities: lockout tracking, IP rate limiting,
+ * attempt logging, and password validation.
  */
 import prisma from '@/lib/prisma';
 
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_MINUTES = 30;
+const MAX_ATTEMPTS       = 5;
+const LOCKOUT_MINUTES    = 30;
+
+// IP-based rate limiting constants
+// Uses the existing LoginAttempt table — no Redis or extra infrastructure needed.
+const MAX_IP_FAILURES   = 20;
+const IP_WINDOW_MINUTES = 15;
 
 // ── Account Lockout ──────────────────────────────────────────────────────────
 
@@ -53,6 +59,29 @@ export async function resetFailedAttempts(userId: number): Promise<void> {
     where: { id: userId },
     data: { failedLoginCount: 0, lockedUntil: null },
   });
+}
+
+// ── IP-based Rate Limiting ────────────────────────────────────────────────────
+
+/**
+ * Checks whether an IP address has exceeded the failure threshold within the
+ * rolling time window. Uses the LoginAttempt table — no extra infrastructure.
+ */
+export async function checkIpRateLimit(
+  ipAddress: string,
+): Promise<{ blocked: boolean; retryAfterMinutes: number }> {
+  if (!ipAddress) return { blocked: false, retryAfterMinutes: 0 };
+
+  const since = new Date(Date.now() - IP_WINDOW_MINUTES * 60_000);
+
+  const failureCount = await prisma.loginAttempt.count({
+    where: { ipAddress, success: false, createdAt: { gte: since } },
+  });
+
+  if (failureCount >= MAX_IP_FAILURES) {
+    return { blocked: true, retryAfterMinutes: IP_WINDOW_MINUTES };
+  }
+  return { blocked: false, retryAfterMinutes: 0 };
 }
 
 // ── Login Attempt Logging ────────────────────────────────────────────────────

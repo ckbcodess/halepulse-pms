@@ -1,0 +1,154 @@
+commit e665bb9835008b92cd45b3598e82504570fe1641
+Author: Ransford Gyasi <ransfordgyasi98@gmail.com>
+Date:   Mon Mar 9 14:15:58 2026 +0000
+
+    wip: blitzmode experiment - dynamic roles and features
+
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index adea4e8..1bfe35c 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -38,13 +38,22 @@ model User {
+   // ── New nullable fields (additive only — existing rows get NULL) ──
+   email        String?  @unique    // Used by NextAuth credentials provider
+   passwordHash String?             // bcrypt hash for new auth system
+-  saasRole     Role?               // SUPER_ADMIN | MANAGER | MCA | NES
++  saasRole     Role?               // SUPER_ADMIN | MANAGER | MCA | NES (legacy enum — deprecated by DynamicRole)
+   tenantId     String?             // FK to Tenant (nullable — super admin has no tenant)
+   tenant       Tenant?  @relation(fields: [tenantId], references: [id])
+   branchId     String?             // FK to Branch (optional)
+   branch       Branch?  @relation(fields: [branchId], references: [id])
+   isActive     Boolean  @default(true)
+   lastActiveAt DateTime?           // Updated on each authenticated request (heartbeat)
++
++  // ── Phase 1 additions: Dynamic roles & security ──
++  dynamicRoleId      String?              // FK to DynamicRole (replaces saasRole)
++  dynamicRole        DynamicRole? @relation(fields: [dynamicRoleId], references: [id])
++  businessUsername   String?              // Username within a business context (for 3-field login)
++  mustChangePassword Boolean  @default(false) // Force password change on first login
++  failedLoginCount   Int      @default(0)     // Track consecutive failed login attempts
++  lockedUntil        DateTime?            // Account lockout expiry (null = not locked)
++  lastPasswordChange DateTime?            // Track when password was last changed
+ }
+ 
+ model Product {
+@@ -132,6 +141,18 @@ model Tenant {
+   isActive       Boolean  @default(true)
+   createdAt      DateTime @default(now())
+ 
++  // ── Phase 1 additions: Business entity fields (from spec) ──
++  businessId       String?  @unique        // Human-readable Business ID (e.g., "PH-00001")
++  legalName        String?                 // Legal business name
++  address          String?                 // Full business address
++  licenceNumber    String?                 // Pharmacy licence number
++  taxVatNumber     String?                 // Tax/VAT registration number
++  subscriptionTier String   @default("basic") // "basic" | "standard" | "premium"
++  primaryContact   String?                 // Primary contact person name
++  primaryPhone     String?                 // Contact phone number
++  primaryEmail     String?                 // Contact email
++
++  // ── Existing relations ──
+   users           User[]
+   products        Product[]
+   customers       Customer[]
+@@ -140,6 +161,13 @@ model Tenant {
+   rolePermissions RolePermission[]
+   menuConfigs     MenuConfig[]
+   auditLogs       AuditLog[]
++
++  // ── New relations (Phase 1) ──
++  dynamicRoles            DynamicRole[]
++  dynamicRolePermissions  DynamicRolePermission[]
++  dynamicMenuConfigs      DynamicMenuConfig[]
++  featureFlags            TenantFeatureFlag[]
++  loginAttempts           LoginAttempt[]
+ }
+ 
+ model Branch {
+@@ -193,3 +221,86 @@ model AuditLog {
+   createdAt DateTime @default(now())
+   ipAddress String?
+ }
++
++// ═══════════════════════════════════════════════════════════════════════════════
++// PHASE 1 — Dynamic Roles, Feature Flags, Login Security
++// These models replace the hard-coded Role enum with a flexible, per-tenant
++// role system and add feature flag infrastructure.
++// ═══════════════════════════════════════════════════════════════════════════════
++
++model DynamicRole {
++  id          String   @id @default(cuid())
++  tenantId    String?                          // null = system-level role (e.g., Super Admin)
++  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
++  name        String                           // Display name: "Pharmacist", "Branch Manager"
++  slug        String                           // Machine name: "pharmacist", "branch_manager"
++  description String?
++  level       Int      @default(3)             // Hierarchy: 0=SuperAdmin, 1=BusinessAdmin, 2=Manager, 3=Viewer
++  isSystem    Boolean  @default(false)         // true = cannot be deleted/renamed by tenant
++  isActive    Boolean  @default(true)
++  createdAt   DateTime @default(now())
++  updatedAt   DateTime @updatedAt
++
++  permissions DynamicRolePermission[]
++  users       User[]
++  menuConfigs DynamicMenuConfig[]
++
++  @@unique([tenantId, slug])
++}
++
++model DynamicRolePermission {
++  id            String      @id @default(cuid())
++  dynamicRoleId String
++  dynamicRole   DynamicRole @relation(fields: [dynamicRoleId], references: [id], onDelete: Cascade)
++  permissionKey String
++  tenantId      String
++  tenant        Tenant      @relation(fields: [tenantId], references: [id])
++
++  @@unique([dynamicRoleId, permissionKey])
++}
++
++model DynamicMenuConfig {
++  id            String      @id @default(cuid())
++  dynamicRoleId String
++  dynamicRole   DynamicRole @relation(fields: [dynamicRoleId], references: [id], onDelete: Cascade)
++  tenantId      String
++  tenant        Tenant      @relation(fields: [tenantId], references: [id])
++  menuItems     String                         // JSON array: [{ key, label, path, icon, visible }]
++
++  @@unique([dynamicRoleId, tenantId])
++}
++
++model FeatureFlag {
++  id           String   @id @default(cuid())
++  key          String   @unique                // e.g., "module.pos", "module.mca_compliance"
++  label        String                          // Human-readable name
++  description  String?
++  category     String                          // "module", "ui", "integration"
++  isGloballyOn Boolean  @default(false)        // If true, ON for all tenants regardless
++  createdAt    DateTime @default(now())
++
++  tenantFlags TenantFeatureFlag[]
++}
++
++model TenantFeatureFlag {
++  id            String      @id @default(cuid())
++  tenantId      String
++  tenant        Tenant      @relation(fields: [tenantId], references: [id])
++  featureFlagId String
++  featureFlag   FeatureFlag @relation(fields: [featureFlagId], references: [id])
++  isEnabled     Boolean     @default(false)
++
++  @@unique([tenantId, featureFlagId])
++}
++
++model LoginAttempt {
++  id        String   @id @default(cuid())
++  email     String?
++  username  String?
++  tenantId  String?
++  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
++  success   Boolean
++  ipAddress String?
++  userAgent String?
++  createdAt DateTime @default(now())
++}

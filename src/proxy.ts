@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { verifyImpersonation } from '@/lib/auth/impersonationToken';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -48,7 +49,8 @@ export async function proxy(request: NextRequest) {
   const isSuperAdmin = token.role === 'SUPER_ADMIN' || token.roleLevel === 0;
   if (isSuperAdmin && pathname.startsWith('/dashboard')) {
     const impersonateCookie = request.cookies.get('sa_impersonate')?.value;
-    if (impersonateCookie) {
+    // Verify HMAC signature — unsigned/tampered cookies are rejected
+    if (impersonateCookie && verifyImpersonation(impersonateCookie)) {
       return NextResponse.next();
     }
     return NextResponse.redirect(new URL('/super-admin', request.url));
