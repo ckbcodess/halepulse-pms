@@ -56,7 +56,7 @@ export default function SPLoginPage() {
         <div className="relative z-10 flex items-center gap-3 animate-in fade-in duration-1000">
           <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
-            PHARM <span className="text-blue-500 font-light">NEXT</span>
+            HALE<span className="text-blue-500 font-light">PULSE</span>
           </h1>
         </div>
 
@@ -75,7 +75,7 @@ export default function SPLoginPage() {
           <div className="md:hidden flex items-center gap-3 mb-10">
             <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
             <h1 className="text-2xl font-bold text-white tracking-tight">
-              PHARM <span className="text-blue-500 font-light">NEXT</span>
+              HALE<span className="text-blue-500 font-light">PULSE</span>
             </h1>
           </div>
 

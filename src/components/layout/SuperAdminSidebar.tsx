@@ -40,7 +40,7 @@ export default function SuperAdminSidebar() {
       <div className="px-4 py-5 border-b border-slate-800">
         <div className="flex items-center gap-2">
           <Shield size={20} className="text-indigo-400" />
-          <span className="text-sm font-bold text-white">PharmNext Admin</span>
+          <span className="text-sm font-bold text-white">HalePulse Admin</span>
         </div>
       </div>
 

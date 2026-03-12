@@ -1,4 +1,4 @@
-# PharmNext — Multi-Tenant Pharmacy Management SaaS
+# HalePulse — Multi-Tenant Pharmacy Management SaaS
 
 A Next.js 16 + Prisma + NextAuth multi-tenant pharmacy management system.
 

@@ -148,6 +148,75 @@ export async function processSale(
   });
 }
 
+// ── Bulk Import ──────────────────────────────────────────────────────────────
+
+export interface ImportRow {
+  name: string;
+  price: number;
+  costPrice: number;
+  stockQty: number;
+  expiryDate: string;
+  barcode: string;
+  category: string;
+}
+
+export async function bulkImportProducts(rows: ImportRow[]) {
+  const { tenantId, role } = await getTenantContext();
+
+  if (role !== 'MANAGER' && role !== 'SUPER_ADMIN') {
+    throw new Error('Only managers can import products');
+  }
+  if (!rows.length) throw new Error('No products to import');
+  if (rows.length > 5000) throw new Error('Maximum 5,000 products per import');
+
+  let created = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  // Process in batches of 50 to avoid overwhelming the DB
+  for (let i = 0; i < rows.length; i += 50) {
+    const batch = rows.slice(i, i + 50);
+
+    for (const row of batch) {
+      try {
+        const name = (row.name || '').trim().toUpperCase();
+        if (!name) { skipped++; continue; }
+
+        const price    = Math.max(0, Number(row.price) || 0);
+        const costPrice = Number(row.costPrice) || null;
+        const stockQty = Math.max(0, Math.floor(Number(row.stockQty) || 0));
+        const category = (row.category || 'General').trim();
+        const barcode  = (row.barcode || '').trim() || null;
+
+        let expiryDate: Date | null = null;
+        if (row.expiryDate) {
+          const d = new Date(row.expiryDate);
+          if (!isNaN(d.getTime())) expiryDate = d;
+        }
+
+        // Skip if exact same name already exists for this tenant
+        const existing = await prisma.product.findFirst({
+          where: { name, tenantId },
+        });
+        if (existing) { skipped++; continue; }
+
+        await prisma.product.create({
+          data: {
+            name, price, costPrice, stockQty,
+            expiryDate, category, tenantId,
+            description: barcode ? `Barcode: ${barcode}` : null,
+          },
+        });
+        created++;
+      } catch (err: any) {
+        errors.push(`Row "${row.name}": ${err.message}`);
+      }
+    }
+  }
+
+  return { created, skipped, errors: errors.slice(0, 20), total: rows.length };
+}
+
 // ── Tenant Info ───────────────────────────────────────────────────────────────
 
 export async function getTenantInfo() {
