@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Filter, AlertCircle, Edit3, PackagePlus, X, Save, Box, ArrowRight, Plus } from "lucide-react";
+import { Search, Filter, AlertCircle, Edit3, PackagePlus, X, Save, Box, ArrowRight, Plus, Upload } from "lucide-react";
 import { updateProduct, addStock } from '@/app/actions';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -71,9 +71,14 @@ export default function InventoryView({ products, query, filter }: { products: a
                     <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Inventory Management</h2>
                     <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm font-medium">Manage stock levels and pricing records across your pharmacy.</p>
                 </div>
-                <Link href="/inventory/new" className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors">
-                    <Plus size={14} /> Add Product
-                </Link>
+                <div className="flex gap-2">
+                    <Link href="/inventory/import" className="flex items-center gap-2 px-4 py-2.5 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl text-sm font-semibold transition-colors">
+                        <Upload size={14} /> Import CSV
+                    </Link>
+                    <Link href="/inventory/new" className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors">
+                        <Plus size={14} /> Add Product
+                    </Link>
+                </div>
             </div>
 
             {/* Search & Filter Bar */}
