@@ -2,6 +2,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function ChangePasswordPage() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -10,6 +15,7 @@ export default function ChangePasswordPage() {
   const [error, setError]                     = useState('');
   const [success, setSuccess]                 = useState(false);
   const [isSubmitting, setIsSubmitting]       = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,72 +71,77 @@ export default function ChangePasswordPage() {
           </h1>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200/60 p-8">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-8">
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
-              <div className="px-2 py-0.5 bg-amber-50 border border-amber-200 rounded text-amber-700 text-[10px] font-bold uppercase tracking-widest">
+              <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 text-[10px] font-bold uppercase tracking-widest">
                 Required
-              </div>
+              </Badge>
             </div>
-            <h2 className="text-2xl font-black text-slate-950 tracking-tight mb-2">Change Password</h2>
-            <p className="text-slate-500 text-sm">
+            <h2 className="text-2xl font-black text-card-foreground tracking-tight mb-2">Change Password</h2>
+            <p className="text-muted-foreground text-sm">
               You must change your password before continuing. Choose a strong password with at least 8 characters, including uppercase, lowercase, numbers, and special characters.
             </p>
           </div>
 
           {error && (
-            <div className="bg-rose-50 border border-rose-200/50 text-rose-700 p-3 rounded-md mb-4 text-sm font-semibold">
-              {error}
-            </div>
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
           {success ? (
-            <div className="bg-emerald-50 border border-emerald-200/50 text-emerald-700 p-4 rounded-md text-sm font-semibold">
-              Password changed successfully! Redirecting to login...
-            </div>
+            <Alert className="border-emerald-200 bg-emerald-50">
+              <AlertDescription className="text-emerald-700 font-semibold">
+                Password changed successfully! Redirecting to login...
+              </AlertDescription>
+            </Alert>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="currentPassword" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Current Password
-                </label>
-                <input
+                </Label>
+                <Input
+                  id="currentPassword"
                   type="password"
                   required
                   autoComplete="current-password"
-                  className="w-full px-4 py-3 bg-white border border-slate-200/60 rounded-md focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
+                  className="h-12"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                 />
               </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="newPassword" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   New Password
-                </label>
-                <input
+                </Label>
+                <Input
+                  id="newPassword"
                   type="password"
                   required
                   autoComplete="new-password"
-                  className="w-full px-4 py-3 bg-white border border-slate-200/60 rounded-md focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
+                  className="h-12"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
               </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="confirmPassword" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Confirm New Password
-                </label>
-                <input
+                </Label>
+                <Input
+                  id="confirmPassword"
                   type="password"
                   required
                   autoComplete="new-password"
-                  className="w-full px-4 py-3 bg-white border border-slate-200/60 rounded-md focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
+                  className="h-12"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
 
-              <div className="text-xs text-slate-400 space-y-1 pt-1">
+              <div className="text-xs text-muted-foreground flex flex-col gap-1 pt-1">
                 <p className={newPassword.length >= 8 ? 'text-emerald-600' : ''}>
                   {newPassword.length >= 8 ? '\u2713' : '\u2022'} At least 8 characters
                 </p>
@@ -148,13 +159,13 @@ export default function ChangePasswordPage() {
                 </p>
               </div>
 
-              <button
+              <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-800 text-white font-bold py-3.5 rounded-md transition-all mt-2"
+                className="w-full h-12 bg-slate-950 hover:bg-slate-900 text-white font-bold mt-2"
               >
                 {isSubmitting ? 'Updating...' : 'Update Password'}
-              </button>
+              </Button>
             </form>
           )}
         </div>

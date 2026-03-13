@@ -3,11 +3,16 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, getSession } from 'next-auth/react';
 import Link from 'next/link';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 
 // ── Google "G" logo — matches Google brand guidelines ─────────────────────────
 function GoogleIcon() {
   return (
-    <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <svg className="size-5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
       <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
       <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
@@ -85,7 +90,6 @@ function LoginContent() {
     setIsGoogleLoading(true);
     setError('');
     await signIn('google', { callbackUrl: '/dashboard' });
-    // If signIn redirects back (e.g. error), reset loading state
     setIsGoogleLoading(false);
   };
 
@@ -129,17 +133,18 @@ function LoginContent() {
           </div>
 
           {displayError && (
-            <div className="bg-rose-50 border border-rose-200/50 text-rose-700 p-4 rounded-md mb-6 text-sm font-semibold animate-in fade-in slide-in-from-top-2">
-              {displayError}
-            </div>
+            <Alert variant="destructive" className="mb-6 animate-in fade-in slide-in-from-top-2">
+              <AlertDescription>{displayError}</AlertDescription>
+            </Alert>
           )}
 
           {/* ── Google Sign-In ──────────────────────────────────────────────── */}
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={handleGoogleSignIn}
             disabled={isGoogleLoading || isSubmitting}
-            className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200/60 text-slate-700 font-semibold py-3.5 rounded-md transition-all hover:bg-slate-50 hover:border-slate-300 disabled:opacity-60 shadow-sm mb-5"
+            className="w-full h-12 gap-3 font-semibold mb-5"
           >
             {isGoogleLoading ? (
               <span className="text-sm">Redirecting<span className="animate-pulse">...</span></span>
@@ -149,12 +154,12 @@ function LoginContent() {
                 <span className="text-sm">Sign in with Google</span>
               </>
             )}
-          </button>
+          </Button>
 
           {/* ── Divider ─────────────────────────────────────────────────────── */}
           <div className="relative mb-5">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
+              <Separator />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-[#f8fafa] px-3 text-slate-400 font-semibold tracking-wider">
@@ -164,60 +169,63 @@ function LoginContent() {
           </div>
 
           {/* ── Credentials Form ─────────────────────────────────────────────── */}
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+          <form onSubmit={handleLogin} className="flex flex-col gap-5">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="businessId" className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Business ID
-              </label>
-              <input
+              </Label>
+              <Input
+                id="businessId"
                 type="text"
                 required
                 placeholder="0000"
                 maxLength={4}
                 autoComplete="organization"
-                className="w-full px-4 py-3 bg-white border border-slate-200/60 rounded-md focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-mono font-medium tracking-wider"
+                className="h-12 font-mono font-medium tracking-wider"
                 value={businessId}
                 onChange={(e) => setBusinessId(e.target.value.replace(/\D/g, '').slice(0, 4))}
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="username" className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Username
-              </label>
-              <input
+              </Label>
+              <Input
+                id="username"
                 type="text"
                 required
                 autoComplete="username"
-                className="w-full px-4 py-3 bg-white border border-slate-200/60 rounded-md focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
+                className="h-12 font-medium"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="loginPassword" className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Password
-              </label>
-              <input
+              </Label>
+              <Input
+                id="loginPassword"
                 type="password"
                 required
                 autoComplete="current-password"
-                className="w-full px-4 py-3 bg-white border border-slate-200/60 rounded-md focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
+                className="h-12 font-medium"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={isSubmitting || isGoogleLoading}
-              className="w-full bg-slate-950 hover:bg-slate-900 disabled:bg-slate-800 text-white font-bold py-3.5 rounded-md transition-all mt-2 flex justify-center items-center gap-2"
+              className="w-full h-12 bg-slate-950 hover:bg-slate-900 text-white font-bold mt-2"
             >
               {isSubmitting ? (
                 <>Authenticating<span className="animate-pulse">...</span></>
               ) : (
-                'Sign In \u2192'
+                'Sign In →'
               )}
-            </button>
+            </Button>
           </form>
 
           <div className="mt-8 text-center">
@@ -230,7 +238,7 @@ function LoginContent() {
           </div>
 
           {process.env.NODE_ENV === 'development' && (
-            <div className="mt-8 space-y-1 text-xs text-slate-400 font-medium border-t border-slate-200 pt-6">
+            <div className="mt-8 flex flex-col gap-1 text-xs text-slate-400 font-medium border-t border-slate-200 pt-6">
               <p className="font-semibold text-slate-500 mb-2">Development accounts:</p>
               <p className="font-semibold text-emerald-600 mb-1">Business ID: <code className="bg-emerald-50 px-1.5 py-0.5 rounded">0721</code></p>
               <p><code className="bg-slate-100 px-1 py-0.5 rounded">manager</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Manager@1234</code></p>

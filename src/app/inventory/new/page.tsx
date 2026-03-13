@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Package, ArrowLeft, Save, Check } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Card, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 const CATEGORIES = [
   'Analgesics', 'Antibiotics', 'Antihistamines', 'Antifungals', 'Antivirals',
@@ -71,158 +78,170 @@ export default function NewProductPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/15 rounded-full flex items-center justify-center">
-          <Check size={32} className="text-emerald-600 dark:text-emerald-400" />
+          <Check className="size-8 text-emerald-600 dark:text-emerald-400" />
         </div>
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Product Added!</h3>
-        <p className="text-sm text-slate-500">Redirecting to inventory…</p>
+        <h3 className="text-lg font-semibold text-card-foreground">Product Added!</h3>
+        <p className="text-sm text-muted-foreground">Redirecting to inventory…</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/inventory" className="p-2 rounded-xl border border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-          <ArrowLeft size={16} className="text-slate-500" />
+        <Link href="/inventory" className={buttonVariants({ variant: 'outline', size: 'icon' })}>
+          <ArrowLeft className="size-4 text-muted-foreground" />
         </Link>
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Add Product</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Add a new product to your inventory</p>
+          <h2 className="text-2xl font-semibold tracking-tight text-card-foreground">Add Product</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Add a new product to your inventory</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-2xl divide-y divide-slate-100 dark:divide-white/5">
+      <Card className="py-0">
+        <form onSubmit={handleSubmit}>
 
-        {/* Basic Info */}
-        <div className="p-6 space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-            <Package size={14} /> Basic Information
-          </h3>
+          {/* ── Basic Info ─────────────────────────────────────────────────── */}
+          <div className="p-6 flex flex-col gap-4">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-card-foreground">
+              <Package className="size-4" /> Basic Information
+            </CardTitle>
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-              Product Name <span className="text-rose-500">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              value={form.name}
-              onChange={e => set('name', e.target.value)}
-              placeholder="e.g. PARACETAMOL 500MG"
-              className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
-            />
-            <p className="text-[11px] text-slate-400">Will be saved in uppercase</p>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-              Category <span className="text-rose-500">*</span>
-            </label>
-            <select
-              required
-              value={form.category}
-              onChange={e => set('category', e.target.value)}
-              className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-            >
-              <option value="">Select category…</option>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">Description</label>
-            <textarea
-              value={form.description}
-              onChange={e => set('description', e.target.value)}
-              placeholder="Optional notes about this product…"
-              rows={2}
-              className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none placeholder:text-slate-300 dark:placeholder:text-slate-600"
-            />
-          </div>
-        </div>
-
-        {/* Pricing */}
-        <div className="p-6 space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Pricing & Stock</h3>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-                Selling Price (₵) <span className="text-rose-500">*</span>
-              </label>
-              <input
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="productName" className="text-xs font-semibold text-muted-foreground">
+                Product Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="productName"
                 required
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.price}
-                onChange={e => set('price', e.target.value)}
-                placeholder="0.00"
-                className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                type="text"
+                value={form.name}
+                onChange={e => set('name', e.target.value)}
+                placeholder="e.g. PARACETAMOL 500MG"
               />
+              <p className="text-[11px] text-muted-foreground">Will be saved in uppercase</p>
             </div>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">Cost Price (₵)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.costPrice}
-                onChange={e => set('costPrice', e.target.value)}
-                placeholder="0.00"
-                className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="categorySelect" className="text-xs font-semibold text-muted-foreground">
+                Category <span className="text-destructive">*</span>
+              </Label>
+              <Select value={form.category} onValueChange={(v) => set('category', String(v))}>
+                <SelectTrigger id="categorySelect" className="w-full h-9">
+                  <SelectValue placeholder="Select category…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="description" className="text-xs font-semibold text-muted-foreground">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                value={form.description}
+                onChange={e => set('description', e.target.value)}
+                placeholder="Optional notes about this product…"
+                rows={2}
+                className="resize-none"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-                Opening Stock <span className="text-rose-500">*</span>
-              </label>
-              <input
-                required
-                type="number"
-                min="0"
-                value={form.stockQty}
-                onChange={e => set('stockQty', e.target.value)}
-                placeholder="0"
-                className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">Expiry Date</label>
-              <input
-                type="date"
-                value={form.expiryDate}
-                onChange={e => set('expiryDate', e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-              />
-            </div>
-          </div>
-        </div>
+          {/* ── Pricing & Stock ──────────────────────────────────────────────── */}
+          <div className="p-6 flex flex-col gap-4 border-t border-border">
+            <CardTitle className="text-sm font-semibold text-card-foreground">Pricing &amp; Stock</CardTitle>
 
-        {/* Footer */}
-        <div className="p-6 flex items-center justify-between gap-3">
-          {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
-          {!error && <span />}
-          <div className="flex gap-3">
-            <Link href="/inventory" className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
-            >
-              <Save size={14} />
-              {isSubmitting ? 'Saving…' : 'Add Product'}
-            </button>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="price" className="text-xs font-semibold text-muted-foreground">
+                  Selling Price (₵) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="price"
+                  required
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.price}
+                  onChange={e => set('price', e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="costPrice" className="text-xs font-semibold text-muted-foreground">
+                  Cost Price (₵)
+                </Label>
+                <Input
+                  id="costPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.costPrice}
+                  onChange={e => set('costPrice', e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="stockQty" className="text-xs font-semibold text-muted-foreground">
+                  Opening Stock <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="stockQty"
+                  required
+                  type="number"
+                  min="0"
+                  value={form.stockQty}
+                  onChange={e => set('stockQty', e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="expiryDate" className="text-xs font-semibold text-muted-foreground">
+                  Expiry Date
+                </Label>
+                <Input
+                  id="expiryDate"
+                  type="date"
+                  value={form.expiryDate}
+                  onChange={e => set('expiryDate', e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+            </div>
           </div>
-        </div>
-      </form>
+
+          {/* ── Footer ───────────────────────────────────────────────────────── */}
+          <div className="p-6 flex items-center justify-between gap-3 border-t border-border bg-muted/50 rounded-b-xl">
+            {error ? (
+              <Alert variant="destructive" className="flex-1 py-2">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : (
+              <span />
+            )}
+            <div className="flex gap-3 shrink-0">
+              <Link href="/inventory" className={buttonVariants({ variant: 'outline' })}>
+                Cancel
+              </Link>
+              <Button type="submit" disabled={isSubmitting}>
+                <Save />
+                {isSubmitting ? 'Saving…' : 'Add Product'}
+              </Button>
+            </div>
+          </div>
+
+        </form>
+      </Card>
     </div>
   );
 }

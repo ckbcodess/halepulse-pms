@@ -6,6 +6,10 @@ import { ArrowLeft, UserPlus, Check } from 'lucide-react';
 import { createCustomer } from '@/app/actions';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -33,60 +37,66 @@ export default function NewCustomerPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center">
-          <Check size={32} className="text-emerald-600 dark:text-emerald-400" />
+          <Check className="size-8 text-emerald-600 dark:text-emerald-400" />
         </div>
-        <p className="text-lg font-semibold text-slate-900 dark:text-white">Customer Added!</p>
-        <p className="text-sm text-slate-500">Redirecting to customers list...</p>
+        <p className="text-lg font-semibold text-card-foreground">Customer Added!</p>
+        <p className="text-sm text-muted-foreground">Redirecting to customers list...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
+    <div className="max-w-lg mx-auto flex flex-col gap-6">
       <div className="flex items-center gap-4">
-        <Link href="/customers" className="p-2 rounded-xl border border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-          <ArrowLeft size={16} className="text-slate-500" />
+        <Link href="/customers" className={buttonVariants({ variant: 'outline', size: 'icon' })}>
+          <ArrowLeft className="size-4 text-muted-foreground" />
         </Link>
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Add Customer</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Register a new customer for loyalty tracking.</p>
+          <h2 className="text-xl font-semibold text-card-foreground">Add Customer</h2>
+          <p className="text-sm text-muted-foreground">Register a new customer for loyalty tracking.</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-2xl p-6 space-y-5">
-        <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">Full Name *</label>
-          <input
-            required
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Customer full name"
-            className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm font-medium dark:text-slate-200 transition-all"
-          />
-        </div>
+      <Card className="p-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="customerName" className="text-xs font-semibold text-muted-foreground">
+              Full Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="customerName"
+              required
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Customer full name"
+            />
+          </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">Phone Number *</label>
-          <input
-            required
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+233 XX XXX XXXX"
-            className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm font-medium dark:text-slate-200 transition-all"
-          />
-        </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="phone" className="text-xs font-semibold text-muted-foreground">
+              Phone Number <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="phone"
+              required
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+233 XX XXX XXXX"
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors disabled:opacity-60"
-        >
-          <UserPlus size={16} />
-          {submitting ? 'Adding...' : 'Add Customer'}
-        </button>
-      </form>
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="w-full"
+          >
+            <UserPlus />
+            {submitting ? 'Adding...' : 'Add Customer'}
+          </Button>
+        </form>
+      </Card>
     </div>
   );
 }

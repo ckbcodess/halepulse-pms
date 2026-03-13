@@ -17,11 +17,21 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Search, AlertCircle, PackagePlus, X, ArrowRight, Plus, Upload,
+  Search, AlertCircle, PackagePlus, ArrowRight, Plus, Upload,
 } from 'lucide-react';
 import { updateProduct, addStock } from '@/app/actions';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Button, buttonVariants } from '@/components/ui/button';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Product = {
@@ -48,21 +58,21 @@ async function fetchInventory(): Promise<Product[]> {
 // ── Skeleton row ──────────────────────────────────────────────────────────────
 function SkeletonRow() {
   return (
-    <tr className="animate-pulse">
-      <td className="px-6 py-4">
-        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-md w-48 mb-2" />
-        <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-md w-24" />
-      </td>
-      <td className="px-6 py-4">
-        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-md w-12" />
-      </td>
-      <td className="px-6 py-4">
-        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-md w-16" />
-      </td>
-      <td className="px-6 py-4 text-right">
-        <div className="h-6 bg-slate-100 dark:bg-slate-800 rounded-md w-28 ml-auto" />
-      </td>
-    </tr>
+    <TableRow className="animate-pulse">
+      <TableCell className="px-6 py-4">
+        <div className="h-4 bg-muted rounded-md w-48 mb-2" />
+        <div className="h-3 bg-muted rounded-md w-24" />
+      </TableCell>
+      <TableCell className="px-6 py-4">
+        <div className="h-4 bg-muted rounded-md w-12" />
+      </TableCell>
+      <TableCell className="px-6 py-4">
+        <div className="h-4 bg-muted rounded-md w-16" />
+      </TableCell>
+      <TableCell className="px-6 py-4 text-right">
+        <div className="h-6 bg-muted rounded-md w-28 ml-auto" />
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -149,28 +159,22 @@ export default function InventoryView() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 animate-in slide-in-from-bottom-2 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '50ms' }}>
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Inventory Management</h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm font-medium">
+          <h2 className="text-2xl font-semibold tracking-tight text-card-foreground">Inventory Management</h2>
+          <p className="text-muted-foreground mt-1 text-sm font-medium">
             Manage stock levels and pricing records across your pharmacy.
           </p>
         </div>
         <div className="flex gap-2">
-          <Link
-            href="/inventory/import"
-            className="flex items-center gap-2 px-4 py-2.5 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl text-sm font-semibold transition-colors"
-          >
-            <Upload size={14} /> Import CSV
+          <Link href="/inventory/import" className={buttonVariants({ variant: 'outline' })}>
+            <Upload /> Import CSV
           </Link>
-          <Link
-            href="/inventory/new"
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors"
-          >
-            <Plus size={14} /> Add Product
+          <Link href="/inventory/new" className={buttonVariants()}>
+            <Plus /> Add Product
           </Link>
         </div>
       </div>
@@ -178,22 +182,22 @@ export default function InventoryView() {
       {/* Search + Filter Bar */}
       <div className="flex flex-col md:flex-row gap-4 animate-in slide-in-from-bottom-3 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '150ms' }}>
 
-        {/* Search — now instant client-side, no form submission */}
+        {/* Search — instant client-side, no form submission */}
         <div className="flex-1 relative group">
           <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
             size={16} strokeWidth={2}
           />
-          <input
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search inventory..."
-            className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.02)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium dark:text-slate-200 placeholder:text-slate-400"
+            className="pl-9"
           />
         </div>
 
-        {/* Filter tabs — now toggle local state, no page reload */}
-        <div className="flex gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/50 rounded-lg border border-slate-200/50 dark:border-slate-800 overflow-x-auto no-scrollbar">
+        {/* Filter tabs — toggle local state, no page reload */}
+        <div className="flex gap-1.5 p-1 bg-muted rounded-lg border border-border overflow-x-auto">
           {([
             { key: 'all',     label: 'All Data' },
             { key: 'low',     label: 'Critical',  icon: <AlertCircle size={14} strokeWidth={2.5} /> },
@@ -201,15 +205,16 @@ export default function InventoryView() {
           ] as { key: ActiveFilter; label: string; icon?: React.ReactNode }[]).map(({ key, label, icon }) => (
             <button
               key={key}
+              type="button"
               onClick={() => setActiveFilter(key)}
               className={`px-4 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5 whitespace-nowrap ${
                 activeFilter === key
                   ? key === 'low'
-                    ? 'bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-400 shadow-sm'
+                    ? 'bg-background text-amber-700 dark:text-amber-400 shadow-sm'
                     : key === 'expired'
-                    ? 'bg-white dark:bg-slate-700 text-rose-700 dark:text-rose-400 shadow-sm'
-                    : 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                    ? 'bg-background text-rose-700 dark:text-rose-400 shadow-sm'
+                    : 'bg-background text-card-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {icon}{label}
@@ -220,188 +225,182 @@ export default function InventoryView() {
 
       {/* Inventory Table */}
       <div
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-x-auto shadow-[0_1px_2px_rgba(0,0,0,0.02)] animate-in slide-in-from-bottom-4 fade-in duration-500 ease-out-expo fill-mode-both"
+        className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm animate-in slide-in-from-bottom-4 fade-in duration-500 ease-out-expo fill-mode-both"
         style={{ animationDelay: '250ms' }}
       >
-        <table className="w-full text-left border-collapse min-w-[800px]">
-          <thead className="bg-[#fcfdfd] dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
-            <tr>
-              <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Item Reference</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest w-32">Volume</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest w-32">UnitPrice</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right w-48">Audit Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+        <Table className="min-w-[800px]">
+          <TableHeader className="bg-muted/50">
+            <TableRow>
+              <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Item Reference</TableHead>
+              <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-32">Volume</TableHead>
+              <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-32">UnitPrice</TableHead>
+              <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-right w-48">Audit Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
 
             {/* Loading skeleton — only shown on very first load */}
             {isLoading && Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
 
             {/* Empty state */}
             {!isLoading && filteredProducts.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-6 py-24 text-center">
+              <TableRow>
+                <TableCell colSpan={4} className="px-6 py-24 text-center">
                   <div className="flex flex-col items-center justify-center max-w-[280px] mx-auto">
-                    <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex items-center justify-center mb-4 border border-slate-100 dark:border-slate-700/50">
-                      <Search size={28} className="text-slate-400 dark:text-slate-500" />
+                    <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4 border border-border">
+                      <Search size={28} className="text-muted-foreground" />
                     </div>
-                    <p className="text-base font-semibold text-slate-900 dark:text-white mb-1">No products found</p>
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
+                    <p className="text-base font-semibold text-card-foreground mb-1">No products found</p>
+                    <p className="text-sm font-medium text-muted-foreground leading-relaxed">
                       {search
                         ? `We couldn't find anything matching "${search}". Try adjusting your search or filters.`
                         : 'There are currently no products in your inventory. Add your first product to get started.'}
                     </p>
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
 
             {/* Product rows */}
             {!isLoading && filteredProducts.map((p) => (
-              <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                <td className="px-6 py-4">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-200 tracking-tight">{p.name}</p>
+              <TableRow key={p.id} className="group">
+                <TableCell className="px-6 py-4">
+                  <p className="text-sm font-semibold text-card-foreground tracking-tight">{p.name}</p>
                   <div className="flex gap-2 items-center mt-1">
-                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">{p.category}</span>
+                    <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">{p.category}</span>
                     {p.expiryDate && (
-                      <span className={`text-[10px] font-medium flex items-center gap-1 ${new Date(p.expiryDate) < new Date() ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
+                      <span className={`text-[10px] font-medium flex items-center gap-1 ${new Date(p.expiryDate) < new Date() ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground'}`}>
                         EXP: {new Date(p.expiryDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
                       </span>
                     )}
                   </div>
-                </td>
-                <td className="px-6 py-4 align-middle">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${p.stockQty <= 5 ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
-                    <span className={`text-sm font-semibold tracking-tight ${p.stockQty <= 5 ? 'text-amber-700 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                      {p.stockQty.toString().padStart(3, '0')}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 align-middle">
-                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-200">₵ {p.price.toFixed(2)}</span>
-                </td>
-                <td className="px-6 py-4 text-right align-middle">
+                </TableCell>
+                <TableCell className="px-6 py-4 align-middle">
+                  <Badge
+                    variant="outline"
+                    className={p.stockQty <= 5
+                      ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
+                      : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
+                    }
+                  >
+                    {p.stockQty.toString().padStart(3, '0')}
+                  </Badge>
+                </TableCell>
+                <TableCell className="px-6 py-4 align-middle">
+                  <span className="text-sm font-semibold text-card-foreground">₵ {p.price.toFixed(2)}</span>
+                </TableCell>
+                <TableCell className="px-6 py-4 text-right align-middle">
                   <div className="flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                    <button
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => openStockIn(p)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-md text-[11px] font-semibold uppercase tracking-wider transition-colors shadow-sm"
+                      className="text-[11px] uppercase tracking-wider"
                     >
                       Stock
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => openEdit(p)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 rounded-md text-[11px] font-semibold uppercase tracking-wider transition-colors"
+                      className="text-[11px] uppercase tracking-wider text-primary border-primary/30 bg-primary/5 hover:bg-primary/10"
                     >
                       Edit
-                    </button>
+                    </Button>
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
-      {/* ── Edit Product Modal ──────────────────────────────────────────────── */}
-      {editingProduct && (
-        <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200/50 dark:border-slate-800 animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-5 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="font-semibold text-sm text-slate-900 dark:text-white">Edit Product</h3>
-              <button
-                disabled={isSubmitting}
-                onClick={() => setEditingProduct(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-1.5 rounded-lg opacity-80 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <X size={16} strokeWidth={2.5} />
-              </button>
-            </div>
-            <div className="px-6 pt-5 pb-2">
-              <p className="font-bold text-lg text-slate-900 dark:text-white mb-1 leading-tight">{editingProduct.name}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">REF: {editingProduct.id.toString().padStart(6, '0')}</p>
-            </div>
-            <form onSubmit={handleEditSubmit} className="p-6 pt-2 space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Selling Price (₵)</label>
-                <input
-                  required type="number" step="0.01"
-                  value={editPrice}
-                  onChange={(e) => setEditPrice(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-medium dark:text-slate-200"
-                />
+      {/* ── Edit Product Dialog ─────────────────────────────────────────────── */}
+      <Dialog open={!!editingProduct} onOpenChange={(open) => { if (!open) setEditingProduct(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+          </DialogHeader>
+          {editingProduct && (
+            <>
+              <div className="pb-1">
+                <p className="font-bold text-base text-card-foreground mb-0.5 leading-tight">{editingProduct.name}</p>
+                <p className="text-xs text-muted-foreground">REF: {editingProduct.id.toString().padStart(6, '0')}</p>
               </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Stock Quantity</label>
-                <input
-                  required type="number"
-                  value={editStock}
-                  onChange={(e) => setEditStock(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-medium dark:text-slate-200"
-                />
-              </div>
-              <div className="pt-2">
-                <button
-                  disabled={isSubmitting} type="submit"
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-200 dark:shadow-none py-2.5 rounded-lg text-sm font-semibold flex justify-center items-center gap-2 transition-all"
-                >
+              <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="editPrice" className="text-xs font-semibold text-muted-foreground">Selling Price (₵)</Label>
+                  <Input
+                    id="editPrice"
+                    required
+                    type="number"
+                    step="0.01"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="editStock" className="text-xs font-semibold text-muted-foreground">Stock Quantity</Label>
+                  <Input
+                    id="editStock"
+                    required
+                    type="number"
+                    value={editStock}
+                    onChange={(e) => setEditStock(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" disabled={isSubmitting} className="w-full">
                   {isSubmitting ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                </Button>
+              </form>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
-      {/* ── Stock In Modal ──────────────────────────────────────────────────── */}
-      {stockingProduct && (
-        <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200/50 dark:border-slate-800 animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-5 flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-500/10 border-b border-indigo-100/50 dark:border-indigo-500/20">
-              <h3 className="font-semibold text-sm text-indigo-900 dark:text-indigo-400 flex items-center gap-2">
-                <PackagePlus size={16} className="text-indigo-600 dark:text-indigo-400" /> Stock In
-              </h3>
-              <button
-                disabled={isSubmitting}
-                onClick={() => setStockingProduct(null)}
-                className="text-indigo-800/50 dark:text-indigo-400/50 hover:text-indigo-900 dark:hover:text-indigo-300 transition-colors p-1.5 rounded-lg hover:bg-indigo-100/50 dark:hover:bg-indigo-500/20"
-              >
-                <X size={16} strokeWidth={2.5} />
-              </button>
-            </div>
-            <div className="px-6 pt-5 pb-2">
-              <p className="font-bold text-lg text-slate-900 dark:text-white mb-1 leading-tight">{stockingProduct.name}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Current Stock: <span className="font-bold text-slate-900 dark:text-slate-200">{stockingProduct.stockQty}</span>
-              </p>
-            </div>
-            <form onSubmit={handleStockInSubmit} className="p-6 pt-4 space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Quantity to Add</label>
-                <input
-                  required autoFocus type="number" min="1"
-                  value={addStockQty}
-                  onChange={(e) => setAddStockQty(e.target.value)}
-                  placeholder="0"
-                  className="w-full px-4 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xl font-bold placeholder:text-slate-300 dark:placeholder:text-slate-700 dark:text-white shadow-inner dark:shadow-black/20"
-                />
+      {/* ── Stock In Dialog ─────────────────────────────────────────────────── */}
+      <Dialog open={!!stockingProduct} onOpenChange={(open) => { if (!open) setStockingProduct(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PackagePlus className="size-4 text-primary" /> Stock In
+            </DialogTitle>
+          </DialogHeader>
+          {stockingProduct && (
+            <>
+              <div className="pb-1">
+                <p className="font-bold text-base text-card-foreground mb-0.5 leading-tight">{stockingProduct.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  Current Stock: <span className="font-bold text-card-foreground">{stockingProduct.stockQty}</span>
+                </p>
               </div>
-              <div className="pt-2">
-                <button
-                  disabled={isSubmitting} type="submit"
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-200 dark:shadow-none py-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-all"
-                >
+              <form onSubmit={handleStockInSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="addStockQty" className="text-xs font-semibold text-muted-foreground">Quantity to Add</Label>
+                  <Input
+                    id="addStockQty"
+                    required
+                    autoFocus
+                    type="number"
+                    min="1"
+                    value={addStockQty}
+                    onChange={(e) => setAddStockQty(e.target.value)}
+                    placeholder="0"
+                    className="h-14 text-xl font-bold"
+                  />
+                </div>
+                <Button type="submit" disabled={isSubmitting} className="w-full">
                   {isSubmitting ? (
-                    <span className="flex items-center gap-2 opacity-50">Processing <ArrowRight size={16} /></span>
+                    <span className="flex items-center gap-2 opacity-60">Processing <ArrowRight className="size-4" /></span>
                   ) : (
-                    <span className="flex items-center gap-2">Confirm Arrival <ArrowRight size={16} /></span>
+                    <span className="flex items-center gap-2">Confirm Arrival <ArrowRight className="size-4" /></span>
                   )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                </Button>
+              </form>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
