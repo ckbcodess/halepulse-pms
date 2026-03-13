@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import { Geist_Mono, Instrument_Sans } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
+import { DynamicThemeProvider } from '@/components/dynamic-theme-provider';
 import { Toaster } from 'sonner';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 import { getTenantBranding } from '@/lib/branding/getTenantBranding';
+import { generateThemeCSS } from '@/lib/theme/theme-utils';
 import SessionProvider from '@/components/SessionProvider';
 import AppShell from '@/components/layout/AppShell';
 import HeartbeatProvider from '@/components/layout/HeartbeatProvider';
@@ -25,8 +27,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await getServerSession(authOptions);
 
   // Load tenant branding for CSS variable injection
-  let primaryColor   = '#6366f1';
-  let secondaryColor = '#8b5cf6';
+  let baseColor = '#6366f1';
 
   // Resolve impersonation context (super admin previewing a tenant role)
   const impersonation = await getImpersonation();
@@ -38,20 +39,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   if (effectiveTenantId) {
     const branding = await getTenantBranding(effectiveTenantId);
     if (branding) {
-      primaryColor   = branding.primaryColor;
-      secondaryColor = branding.secondaryColor;
+      // Prefer baseColor, fall back to primaryColor for backward compat
+      baseColor = branding.baseColor ?? branding.primaryColor;
     }
   }
 
   // Fetch sidebar menu items server-side so the sidebar always reflects the full MASTER_MENU
   const menuItems = await getMenuForUser(effectiveRole, effectiveTenantId);
 
-  const brandingCSS = `
-    :root {
-      --primary-color: ${primaryColor};
-      --secondary-color: ${secondaryColor};
-    }
-  `;
+  // Generate full OKLCH palette from base color — injected server-side to prevent flash
+  const brandingCSS = generateThemeCSS(baseColor);
 
   return (
     <html
@@ -66,12 +63,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ReactQueryProvider>
           <SessionProvider session={session}>
             <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-              <Toaster position="top-right" richColors />
-              <HeartbeatProvider>
-                <AppShell session={session} menuItems={menuItems}>
-                  {children}
-                </AppShell>
-              </HeartbeatProvider>
+              <DynamicThemeProvider initialBaseColor={baseColor}>
+                <Toaster position="top-right" richColors />
+                <HeartbeatProvider>
+                  <AppShell session={session} menuItems={menuItems}>
+                    {children}
+                  </AppShell>
+                </HeartbeatProvider>
+              </DynamicThemeProvider>
             </ThemeProvider>
           </SessionProvider>
         </ReactQueryProvider>
