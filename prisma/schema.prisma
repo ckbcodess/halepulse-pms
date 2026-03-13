@@ -138,6 +138,7 @@ model Tenant {
   subdomain      String   @unique
   primaryColor   String   @default("#6366f1")
   secondaryColor String   @default("#8b5cf6")
+  baseColor      String?  @default("#6366f1")
   logoUrl        String?
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())

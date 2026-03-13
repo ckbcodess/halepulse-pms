@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 export interface TenantBranding {
   primaryColor:   string;
   secondaryColor: string;
+  baseColor:      string | null;
   logoUrl:        string | null;
   name:           string;
 }
@@ -15,7 +16,7 @@ export interface TenantBranding {
 export async function getTenantBranding(tenantId: string): Promise<TenantBranding | null> {
   const tenant = await prisma.tenant.findUnique({
     where:  { id: tenantId },
-    select: { primaryColor: true, secondaryColor: true, logoUrl: true, name: true },
+    select: { primaryColor: true, secondaryColor: true, baseColor: true, logoUrl: true, name: true },
   });
   return tenant;
 }
