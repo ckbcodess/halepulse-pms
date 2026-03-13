@@ -9,6 +9,7 @@ import { getTenantBranding } from '@/lib/branding/getTenantBranding';
 import SessionProvider from '@/components/SessionProvider';
 import AppShell from '@/components/layout/AppShell';
 import HeartbeatProvider from '@/components/layout/HeartbeatProvider';
+import ReactQueryProvider from '@/components/providers/ReactQueryProvider';
 import { getMenuForUser } from '@/lib/menus/getMenuForUser';
 import { getImpersonation } from '@/lib/auth/getImpersonation';
 
@@ -58,16 +59,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <style dangerouslySetInnerHTML={{ __html: brandingCSS }} />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <SessionProvider session={session}>
-          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-            <Toaster position="top-right" richColors />
-            <HeartbeatProvider>
-              <AppShell session={session} menuItems={menuItems}>
-                {children}
-              </AppShell>
-            </HeartbeatProvider>
-          </ThemeProvider>
-        </SessionProvider>
+        <ReactQueryProvider>
+          <SessionProvider session={session}>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+              <Toaster position="top-right" richColors />
+              <HeartbeatProvider>
+                <AppShell session={session} menuItems={menuItems}>
+                  {children}
+                </AppShell>
+              </HeartbeatProvider>
+            </ThemeProvider>
+          </SessionProvider>
+        </ReactQueryProvider>
       </body>
     </html>
   );
