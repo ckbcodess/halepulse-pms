@@ -5,6 +5,8 @@ import { getImpersonation } from '@/lib/auth/getImpersonation';
 import prisma from '@/lib/prisma';
 import { Package, AlertCircle, Calendar, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
 export default async function ManagerDashboard() {
   const session = await getServerSession(authOptions);
@@ -34,10 +36,10 @@ export default async function ManagerDashboard() {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Manager Dashboard</h2>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">Full access — all modules available.</p>
+        <h2 className="text-2xl font-bold text-card-foreground">Manager Dashboard</h2>
+        <p className="text-muted-foreground mt-1">Full access — all modules available.</p>
       </div>
 
       {/* Stats */}
@@ -48,11 +50,13 @@ export default async function ManagerDashboard() {
           { label: 'Sales Today',    value: `₵${(salesToday._sum.totalAmount ?? 0).toFixed(2)}`, icon: ShoppingBag, color: 'text-emerald-600' },
           { label: 'Active Alerts',  value: lowStock,      icon: Calendar,    color: 'text-rose-600'   },
         ].map((s, i) => (
-          <div key={i} className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-2xl p-6">
-            <s.icon size={20} className={`${s.color} mb-3`} />
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{s.label}</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">{s.value}</p>
-          </div>
+          <Card key={i} className="py-0 gap-0">
+            <div className="p-6">
+              <s.icon className={`size-5 ${s.color} mb-3`} />
+              <p className="text-xs font-semibold text-muted-foreground mb-1">{s.label}</p>
+              <p className="text-2xl font-bold text-card-foreground">{s.value}</p>
+            </div>
+          </Card>
         ))}
       </div>
 
@@ -71,26 +75,33 @@ export default async function ManagerDashboard() {
       </div>
 
       {/* Recent Sales */}
-      <div className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-2xl p-6">
-        <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4">Recent Transactions</h3>
-        {recentSales.length === 0 ? (
-          <p className="text-sm text-slate-400">No transactions yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {recentSales.map(sale => (
-              <div key={sale.id} className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">
-                    {sale.customer?.name ?? 'Walk-in'}
-                  </p>
-                  <p className="text-xs text-slate-400">{new Date(sale.createdAt).toLocaleTimeString()} · {sale.items.length} items</p>
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Transactions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentSales.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No transactions yet.</p>
+          ) : (
+            <div className="flex flex-col">
+              {recentSales.map((sale, idx) => (
+                <div key={sale.id}>
+                  {idx > 0 && <Separator />}
+                  <div className="flex justify-between items-center py-3">
+                    <div>
+                      <p className="text-sm font-medium text-card-foreground">
+                        {sale.customer?.name ?? 'Walk-in'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{new Date(sale.createdAt).toLocaleTimeString()} · {sale.items.length} items</p>
+                    </div>
+                    <p className="font-semibold text-card-foreground">₵{sale.totalAmount.toFixed(2)}</p>
+                  </div>
                 </div>
-                <p className="font-semibold text-slate-900 dark:text-white">₵{sale.totalAmount.toFixed(2)}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

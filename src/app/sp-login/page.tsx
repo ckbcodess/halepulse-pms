@@ -3,6 +3,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function SPLoginPage() {
   const [email, setEmail]             = useState('');
@@ -90,50 +94,52 @@ export default function SPLoginPage() {
           </div>
 
           {error && (
-            <div className="bg-rose-900/30 border border-rose-500/30 text-rose-300 p-4 rounded-md mb-6 text-sm font-semibold animate-in fade-in slide-in-from-top-2">
-              {error}
-            </div>
+            <Alert variant="destructive" className="mb-6 bg-rose-900/30 border-rose-500/30 animate-in fade-in slide-in-from-top-2">
+              <AlertDescription className="text-rose-300 font-semibold">{error}</AlertDescription>
+            </Alert>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
+          <form onSubmit={handleLogin} className="flex flex-col gap-6">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Email
-              </label>
-              <input
+              </Label>
+              <Input
+                id="email"
                 type="email"
                 required
                 autoComplete="email"
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-md focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all text-white font-medium placeholder-slate-500"
+                className="h-12 bg-slate-800 border-slate-700 text-white font-medium placeholder:text-slate-500"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="spPassword" className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Password
-              </label>
-              <input
+              </Label>
+              <Input
+                id="spPassword"
                 type="password"
                 required
                 autoComplete="current-password"
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-md focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all text-white font-medium placeholder-slate-500"
+                className="h-12 bg-slate-800 border-slate-700 text-white font-medium placeholder:text-slate-500"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-bold py-3.5 rounded-md transition-all mt-4 flex justify-center items-center gap-2"
+              className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-bold mt-4"
             >
               {isSubmitting ? (
                 <>Authenticating<span className="animate-pulse">...</span></>
               ) : (
                 'Sign In \u2192'
               )}
-            </button>
+            </Button>
           </form>
 
           <div className="mt-8 text-center">
@@ -146,7 +152,7 @@ export default function SPLoginPage() {
           </div>
 
           {process.env.NODE_ENV === 'development' && (
-            <div className="mt-8 space-y-1 text-xs text-slate-500 font-medium border-t border-slate-800 pt-6">
+            <div className="mt-8 flex flex-col gap-1 text-xs text-slate-500 font-medium border-t border-slate-800 pt-6">
               <p className="font-semibold text-slate-400 mb-2">Development:</p>
               <p><code className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">superadmin@system.com</code> / <code className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">Admin@1234</code></p>
             </div>

@@ -4,6 +4,9 @@ import { getProducts, getCustomers, processSale, getTenantInfo, createCustomer }
 import { useCartStore } from '@/lib/store';
 import { Search, ShoppingCart, Trash2, UserPlus, UserCheck, Printer, X, Plus, Minus, AlertTriangle } from "lucide-react";
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function POSPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -115,13 +118,12 @@ export default function POSPage() {
       <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-6rem)] print:hidden animate-in slide-in-from-bottom-2 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '50ms' }}>
 
         {/* Product Search & List */}
-        <div className="flex-1 space-y-6 flex flex-col min-h-0 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-2xl p-6">
+        <div className="flex-1 flex flex-col gap-6 min-h-0 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-2xl p-6">
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 dark:group-focus-within:text-white transition-colors" size={18} strokeWidth={2} />
-            <input
-              type="text"
+            <Input
               placeholder="Search products..."
-              className="w-full pl-12 pr-4 py-3 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-zinc-800/80 rounded-xl focus:outline-none focus:border-slate-400 dark:focus:border-slate-600 transition-all text-sm font-medium text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              className="pl-12 pr-4 h-12 text-sm font-medium text-slate-900 dark:text-slate-200 bg-white dark:bg-[#0a0a0c] border-slate-200 dark:border-zinc-800/80 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-400 dark:focus:border-slate-600"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -206,7 +208,7 @@ export default function POSPage() {
             </span>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-[300px] custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 min-h-[300px] custom-scrollbar">
             {/* Customer Selection */}
             <div className="relative">
               {selectedCustomer ? (
@@ -225,35 +227,48 @@ export default function POSPage() {
                   </button>
                 </div>
               ) : showNewCustomer ? (
-                <div className="space-y-2 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Customer</p>
-                  <input
+                <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">New Customer</p>
+                  <Input
                     type="text"
                     placeholder="Customer name"
                     value={newCustName}
                     onChange={(e) => setNewCustName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-zinc-800 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400"
+                    className="text-sm bg-white dark:bg-[#0a0a0c] border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400"
                   />
-                  <input
+                  <Input
                     type="tel"
                     placeholder="Phone number"
                     value={newCustPhone}
                     onChange={(e) => setNewCustPhone(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-zinc-800 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400"
+                    className="text-sm bg-white dark:bg-[#0a0a0c] border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400"
                   />
                   <div className="flex gap-2">
-                    <button onClick={handleCreateCustomer} className="flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700">Save</button>
-                    <button onClick={() => { setShowNewCustomer(false); setNewCustName(''); setNewCustPhone(''); }} className="px-3 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</button>
+                    <Button
+                      onClick={handleCreateCustomer}
+                      size="sm"
+                      className="flex-1 bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setShowNewCustomer(false); setNewCustName(''); setNewCustPhone(''); }}
+                      className="px-3 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    >
+                      Cancel
+                    </Button>
                   </div>
                 </div>
               ) : (
                 <>
                   <div className="relative group">
                     <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 dark:text-slate-500 dark:group-focus-within:text-white transition-colors" size={16} />
-                    <input
+                    <Input
                       type="text"
                       placeholder="Search or add customer..."
-                      className="w-full pl-11 pr-4 py-3 text-sm bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-zinc-800/80 rounded-xl focus:outline-none focus:border-slate-400 dark:focus:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all font-medium"
+                      className="pl-11 pr-4 h-12 text-sm font-medium bg-white dark:bg-[#0a0a0c] border-slate-200 dark:border-zinc-800/80 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-400 dark:focus:border-slate-600"
                       value={customerSearch}
                       onChange={(e) => setCustomerSearch(e.target.value)}
                     />
@@ -299,7 +314,7 @@ export default function POSPage() {
                 <p className="text-sm font-medium">Terminal awaits items</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3">
                 {items.map((item) => (
                   <div key={item.id} className="flex flex-col gap-3 bg-white dark:bg-[#0a0a0c] p-4 rounded-xl border border-slate-200 dark:border-zinc-800/80 group">
                     <div className="flex justify-between items-start">
@@ -331,7 +346,7 @@ export default function POSPage() {
             )}
           </div>
 
-          <div className="p-6 bg-white dark:bg-[#18181b] border-t border-slate-100 dark:border-white/5 space-y-5">
+          <div className="p-6 bg-white dark:bg-[#18181b] border-t border-slate-100 dark:border-white/5 flex flex-col gap-5">
             <div className="flex justify-between items-center text-sm">
               <span className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Subtotal</span>
               <span className="font-semibold text-slate-700 dark:text-slate-300">₵{total.toFixed(2)}</span>
@@ -351,20 +366,23 @@ export default function POSPage() {
         </div>
       </div>
 
-      {/* Receipt Modal */}
-      {receiptData && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:bg-white print:p-0 transition-all duration-300">
-          <div className="bg-white rounded-md w-full max-w-sm overflow-hidden flex flex-col shadow-2xl print:shadow-none print:w-full print:max-w-none animate-in zoom-in-95 duration-200">
-            {/* Modal Header - Hidden in print */}
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 print:hidden">
-              <h3 className="font-bold text-slate-900 flex items-center gap-2 text-sm uppercase tracking-widest"><Printer size={16} /> Receipt</h3>
-              <button onClick={() => setReceiptData(null)} className="text-slate-400 hover:text-rose-500 transition-colors">
-                <X size={20} />
-              </button>
-            </div>
+      {/* Receipt Dialog */}
+      <Dialog open={!!receiptData} onOpenChange={(open) => { if (!open) setReceiptData(null); }}>
+        <DialogContent showCloseButton={false} className="p-0 gap-0 overflow-hidden rounded-md sm:max-w-sm print:shadow-none">
+          {/* Modal Header - Hidden in print */}
+          <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 print:hidden">
+            <DialogTitle className="font-bold text-slate-900 flex items-center gap-2 text-sm uppercase tracking-widest">
+              <Printer size={16} /> Receipt
+            </DialogTitle>
+            <button onClick={() => setReceiptData(null)} className="text-slate-400 hover:text-rose-500 transition-colors">
+              <X size={20} />
+              <span className="sr-only">Close</span>
+            </button>
+          </div>
 
-            {/* Receipt Content */}
-            <div className="print-receipt p-8 flex-1 overflow-y-auto w-full text-slate-900 text-sm bg-white font-mono">
+          {/* Receipt Content */}
+          {receiptData && (
+            <div className="print-receipt p-8 overflow-y-auto w-full text-slate-900 text-sm bg-white font-mono max-h-[60vh]">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-black font-sans tracking-tight mb-2">{tenantInfo.name?.toUpperCase() || 'PHARMACY'}</h2>
                 {tenantInfo.address && <p className="text-xs text-slate-500 font-mono">{tenantInfo.address}</p>}
@@ -400,23 +418,26 @@ export default function POSPage() {
                 <p className="text-[10px] uppercase tracking-widest text-slate-400">Thank you for your patronage</p>
               </div>
             </div>
+          )}
 
-            {/* Modal Footer - Hidden in print */}
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-3 print:hidden">
-              <button
-                onClick={() => window.print()}
-                className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-md font-bold text-sm tracking-wide transition-colors flex justify-center items-center gap-2">
-                <Printer size={16} /> PRINT
-              </button>
-              <button
-                onClick={() => setReceiptData(null)}
-                className="px-6 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-sm rounded-md transition-colors">
-                DONE
-              </button>
-            </div>
+          {/* Modal Footer - Hidden in print */}
+          <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-3 print:hidden">
+            <Button
+              onClick={() => window.print()}
+              className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-md font-bold text-sm tracking-wide flex justify-center items-center gap-2"
+            >
+              <Printer size={16} /> PRINT
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setReceiptData(null)}
+              className="px-6 font-bold text-sm rounded-md"
+            >
+              DONE
+            </Button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

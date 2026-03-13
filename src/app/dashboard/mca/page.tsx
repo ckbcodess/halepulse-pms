@@ -5,6 +5,7 @@ import { getImpersonation } from '@/lib/auth/getImpersonation';
 import prisma from '@/lib/prisma';
 import { Package, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
+import { Card } from '@/components/ui/card';
 
 export default async function McaDashboard() {
   const session = await getServerSession(authOptions);
@@ -23,23 +24,27 @@ export default async function McaDashboard() {
   ]);
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">MCA Dashboard</h2>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">Inventory and order management.</p>
+        <h2 className="text-2xl font-bold text-card-foreground">MCA Dashboard</h2>
+        <p className="text-muted-foreground mt-1">Inventory and order management.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-2xl p-6">
-          <Package size={20} className="text-indigo-600 mb-3" />
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Total Products</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">{totalProducts}</p>
-        </div>
-        <div className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-2xl p-6">
-          <ShoppingCart size={20} className="text-emerald-600 mb-3" />
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Pending Orders</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">{pendingOrders}</p>
-        </div>
+        <Card className="py-0 gap-0">
+          <div className="p-6">
+            <Package className="size-5 text-indigo-600 mb-3" />
+            <p className="text-xs font-semibold text-muted-foreground mb-1">Total Products</p>
+            <p className="text-2xl font-bold text-card-foreground">{totalProducts}</p>
+          </div>
+        </Card>
+        <Card className="py-0 gap-0">
+          <div className="p-6">
+            <ShoppingCart className="size-5 text-emerald-600 mb-3" />
+            <p className="text-xs font-semibold text-muted-foreground mb-1">Pending Orders</p>
+            <p className="text-2xl font-bold text-card-foreground">{pendingOrders}</p>
+          </div>
+        </Card>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
