@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist_Mono, Instrument_Sans } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from 'sonner';
@@ -13,8 +13,8 @@ import ReactQueryProvider from '@/components/providers/ReactQueryProvider';
 import { getMenuForUser } from '@/lib/menus/getMenuForUser';
 import { getImpersonation } from '@/lib/auth/getImpersonation';
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
+const instrumentSans = Instrument_Sans({ variable: '--font-sans', subsets: ['latin'] });
+const geistMono = Geist_Mono({ variable: '--font-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title:       'HalePulse',
@@ -54,11 +54,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   `;
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${instrumentSans.variable} ${geistMono.variable}`}
+    >
       <head>
         <style dangerouslySetInnerHTML={{ __html: brandingCSS }} />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className="antialiased">
         <ReactQueryProvider>
           <SessionProvider session={session}>
             <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
