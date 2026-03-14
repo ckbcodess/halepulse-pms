@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 import { getImpersonation } from '@/lib/auth/getImpersonation';
 import prisma from '@/lib/prisma';
-import { Package, ShoppingCart } from 'lucide-react';
+import { Package, AlertCircle, ShoppingBag, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 
@@ -18,9 +18,19 @@ export default async function McaDashboard() {
 
   const tenantId = isImpersonating ? impersonation.tenantId : session.user.tenantId!;
 
-  const [totalProducts, pendingOrders] = await Promise.all([
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const in30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  const [totalProducts, lowStock, salesToday, expiringSoon] = await Promise.all([
     prisma.product.count({ where: { tenantId } }),
-    prisma.sale.count({ where: { tenantId, status: 'Pending' } }),
+    prisma.product.count({ where: { tenantId, stockQty: { lte: 5 } } }),
+    // Count of completed sales today (replaces broken status:'Pending' query)
+    prisma.sale.count({ where: { tenantId, createdAt: { gte: todayStart } } }),
+    // Products expiring within 30 days (not yet expired)
+    prisma.product.count({
+      where: { tenantId, expiryDate: { gt: new Date(), lte: in30Days } },
+    }),
   ]);
 
   return (
@@ -30,7 +40,7 @@ export default async function McaDashboard() {
         <p className="text-muted-foreground mt-1">Inventory and order management.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="py-0 gap-0">
           <div className="p-6">
             <Package className="size-5 text-indigo-600 mb-3" />
@@ -40,9 +50,23 @@ export default async function McaDashboard() {
         </Card>
         <Card className="py-0 gap-0">
           <div className="p-6">
-            <ShoppingCart className="size-5 text-emerald-600 mb-3" />
-            <p className="text-xs font-semibold text-muted-foreground mb-1">Pending Orders</p>
-            <p className="text-2xl font-bold text-card-foreground">{pendingOrders}</p>
+            <AlertCircle className="size-5 text-amber-600 mb-3" />
+            <p className="text-xs font-semibold text-muted-foreground mb-1">Low Stock</p>
+            <p className="text-2xl font-bold text-card-foreground">{lowStock}</p>
+          </div>
+        </Card>
+        <Card className="py-0 gap-0">
+          <div className="p-6">
+            <ShoppingBag className="size-5 text-emerald-600 mb-3" />
+            <p className="text-xs font-semibold text-muted-foreground mb-1">Sales Today</p>
+            <p className="text-2xl font-bold text-card-foreground">{salesToday}</p>
+          </div>
+        </Card>
+        <Card className="py-0 gap-0">
+          <div className="p-6">
+            <Clock className="size-5 text-rose-600 mb-3" />
+            <p className="text-xs font-semibold text-muted-foreground mb-1">Expiring Soon</p>
+            <p className="text-2xl font-bold text-card-foreground">{expiringSoon}</p>
           </div>
         </Card>
       </div>

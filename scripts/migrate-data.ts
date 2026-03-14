@@ -89,11 +89,14 @@ async function main() {
           const mobile = vals[2];
           if (customerName && customerName !== 'Walking Customer' && customerName !== 'NULL') {
             try {
-                await prisma.customer.upsert({
-                    where: { phone: mobile || undefined },
-                    update: {},
-                    create: { name: customerName, phone: mobile || null },
-                });
+                // Use compound unique key (tenantId_phone) now that phone is per-tenant unique
+                // Legacy migration data has no tenantId, so we upsert by id fallback via findFirst
+                const existing = mobile ? await prisma.customer.findFirst({ where: { phone: mobile, tenantId: null } }) : null;
+                if (existing) {
+                    // Already exists — skip
+                } else {
+                    await prisma.customer.create({ data: { name: customerName, phone: mobile || null } });
+                }
                 customerCount++;
             } catch (e) {}
           }

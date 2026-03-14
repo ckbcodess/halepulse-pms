@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 import { getImpersonation } from '@/lib/auth/getImpersonation';
 import prisma from '@/lib/prisma';
-import { Package, AlertCircle, Calendar, ShoppingBag } from 'lucide-react';
+import { Package, AlertCircle, ShoppingBag, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -19,12 +19,20 @@ export default async function ManagerDashboard() {
 
   const tenantId = isImpersonating ? impersonation.tenantId : session.user.tenantId!;
 
-  const [totalProducts, lowStock, salesToday] = await Promise.all([
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const in30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  const [totalProducts, lowStock, salesToday, expiringSoon] = await Promise.all([
     prisma.product.count({ where: { tenantId } }),
     prisma.product.count({ where: { tenantId, stockQty: { lte: 5 } } }),
     prisma.sale.aggregate({
       _sum:  { totalAmount: true },
-      where: { tenantId, createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+      where: { tenantId, createdAt: { gte: todayStart } },
+    }),
+    // Products expiring within the next 30 days (not yet expired)
+    prisma.product.count({
+      where: { tenantId, expiryDate: { gt: new Date(), lte: in30Days } },
     }),
   ]);
 
@@ -45,10 +53,10 @@ export default async function ManagerDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Products', value: totalProducts, icon: Package,     color: 'text-indigo-600' },
-          { label: 'Low Stock',      value: lowStock,      icon: AlertCircle, color: 'text-amber-600'  },
+          { label: 'Total Products', value: totalProducts,  icon: Package,     color: 'text-indigo-600' },
+          { label: 'Low Stock',      value: lowStock,       icon: AlertCircle, color: 'text-amber-600'  },
           { label: 'Sales Today',    value: `₵${(salesToday._sum.totalAmount ?? 0).toFixed(2)}`, icon: ShoppingBag, color: 'text-emerald-600' },
-          { label: 'Active Alerts',  value: lowStock,      icon: Calendar,    color: 'text-rose-600'   },
+          { label: 'Expiring Soon',  value: expiringSoon,   icon: Clock,       color: 'text-rose-600'   },
         ].map((s, i) => (
           <Card key={i} className="py-0 gap-0">
             <div className="p-6">
