@@ -3,9 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 import { getImpersonation } from '@/lib/auth/getImpersonation';
 import prisma from '@/lib/prisma';
-import { Package, FileText } from 'lucide-react';
-import Link from 'next/link';
-import { Card } from '@/components/ui/card';
+import DashboardView from '../manager/DashboardView';
 
 export default async function NesDashboard() {
   const session = await getServerSession(authOptions);
@@ -18,40 +16,110 @@ export default async function NesDashboard() {
 
   const tenantId = isImpersonating ? impersonation.tenantId : session.user.tenantId!;
 
-  const totalProducts = await prisma.product.count({ where: { tenantId } });
+  // ── Date boundaries ──
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const yesterdayStart = new Date(todayStart);
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+  const in30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const yearStart = new Date(todayStart.getFullYear(), 0, 1);
+
+  const [
+    totalProducts,
+    lowStock,
+    expiringSoon,
+    salesTodayAgg,
+    salesYesterdayAgg,
+    yearSales,
+    todaySalesByPayment,
+    recentSales,
+  ] = await Promise.all([
+    prisma.product.count({ where: { tenantId } }),
+    prisma.product.count({ where: { tenantId, stockQty: { lte: 5 } } }),
+    prisma.product.count({
+      where: { tenantId, expiryDate: { gt: new Date(), lte: in30Days } },
+    }),
+    prisma.sale.aggregate({
+      _sum: { totalAmount: true },
+      _count: true,
+      where: { tenantId, createdAt: { gte: todayStart } },
+    }),
+    prisma.sale.aggregate({
+      _sum: { totalAmount: true },
+      where: { tenantId, createdAt: { gte: yesterdayStart, lt: todayStart } },
+    }),
+    prisma.sale.findMany({
+      where: { tenantId, createdAt: { gte: yearStart } },
+      select: { totalAmount: true, createdAt: true },
+    }),
+    prisma.sale.groupBy({
+      by: ['paymentType'],
+      _sum: { totalAmount: true },
+      where: { tenantId, createdAt: { gte: todayStart } },
+    }),
+    prisma.sale.findMany({
+      where: { tenantId },
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: { customer: true, items: true },
+    }),
+  ]);
+
+  const todayTotal = salesTodayAgg._sum.totalAmount ?? 0;
+  const yesterdayTotal = salesYesterdayAgg._sum.totalAmount ?? 0;
+  const salesChange =
+    yesterdayTotal > 0
+      ? ((todayTotal - yesterdayTotal) / yesterdayTotal) * 100
+      : todayTotal > 0
+        ? 100
+        : null;
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthlyMap = new Map<number, number>();
+  for (const sale of yearSales) {
+    const month = new Date(sale.createdAt).getMonth();
+    monthlyMap.set(month, (monthlyMap.get(month) ?? 0) + sale.totalAmount);
+  }
+  const monthlySales = months.map((name, i) => ({
+    month: name,
+    amount: Math.round((monthlyMap.get(i) ?? 0) * 100) / 100,
+  }));
+
+  const todayByPayment = todaySalesByPayment.map((g) => ({
+    name: g.paymentType || 'Other',
+    value: g._sum.totalAmount ?? 0,
+  }));
+
+  const formattedSales = recentSales.map((s) => ({
+    id: s.id,
+    customerName: s.customer?.name ?? 'Walk-in Customer',
+    time: new Date(s.createdAt).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    itemCount: s.items.length,
+    amount: s.totalAmount,
+  }));
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h2 className="text-2xl font-bold text-card-foreground">NES Dashboard</h2>
-        <p className="text-muted-foreground mt-1">Read-only access — view inventory and reports.</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="py-0 gap-0">
-          <div className="p-6">
-            <Package className="size-5 text-indigo-600 mb-3" />
-            <p className="text-xs font-semibold text-muted-foreground mb-1">Products in System</p>
-            <p className="text-2xl font-bold text-card-foreground">{totalProducts}</p>
-          </div>
-        </Card>
-        <Card className="py-0 gap-0">
-          <div className="p-6">
-            <FileText className="size-5 text-muted-foreground mb-3" />
-            <p className="text-xs font-semibold text-muted-foreground mb-1">Access Level</p>
-            <p className="text-lg font-bold text-card-foreground">Read Only</p>
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Link href="/inventory" className="bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 rounded-xl p-4 text-sm font-bold text-center hover:opacity-80 transition-opacity">
-          View Inventory
-        </Link>
-        <Link href="/reports" className="bg-muted text-muted-foreground rounded-xl p-4 text-sm font-bold text-center hover:opacity-80 transition-opacity">
-          Reports
-        </Link>
-      </div>
-    </div>
+    <DashboardView
+      userName={session.user.email}
+      stats={{
+        totalProducts,
+        lowStock,
+        expiringSoon,
+        salesToday: todayTotal,
+        salesChange,
+      }}
+      monthlySales={monthlySales}
+      todayByPayment={todayByPayment}
+      recentSales={formattedSales}
+      alerts={{
+        lowStockCount: lowStock,
+        expiringCount: expiringSoon,
+      }}
+    />
   );
 }

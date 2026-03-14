@@ -92,7 +92,8 @@ export default async function ReportsPage({
     const day = new Date(sale.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
     salesByDay.set(day, (salesByDay.get(day) ?? 0) + sale.totalAmount);
   }
-  const dailyData = Array.from(salesByDay.entries()).slice(-14);
+  // Use `days` (from the selected range param) so 7/30/90-day selector is respected
+  const dailyData = Array.from(salesByDay.entries()).slice(-days);
   const maxDay = Math.max(...dailyData.map(d => d[1]), 1);
 
   const tabs = [
