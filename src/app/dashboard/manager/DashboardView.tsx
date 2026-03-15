@@ -82,7 +82,7 @@ function StatCard({
         <Info className="size-4 text-muted-foreground/40" />
       </div>
       <div className="flex items-end gap-2">
-        <p className="text-3xl font-bold text-card-foreground leading-none tracking-tight">
+        <p className="text-3xl font-medium text-card-foreground leading-none tracking-tight">
           {value}
         </p>
         {indicator === 'warning' && (
@@ -90,7 +90,7 @@ function StatCard({
         )}
         {change != null && (
           <span
-            className={`text-xs font-semibold px-2 py-0.5 rounded-md mb-0.5 ${
+            className={`text-xs font-medium px-2 py-0.5 rounded-md mb-0.5 ${
               change >= 0
                 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600'
                 : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600'
@@ -110,7 +110,7 @@ function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
-      <p className="text-xs font-semibold text-card-foreground">{label}</p>
+      <p className="text-xs font-medium text-card-foreground">{label}</p>
       <p className="text-xs text-muted-foreground">
         ₵{Number(payload[0].value).toLocaleString(undefined, { minimumFractionDigits: 2 })}
       </p>
@@ -137,7 +137,7 @@ export default function DashboardView({
     <div className="flex flex-col gap-6">
       {/* ── Greeting ── */}
       <div>
-        <h1 className="text-[28px] font-bold text-card-foreground">
+        <h1 className="text-[28px] font-medium text-card-foreground">
           {getGreeting()}, {firstName}
           <span className="ml-1">💙</span>
         </h1>
@@ -185,7 +185,7 @@ export default function DashboardView({
         {/* Monthly Progress */}
         <Card className="p-6 py-6 gap-0">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-card-foreground">Monthly Progress</h3>
+            <h3 className="text-lg font-medium text-card-foreground">Monthly Progress</h3>
             <span className="text-sm text-muted-foreground border border-border rounded-lg px-3 py-1">
               Monthly
             </span>
@@ -215,7 +215,7 @@ export default function DashboardView({
 
         {/* Today's Report (Donut) */}
         <Card className="p-6 py-6 gap-0">
-          <h3 className="text-lg font-bold text-card-foreground mb-2">Today&apos;s Report</h3>
+          <h3 className="text-lg font-medium text-card-foreground mb-2">Today&apos;s Report</h3>
           {todayByPayment.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[260px]">
               <p className="text-sm text-muted-foreground">No sales data for today</p>
@@ -247,7 +247,7 @@ export default function DashboardView({
                 {/* Center label */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <p className="text-xs text-muted-foreground">Total Earning</p>
-                  <p className="text-xl font-bold text-card-foreground">
+                  <p className="text-xl font-medium text-card-foreground">
                     ₵{totalEarning.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
@@ -274,7 +274,7 @@ export default function DashboardView({
         {/* Recent Transactions */}
         <Card className="py-0 gap-0 overflow-hidden">
           <div className="flex items-center justify-between px-6 py-5 border-b border-border">
-            <h3 className="font-semibold text-card-foreground">Recent Transactions</h3>
+            <h3 className="font-medium text-card-foreground">Recent Transactions</h3>
             <Link
               href="/reports"
               className="text-sm font-medium text-primary hover:underline border border-border rounded-lg px-3 py-1"
@@ -292,7 +292,7 @@ export default function DashboardView({
                   className="flex items-center justify-between px-6 py-4"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-muted-foreground">
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
                       {sale.customerName[0]?.toUpperCase() || 'W'}
                     </div>
                     <div>
@@ -304,7 +304,7 @@ export default function DashboardView({
                       </p>
                     </div>
                   </div>
-                  <p className="text-sm font-semibold text-card-foreground">
+                  <p className="text-sm font-medium text-card-foreground">
                     ₵{sale.amount.toFixed(2)}
                   </p>
                 </div>
@@ -316,7 +316,7 @@ export default function DashboardView({
         {/* Inventory Alerts */}
         <Card className="py-0 gap-0 overflow-hidden">
           <div className="flex items-center justify-between px-6 py-5 border-b border-border">
-            <h3 className="font-semibold text-card-foreground">Inventory Alerts</h3>
+            <h3 className="font-medium text-card-foreground">Inventory Alerts</h3>
             <Link
               href="/inventory"
               className="text-sm font-medium text-primary hover:underline border border-border rounded-lg px-3 py-1"

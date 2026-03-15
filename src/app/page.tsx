@@ -47,19 +47,19 @@ export default async function Dashboard() {
       {/* Filter Header */}
       <div className="animate-in slide-in-from-bottom-2 fade-in duration-500 ease-out-expo flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
         <div className="flex items-center gap-3">
-          <button className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-xl px-4 py-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors">
+          <button className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-xl px-4 py-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors">
             <Calendar size={14} className="text-slate-400" />
             Last 30 days
             <span className="text-[10px] ml-1 text-slate-400">▼</span>
           </button>
-          <button className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-xl px-4 py-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors hidden sm:flex">
+          <button className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-xl px-4 py-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors hidden sm:flex">
             <Clock size={14} className="text-slate-400" />
             Compare: Previous period
             <span className="text-[10px] ml-1 text-slate-400">▼</span>
           </button>
         </div>
-        <button className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-xl px-4 py-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors">
-          <span className="text-[10px] text-slate-400 font-bold">⤢</span>
+        <button className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-xl px-4 py-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors">
+          <span className="text-[10px] text-slate-400 font-medium">⤢</span>
           Full-screen
         </button>
       </div>
@@ -70,7 +70,7 @@ export default async function Dashboard() {
           <div className="w-16 h-16 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Package size={32} className="text-indigo-500 dark:text-indigo-400" />
           </div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Welcome to HalePulse</h3>
+          <h3 className="text-xl font-medium text-slate-900 dark:text-white mb-2">Welcome to HalePulse</h3>
           <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-8 font-medium">
             Your pharmacy system is ready to go. Get started by adding your first products to the inventory database.
           </p>
@@ -88,7 +88,7 @@ export default async function Dashboard() {
             {stats.map((stat, i) => (
               <div key={i} className="flex-1 p-6 sm:p-8">
                 <div className="flex items-center gap-1.5 mb-4">
-                  <p className="text-[13px] font-semibold text-slate-600 dark:text-slate-400">{stat.title}</p>
+                  <p className="text-[13px] font-medium text-slate-600 dark:text-slate-400">{stat.title}</p>
                   <Info size={12} className="text-slate-400" />
                 </div>
                 <div className="flex items-baseline gap-2">
@@ -111,7 +111,7 @@ export default async function Dashboard() {
             {/* Sales Overview / Recent Transactions */}
             <div className="lg:col-span-3 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-2xl flex flex-col">
               <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 flex justify-between items-center">
-                <h4 className="text-[17px] font-semibold text-slate-900 dark:text-white tracking-tight">Recent Transactions</h4>
+                <h4 className="text-[17px] font-medium text-slate-900 dark:text-white tracking-tight">Recent Transactions</h4>
                 <Link href="/reports?tab=sales" className="bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-white/5 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">View report</Link>
               </div>
 
@@ -131,7 +131,7 @@ export default async function Dashboard() {
                             </p>
                           </div>
                         </div>
-                        <p className="font-semibold text-slate-900 dark:text-white">₵{sale.totalAmount.toFixed(2)}</p>
+                        <p className="font-medium text-slate-900 dark:text-white">₵{sale.totalAmount.toFixed(2)}</p>
                       </div>
                     ))}
                   </div>
@@ -150,7 +150,7 @@ export default async function Dashboard() {
             {/* Inventory Alerts */}
             <div className="lg:col-span-2 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 rounded-2xl flex flex-col">
               <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 flex justify-between items-center">
-                <h4 className="text-[17px] font-semibold text-slate-900 dark:text-white tracking-tight">Inventory Alerts</h4>
+                <h4 className="text-[17px] font-medium text-slate-900 dark:text-white tracking-tight">Inventory Alerts</h4>
                 <Link href="/reports?tab=sales" className="bg-slate-50 dark:bg-transparent border border-slate-200 dark:border-white/5 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">View report</Link>
               </div>
 
@@ -161,7 +161,7 @@ export default async function Dashboard() {
                       <AlertCircle size={18} className="text-amber-600 dark:text-amber-400" />
                     </div>
                     <div className="flex-1 pr-2">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-200 mb-0.5">Low Stock Remaining</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-200 mb-0.5">Low Stock Remaining</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{lowStock} products have dropped below the minimum stock threshold of 5 units.</p>
                     </div>
                   </div>
@@ -173,7 +173,7 @@ export default async function Dashboard() {
                       <Calendar size={18} className="text-rose-600 dark:text-rose-400" />
                     </div>
                     <div className="flex-1 pr-2">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-200 mb-0.5">Expiring Items</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-200 mb-0.5">Expiring Items</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{expiringSoon} products will expire within the next 90 days. Please review inventory.</p>
                     </div>
                   </div>
@@ -184,7 +184,7 @@ export default async function Dashboard() {
                     <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center mb-4 border border-slate-200 dark:border-slate-800">
                       <Package size={20} className="text-emerald-500 dark:text-emerald-400" />
                     </div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-200">Inventory is healthy</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-200">Inventory is healthy</p>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-[200px] mx-auto">No low stock or expiring items detected.</p>
                   </div>
                 )}
