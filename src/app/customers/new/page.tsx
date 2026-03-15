@@ -51,10 +51,7 @@ export default function NewCustomerPage() {
         <Link href="/customers" className={buttonVariants({ variant: 'outline', size: 'icon' })}>
           <ArrowLeft className="size-4 text-muted-foreground" />
         </Link>
-        <div>
-          <h2 className="text-xl font-semibold text-card-foreground">Add Customer</h2>
-          <p className="text-sm text-muted-foreground">Register a new customer for loyalty tracking.</p>
-        </div>
+        <p className="text-sm text-muted-foreground">Register a new customer for loyalty tracking.</p>
       </div>
 
       <Card className="p-6">

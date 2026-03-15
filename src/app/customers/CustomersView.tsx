@@ -81,10 +81,7 @@ export default function CustomersView() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-card-foreground">Customers &amp; Loyalty</h2>
-          <p className="text-muted-foreground">Track customer purchases and award loyalty points.</p>
-        </div>
+        <p className="text-muted-foreground">Track customer purchases and award loyalty points.</p>
         <Link href="/customers/new" className={buttonVariants()}>
           <Plus /> Add Customer
         </Link>

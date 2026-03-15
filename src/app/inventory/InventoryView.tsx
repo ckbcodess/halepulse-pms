@@ -163,12 +163,9 @@ export default function InventoryView() {
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 animate-in slide-in-from-bottom-2 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '50ms' }}>
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-card-foreground">Inventory Management</h2>
-          <p className="text-muted-foreground mt-1 text-sm font-medium">
-            Manage stock levels and pricing records across your pharmacy.
-          </p>
-        </div>
+        <p className="text-muted-foreground text-sm font-medium">
+          Manage stock levels and pricing records across your pharmacy.
+        </p>
         <div className="flex gap-2">
           <Link href="/inventory/import" className={buttonVariants({ variant: 'outline' })}>
             <Upload /> Import CSV

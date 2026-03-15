@@ -93,10 +93,7 @@ export default function NewProductPage() {
         <Link href="/inventory" className={buttonVariants({ variant: 'outline', size: 'icon' })}>
           <ArrowLeft className="size-4 text-muted-foreground" />
         </Link>
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-card-foreground">Add Product</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Add a new product to your inventory</p>
-        </div>
+        <p className="text-sm text-muted-foreground">Add a new product to your inventory</p>
       </div>
 
       <Card className="py-0">

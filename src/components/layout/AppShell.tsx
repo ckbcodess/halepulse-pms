@@ -42,7 +42,7 @@ export default function AppShell({ children, session, menuItems }: AppShellProps
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[#0a0a0c]">
       {/* Backdrop overlay — visible on mobile when sidebar is open */}
       {sidebarOpen && (
         <div
@@ -58,14 +58,14 @@ export default function AppShell({ children, session, menuItems }: AppShellProps
         onClose={closeSidebar}
       />
 
-      <main className="flex-1 flex flex-col overflow-hidden relative bg-white dark:bg-[#0a0a0c]">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <TopHeader user={session.user} onMenuToggle={toggleSidebar} />
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500 ease-out-expo">
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-300">
             {children}
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
