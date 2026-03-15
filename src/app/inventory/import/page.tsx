@@ -105,10 +105,7 @@ export default function ImportPage() {
         <button onClick={() => router.push('/inventory')} className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
           <ArrowLeft size={18} className="text-slate-500" />
         </button>
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Import Products</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Upload a CSV file to bulk-add products to your inventory</p>
-        </div>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Upload a CSV file to bulk-add products to your inventory</p>
       </div>
 
       {/* Upload Step */}
