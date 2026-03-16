@@ -73,7 +73,12 @@ function LoginContent() {
         if (session?.user?.mustChangePassword) {
           router.push('/change-password');
         } else {
-          router.push('/');
+          const role = session?.user?.role;
+          if (role === 'SUPER_ADMIN') router.push('/super-admin');
+          else if (role === 'MANAGER') router.push('/dashboard/manager');
+          else if (role === 'MCA') router.push('/dashboard/mca');
+          else if (role === 'NES') router.push('/dashboard/nes');
+          else router.push('/');
         }
         router.refresh();
       } else {

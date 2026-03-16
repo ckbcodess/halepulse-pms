@@ -9,7 +9,12 @@ import { verifyImpersonation } from './impersonationToken';
  * Returns null if not impersonating or if the cookie is invalid.
  */
 export async function getImpersonation(): Promise<{ tenantId: string; role: string } | null> {
-  const session = await getServerSession(authOptions);
+  let session;
+  try {
+    session = await getServerSession(authOptions);
+  } catch (error) {
+    return null;
+  }
   if (!session || session.user.role !== 'SUPER_ADMIN') return null;
 
   const cookieStore = await cookies();

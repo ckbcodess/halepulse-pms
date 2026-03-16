@@ -11,9 +11,16 @@ import {
   logLoginAttempt,
 } from './loginSecurity';
 
+if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV !== 'production') {
+  console.warn('⚠️  NEXTAUTH_SECRET is not set in .env. Using a fallback secret.');
+} else if (process.env.NODE_ENV !== 'production') {
+  console.log('✅ NEXTAUTH_SECRET is loaded.');
+}
+
 export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   pages:   { signIn: '/login' },
+  secret: process.env.NEXTAUTH_SECRET || 'halepulse-fallback-secret-for-dev-only',
 
   providers: [
     // ═══════════════════════════════════════════════════════════════════════════

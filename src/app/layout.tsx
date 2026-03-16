@@ -24,7 +24,12 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
+  let session = null;
+  try {
+    session = await getServerSession(authOptions);
+  } catch (error) {
+    console.error('NextAuth session decryption failed. This usually happens after a secret change. Clearing session.');
+  }
 
   // Load tenant branding for CSS variable injection
   let baseColor = '#6366f1';
