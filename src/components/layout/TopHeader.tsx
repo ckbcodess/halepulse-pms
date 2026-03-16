@@ -1,6 +1,6 @@
 'use client';
 import { usePathname } from 'next/navigation';
-import { Bell, Menu, ChevronDown, Sun, Moon } from 'lucide-react';
+import { Bell, Menu, ChevronDown, Sun, Moon, Search } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 interface TopHeaderProps {
@@ -10,6 +10,8 @@ interface TopHeaderProps {
     tenantId: string | null;
   };
   onMenuToggle?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 const ROUTE_TITLES: Record<string, string> = {
@@ -43,17 +45,13 @@ const ROLE_LABEL: Record<string, string> = {
 function ThemeToggleButton() {
   const { setTheme, theme } = useTheme();
   return (
-    /*
-      Figma: Background — bg-[#fbfbfb] p-[10px] rounded-[8332.5px] (fully round pill)
-      Sun icon 20×20 inside
-    */
     <button
       onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-      className="w-10 h-10 flex items-center justify-center bg-[#fbfbfb] dark:bg-[#1e1e20] rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+      className="w-8 h-8 flex items-center justify-center rounded-md surface-interactive text-muted-foreground"
       aria-label="Toggle theme"
     >
-      <Sun className="h-5 w-5 text-[#0f172a] dark:hidden block" />
-      <Moon className="h-5 w-5 text-slate-300 hidden dark:block" />
+      <Sun className="h-4 w-4 dark:hidden block" />
+      <Moon className="h-4 w-4 hidden dark:block" />
     </button>
   );
 }
@@ -63,13 +61,11 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
   const pageTitle = getPageTitle(pathname);
   const roleLabel = ROLE_LABEL[user.role] ?? user.role;
 
-  // Derive display name from email: "jane.doe@..." → "Jane Doe"
   const displayName = user.email
     .split('@')[0]
     .replace(/[._]/g, ' ')
     .replace(/\b\w/g, c => c.toUpperCase());
 
-  // Initials for avatar fallback
   const initials = displayName
     .split(' ')
     .map(w => w[0])
@@ -78,81 +74,65 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
     .toUpperCase();
 
   return (
-    /*
-      Figma: TopNav — h-[64px], sits inside the white card (no bg/border of its own).
-      The white card provides the background. A subtle bottom border separates it from content.
-    */
-    <header className="h-16 flex items-center justify-between flex-shrink-0 border-b border-slate-100 dark:border-white/[0.06] px-4 sm:px-10 lg:px-20">
+    <header className="h-12 flex items-center justify-between flex-shrink-0 border-b border-border px-5 sm:px-8 lg:px-12">
 
-      {/* Left: hamburger (mobile only) + page title */}
-      <div className="flex items-center gap-3">
+      {/* Left: hamburger (mobile) + page title */}
+      <div className="flex items-center gap-2.5">
         <button
           onClick={onMenuToggle}
-          className="p-2 -ml-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors lg:hidden"
+          className="p-1.5 -ml-1 rounded-md surface-interactive lg:hidden text-muted-foreground"
           aria-label="Toggle menu"
         >
-          <Menu size={20} className="text-slate-600 dark:text-slate-300" />
+          <Menu size={18} />
         </button>
 
-        {/*
-          Figma: Dashboard Title — text-[16px] font-medium opacity-60
-          text-[#0f172a] tracking-[-0.05px]
-        */}
-        <h1 className="text-[16px] font-medium text-[#0f172a]/60 dark:text-white/50 tracking-[-0.05px] leading-8">
+        <h1 className="text-[13px] font-medium text-muted-foreground tracking-tight leading-none">
           {pageTitle}
         </h1>
       </div>
 
-      {/* Right: Header Container — gap-[24px] */}
-      <div className="flex items-center gap-6">
+      {/* Right side */}
+      <div className="flex items-center gap-1.5">
 
-        {/* Figma: Header Icons — gap-[16px] between the two icon buttons */}
-        <div className="flex items-center gap-4">
+        {/* Search hint */}
+        <button className="hidden sm:flex items-center gap-2 h-8 px-3 rounded-md border border-border text-muted-foreground surface-interactive mr-1">
+          <Search size={14} />
+          <span className="text-[12px] font-medium">Search</span>
+          <kbd className="hidden lg:inline text-[10px] font-medium bg-[var(--surface)] border border-border rounded px-1.5 py-0.5 ml-2 text-muted-foreground/70">
+            /
+          </kbd>
+        </button>
 
-          {/*
-            Figma: Notification Background — bg-[#fbfbfb] p-[10px] rounded-full
-            Badge: bg-red, absolute top-right, text "1"
-          */}
-          <button className="relative w-10 h-10 flex items-center justify-center bg-[#fbfbfb] dark:bg-[#1e1e20] rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0">
-            <Bell size={20} className="text-[#0f172a] dark:text-slate-300" />
-            {/* Figma: Notifications Container — bg-red, 16.8×16.8, top:-3px left:26px */}
-            <span className="absolute -top-0.5 right-0 w-[17px] h-[17px] bg-red-500 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#111113]">
-              <span className="text-white font-semibold leading-none" style={{ fontSize: '9px' }}>1</span>
-            </span>
-          </button>
+        {/* Notification */}
+        <button className="relative w-8 h-8 flex items-center justify-center rounded-md surface-interactive text-muted-foreground">
+          <Bell size={16} />
+          <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-[var(--surface-raised)]" />
+        </button>
 
-          {/* Figma: Theme toggle — same pill style as notification button */}
-          <ThemeToggleButton />
-        </div>
+        {/* Theme toggle */}
+        <ThemeToggleButton />
 
-        {/* Figma: Line 2 — vertical divider, h≈20px */}
-        <div className="w-px h-5 bg-slate-200 dark:bg-white/10 flex-shrink-0" />
+        {/* Separator */}
+        <div className="w-px h-5 bg-border mx-1.5 flex-shrink-0" />
 
-        {/*
-          Figma: Project Switcher (user profile)
-          Avatar: bg-[#dee8ff] size-[40px] rounded-full
-          Name: text-[14px] font-semibold text-[#0f172a] tracking-[0.02px] leading-6
-          Role: text-[12px] text-[#64748b] leading-4
-        */}
-        <button className="flex items-center gap-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors px-1 py-1 -mr-1">
-          {/* Avatar circle */}
-          <div className="w-10 h-10 rounded-full bg-[#dee8ff] dark:bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-semibold text-[#0f172a]/70 dark:text-primary leading-none">
+        {/* User profile */}
+        <button className="flex items-center gap-2.5 rounded-md surface-interactive px-2 py-1.5 -mr-2">
+          <div className="w-7 h-7 rounded-md bg-[var(--active-bg)] flex items-center justify-center flex-shrink-0">
+            <span className="text-[11px] font-medium text-[var(--active-border)] leading-none">
               {initials}
             </span>
           </div>
 
-          {/* Name + role — hidden on small screens */}
-          <div className="hidden sm:flex flex-col items-start">
-            <span className="text-[14px] font-semibold text-[#0f172a] dark:text-white tracking-[0.02px] leading-6 whitespace-nowrap">
+          <div className="hidden sm:flex flex-col items-start min-w-0">
+            <span className="text-[13px] font-medium text-foreground leading-tight truncate">
               {displayName}
             </span>
-            <span className="text-[12px] text-[#64748b] dark:text-slate-400 leading-4 whitespace-nowrap">
+            <span className="text-[11px] text-muted-foreground leading-tight truncate">
               {roleLabel}
             </span>
           </div>
 
-          <ChevronDown size={16} className="text-slate-400 hidden sm:block" />
+          <ChevronDown size={14} className="text-muted-foreground hidden sm:block flex-shrink-0" />
         </button>
 
       </div>

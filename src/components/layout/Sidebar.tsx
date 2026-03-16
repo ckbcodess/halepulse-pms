@@ -4,8 +4,9 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, ShoppingCart, Package, Users,
-  Settings, LogOut, FileText, UserCog, X, PanelLeftClose,
+  Settings, LogOut, FileText, UserCog, X, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   dashboard:  LayoutDashboard,
@@ -30,9 +31,11 @@ interface SidebarProps {
     role:     string;
     tenantId: string | null;
   };
-  menuItems?: MenuItem[];
-  isOpen?:    boolean;
-  onClose?:   () => void;
+  menuItems?:  MenuItem[];
+  isOpen?:     boolean;
+  onClose?:    () => void;
+  collapsed?:  boolean;
+  onToggleCollapse?: () => void;
 }
 
 const DEFAULT_ITEMS: MenuItem[] = [
@@ -42,72 +45,147 @@ const DEFAULT_ITEMS: MenuItem[] = [
   { key: 'inventory', label: 'Inventory',      path: '/inventory', visible: true },
 ];
 
-export default function Sidebar({ user, menuItems, isOpen = false, onClose }: SidebarProps) {
+export default function Sidebar({
+  user, menuItems, isOpen = false, onClose,
+  collapsed = false, onToggleCollapse,
+}: SidebarProps) {
   const pathname = usePathname();
   const items = (menuItems ?? DEFAULT_ITEMS).filter(i => i.visible);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [isOpen]);
+
+  const sidebarWidth = collapsed ? 'w-[68px]' : 'w-[260px]';
 
   return (
-    /*
-      Figma: Sidebar sits directly on the #f7f7f7 background — no background color of its own.
-      Width: 284px. Uses full height with py-4 vertical padding.
-    */
     <aside
       className={`
-        fixed inset-y-0 left-0 z-40 w-[284px]
-        flex flex-col py-4
-        transition-transform duration-300 ease-in-out
-        lg:relative lg:z-20 lg:w-[284px] lg:translate-x-0
-        ${isOpen ? 'translate-x-0 bg-[#f7f7f7] dark:bg-[#0c0c0e]' : '-translate-x-full'}
+        fixed inset-y-0 left-0 z-40
+        flex flex-col
+        border-r border-border bg-[var(--surface)]
+        transition-all duration-200 ease-[cubic-bezier(0.25,0.1,0.25,1)]
+        lg:relative lg:z-20 lg:translate-x-0
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:${sidebarWidth}
       `}
+      style={{ width: collapsed ? 68 : 260 }}
     >
-      {/*
-        Figma: Company Name section — px-[16px], logo 32×32 rounded-[4px],
-        name: text-[15px] font-semibold text-[#0f172a] tracking-[0.02px]
-      */}
-      <div className="flex items-center justify-between px-4 mb-8 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          {/* Figma: 32×32 rounded-[4px] logo */}
+      {/* ── Header: Logo + collapse toggle ── */}
+      <div className={`flex items-center h-14 flex-shrink-0 border-b border-border ${collapsed ? 'justify-center px-0' : 'justify-between px-4'}`}>
+        {!collapsed && (
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div
+              className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
+              style={{ background: 'var(--primary-color, #6366f1)' }}
+            >
+              <span className="text-white text-xs font-medium leading-none">H</span>
+            </div>
+            <span className="text-[13px] font-medium text-foreground/90 tracking-tight truncate">
+              HalePulse
+            </span>
+          </div>
+        )}
+
+        {collapsed && (
           <div
-            className="w-8 h-8 rounded-[4px] flex items-center justify-center flex-shrink-0"
+            className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
             style={{ background: 'var(--primary-color, #6366f1)' }}
           >
-            <span className="text-white font-bold text-sm leading-none">✦</span>
+            <span className="text-white text-xs font-medium leading-none">H</span>
           </div>
-          {/* Figma: Project Name — text-[15px] font-semibold text-[#0f172a] tracking-[0.02px] */}
-          <span className="text-[15px] font-semibold text-[#0f172a] dark:text-white tracking-[0.02px] leading-none">
-            Haletop Pharmacy
-          </span>
-        </div>
+        )}
 
-        {/* Close on mobile / collapse hint on desktop */}
+        {/* Mobile close */}
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors lg:hidden"
+          className="p-1.5 rounded-md surface-interactive lg:hidden text-muted-foreground"
           aria-label="Close menu"
         >
-          <X size={18} className="text-slate-500 dark:text-slate-400" />
+          <X size={16} />
         </button>
-        <button
-          className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors hidden lg:flex text-slate-400"
-          aria-label="Collapse sidebar"
-        >
-          <PanelLeftClose size={18} />
-        </button>
+
+        {/* Desktop collapse toggle */}
+        {!collapsed && (
+          <button
+            onClick={onToggleCollapse}
+            className="p-1.5 rounded-md surface-interactive hidden lg:flex text-muted-foreground"
+            aria-label="Collapse sidebar"
+          >
+            <PanelLeftClose size={16} />
+          </button>
+        )}
       </div>
 
-      {/*
-        Figma: Navigation Links — px-[16px], gap-[8px] between items
-        Active: bg-[#efdefa] rounded-[8px] px-[12px] py-[8px]
-        Active text: text-[#0f172a]/60 font-medium
-        Inactive text: text-[#64748b] font-medium
-      */}
-      <nav className="flex-1 overflow-y-auto px-4">
-        <div className="flex flex-col gap-2">
+      {/* ── Expand button when collapsed (desktop) ── */}
+      {collapsed && (
+        <div className="hidden lg:flex justify-center pt-3 pb-1">
+          <button
+            onClick={onToggleCollapse}
+            className="p-1.5 rounded-md surface-interactive text-muted-foreground"
+            aria-label="Expand sidebar"
+          >
+            <PanelLeftOpen size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Navigation ── */}
+      <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-3 ${collapsed ? 'px-2' : 'px-3'}`}>
+        <div className="flex flex-col gap-0.5">
+          {!collapsed && (
+            <span className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider px-2.5 mb-2">
+              Menu
+            </span>
+          )}
           {items.map((item) => {
             const Icon = ICON_MAP[item.key] ?? Package;
             const isActive =
               pathname === item.path ||
               (item.path !== '/' && pathname.startsWith(item.path));
+
+            if (collapsed) {
+              return (
+                <div key={item.key} className="relative group">
+                  <Link
+                    href={item.path}
+                    onClick={onClose}
+                    className={`
+                      flex items-center justify-center w-full h-9 rounded-md
+                      transition-all duration-120
+                      ${isActive
+                        ? 'bg-[var(--active-bg)] text-[var(--active-border)]'
+                        : 'text-muted-foreground surface-interactive hover:text-foreground'
+                      }
+                    `}
+                  >
+                    {isActive && (
+                      <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-r-full bg-[var(--active-border)]" />
+                    )}
+                    <Icon size={18} strokeWidth={1.7} />
+                  </Link>
+                  {/* Tooltip */}
+                  <div
+                    ref={tooltipRef}
+                    className="
+                      absolute left-full top-1/2 -translate-y-1/2 ml-2
+                      px-2.5 py-1.5 rounded-md
+                      bg-foreground text-background text-[12px] font-medium
+                      opacity-0 pointer-events-none group-hover:opacity-100
+                      transition-opacity duration-150 whitespace-nowrap z-50
+                      shadow-sm
+                    "
+                  >
+                    {item.label}
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <Link
@@ -115,49 +193,55 @@ export default function Sidebar({ user, menuItems, isOpen = false, onClose }: Si
                 href={item.path}
                 onClick={onClose}
                 className={`
-                  flex items-center gap-3 px-3 py-2 text-[14px] font-medium
-                  rounded-[8px] transition-all duration-150
+                  relative flex items-center gap-2.5 px-2.5 h-9 text-[13px] font-medium
+                  rounded-md transition-all duration-120
                   ${isActive
-                    ? 'bg-[#efdefa] text-[#0f172a]/60 dark:bg-primary/20 dark:text-primary'
-                    : 'text-[#64748b] dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#0f172a] dark:hover:text-slate-200'
+                    ? 'bg-[var(--active-bg)] text-[var(--active-border)]'
+                    : 'text-muted-foreground surface-interactive hover:text-foreground'
                   }
                 `}
               >
-                <Icon size={20} strokeWidth={1.8} />
-                <span className="leading-5">{item.label}</span>
+                {isActive && (
+                  <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-r-full bg-[var(--active-border)]" />
+                )}
+                <Icon size={18} strokeWidth={1.7} />
+                <span className="leading-none">{item.label}</span>
               </Link>
             );
           })}
         </div>
       </nav>
 
-      {/*
-        Figma: Footer Container — px-[16px]
-        Sign out (not in Figma design but kept for functionality)
-        HalePulse branding: 32×32 icon + "HalePulse" text-[15px] font-semibold
-      */}
-      <div className="flex-shrink-0 px-4 pt-4">
-        {/* Sign out — subtle, not in Figma but needed for functionality */}
-        <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] font-medium text-[#64748b] dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-[8px] transition-colors mb-3"
-        >
-          <LogOut size={18} strokeWidth={1.8} />
-          <span>Sign Out</span>
-        </button>
-
-        {/* Figma: HalePulse footer — icon 32×32 + "HalePulse" text */}
-        <div className="flex items-center gap-3 px-3 py-2">
-          <div
-            className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0"
-            style={{ background: 'var(--primary-color, #6366f1)' }}
-          >
-            <span className="text-white text-xs font-bold leading-none">✦</span>
+      {/* ── Footer: Sign out + branding ── */}
+      <div className={`flex-shrink-0 border-t border-border ${collapsed ? 'px-2 py-3' : 'px-3 py-3'}`}>
+        {collapsed ? (
+          <div className="relative group">
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="flex items-center justify-center w-full h-9 rounded-md text-muted-foreground surface-interactive hover:text-rose-600 dark:hover:text-rose-400"
+            >
+              <LogOut size={16} strokeWidth={1.7} />
+            </button>
+            <div className="
+              absolute left-full top-1/2 -translate-y-1/2 ml-2
+              px-2.5 py-1.5 rounded-md
+              bg-foreground text-background text-[12px] font-medium
+              opacity-0 pointer-events-none group-hover:opacity-100
+              transition-opacity duration-150 whitespace-nowrap z-50
+              shadow-sm
+            ">
+              Sign Out
+            </div>
           </div>
-          <span className="text-[15px] font-semibold text-[#0f172a] dark:text-white tracking-[0.02px] leading-none">
-            HalePulse
-          </span>
-        </div>
+        ) : (
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="w-full flex items-center gap-2.5 px-2.5 h-9 text-[13px] font-medium text-muted-foreground rounded-md surface-interactive hover:text-rose-600 dark:hover:text-rose-400"
+          >
+            <LogOut size={16} strokeWidth={1.7} />
+            <span>Sign Out</span>
+          </button>
+        )}
       </div>
     </aside>
   );
