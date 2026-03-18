@@ -4,6 +4,7 @@ import { getImpersonation } from '@/lib/auth/getImpersonation';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { Users, ShieldCheck, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,12 +53,10 @@ export default async function UsersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">
-          {tenant?.name ?? 'Your pharmacy'} · {users.length} user{users.length !== 1 ? 's' : ''}
-        </p>
-      </div>
+      <PageHeader
+        title="Team"
+        description={`${tenant?.name ?? 'Your pharmacy'} · ${users.length} user${users.length !== 1 ? 's' : ''}`}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

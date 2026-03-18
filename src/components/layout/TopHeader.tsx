@@ -1,6 +1,10 @@
 'use client';
 import { usePathname } from 'next/navigation';
-import { Bell, Menu, ChevronDown, Sun, Moon, LogOut } from 'lucide-react';
+import {
+  Bell, Menu, ChevronDown, Sun, Moon, LogOut,
+  LayoutDashboard, ShoppingCart, Package, Users,
+  FileText, Settings, UserCog, KeyRound, type LucideIcon,
+} from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { signOut } from 'next-auth/react';
 import {
@@ -25,25 +29,24 @@ interface TopHeaderProps {
   onToggleCollapse?: () => void;
 }
 
-const ROUTE_TITLES: Record<string, string> = {
-  '/':                 'Dashboard',
-  '/pos':              'Point of Sale',
-  '/inventory':        'Inventory',
-  '/inventory/new':    'Add Product',
-  '/inventory/import': 'Import Products',
-  '/customers':        'Customers',
-  '/customers/new':    'Add Customer',
-  '/reports':          'Reports',
-  '/settings':         'Settings',
-  '/users':            'Team',
-  '/change-password':  'Change Password',
+const ROUTE_META: Record<string, { title: string; icon: LucideIcon }> = {
+  '/':                 { title: 'Dashboard',       icon: LayoutDashboard },
+  '/pos':              { title: 'Point of Sale',   icon: ShoppingCart },
+  '/inventory':        { title: 'Inventory',       icon: Package },
+  '/inventory/new':    { title: 'Add Product',     icon: Package },
+  '/inventory/import': { title: 'Import Products', icon: Package },
+  '/customers':        { title: 'Customers',       icon: Users },
+  '/customers/new':    { title: 'Add Customer',    icon: Users },
+  '/reports':          { title: 'Reports',         icon: FileText },
+  '/settings':         { title: 'Settings',        icon: Settings },
+  '/users':            { title: 'Team',            icon: UserCog },
+  '/change-password':  { title: 'Change Password', icon: KeyRound },
 };
 
-function getPageTitle(pathname: string): string {
-  if (ROUTE_TITLES[pathname]) return ROUTE_TITLES[pathname];
-  if (pathname.startsWith('/dashboard/')) return 'Dashboard';
-  if (pathname.startsWith('/customers/')) return 'Customer Details';
-  return 'Dashboard';
+function getPageMeta(pathname: string): { title: string; icon: LucideIcon } {
+  if (ROUTE_META[pathname]) return ROUTE_META[pathname];
+  if (pathname.startsWith('/customers/')) return { title: 'Customer Details', icon: Users };
+  return { title: 'Dashboard', icon: LayoutDashboard };
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -69,7 +72,7 @@ function ThemeToggleButton() {
 
 export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
   const pathname  = usePathname();
-  const pageTitle = getPageTitle(pathname);
+  const { title: pageTitle, icon: PageIcon } = getPageMeta(pathname);
   const roleLabel = ROLE_LABEL[user.role] ?? user.role;
 
   const displayName = user.email
@@ -85,10 +88,10 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
     .toUpperCase();
 
   return (
-    <header className="h-[54px] flex items-center justify-between flex-shrink-0 border-b border-border px-5 sm:px-8 lg:px-12">
+    <header className="h-[64px] flex items-center justify-between flex-shrink-0 border-b border-border px-6">
 
-      {/* Left: hamburger (mobile) + page title */}
-      <div className="flex items-center gap-2.5">
+      {/* Left: hamburger (mobile) + icon + page title */}
+      <div className="flex items-center gap-2">
         <button
           onClick={onMenuToggle}
           className="p-1.5 -ml-1 rounded-md surface-interactive lg:hidden text-muted-foreground"
@@ -97,9 +100,12 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
           <Menu size={18} />
         </button>
 
-        <h1 className="text-[13px] font-medium text-muted-foreground tracking-tight leading-none">
-          {pageTitle}
-        </h1>
+        <div className="flex items-center gap-2">
+          <PageIcon size={20} className="text-foreground/60 flex-shrink-0" />
+          <h1 className="text-[16px] font-medium text-foreground/60 tracking-[-0.05px] leading-none whitespace-nowrap">
+            {pageTitle}
+          </h1>
+        </div>
       </div>
 
       {/* Right side — matches Figma Control Panel (node 156:67) */}

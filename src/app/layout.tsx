@@ -63,6 +63,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     >
       <head>
         <style dangerouslySetInnerHTML={{ __html: brandingCSS }} />
+        {/* figma capture — remove after capture */}
+        <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
       </head>
       <body className="antialiased">
         <ReactQueryProvider>

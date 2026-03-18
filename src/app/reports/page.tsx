@@ -5,6 +5,7 @@ import {
   ShoppingBag, ArrowUpRight, Download, BarChart2, FileText
 } from 'lucide-react';
 import Link from 'next/link';
+import PageHeader from '@/components/layout/PageHeader';
 
 export default async function ReportsPage({
   searchParams,
@@ -111,25 +112,24 @@ export default async function ReportsPage({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <p className="text-sm text-slate-500 dark:text-slate-400">Analytics and insights across your pharmacy.</p>
-        <div className="flex items-center gap-2">
-          {ranges.map(r => (
+      <PageHeader
+        title="Reports"
+        description="Analytics and insights across your pharmacy."
+      >
+        {ranges.map(r => (
             <Link
               key={r.value}
               href={`/reports?tab=${tab}&range=${r.value}`}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              className={`px-[13px] py-[9px] rounded-[8px] text-[12.25px] font-medium transition-colors ${
                 range === r.value
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
+                  ? 'bg-primary border border-[#484ced] text-white'
+                  : 'bg-white border border-[#e2e8f0] text-[#08090e] hover:bg-muted/50'
               }`}
             >
               {r.label}
             </Link>
           ))}
-        </div>
-      </div>
+      </PageHeader>
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-800 w-full overflow-x-auto no-scrollbar">

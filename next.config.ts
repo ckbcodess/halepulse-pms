@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",   // Next.js requires these
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://mcp.figma.com",   // Next.js requires these; mcp.figma.com for Figma capture (temp)
               "style-src 'self' 'unsafe-inline'",                    // Tailwind inline styles
               "img-src 'self' data: blob: https:",                   // allow tenant logos via https
               "font-src 'self' data: https://fonts.gstatic.com",
