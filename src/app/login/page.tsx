@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
-// ── Google "G" logo — matches Google brand guidelines ─────────────────────────
 function GoogleIcon() {
   return (
     <svg className="size-5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -21,8 +20,6 @@ function GoogleIcon() {
   );
 }
 
-// ── Main login form — separated into its own component so useSearchParams
-//    can be used inside a Suspense boundary (Next.js App Router requirement)
 function LoginContent() {
   const [businessId, setBusinessId] = useState('');
   const [username, setUsername]     = useState('');
@@ -33,7 +30,6 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Map NextAuth error codes (from ?error= URL param) to friendly messages
   const urlError = searchParams.get('error');
   const urlErrorMessage = urlError === 'NotProvisioned'
     ? 'Your Google account is not linked to any provisioned account. Contact your system administrator.'
@@ -73,7 +69,12 @@ function LoginContent() {
         if (session?.user?.mustChangePassword) {
           router.push('/change-password');
         } else {
-          router.push('/');
+          const role = session?.user?.role;
+          if (role === 'SUPER_ADMIN') router.push('/super-admin');
+          else if (role === 'MANAGER') router.push('/dashboard/manager');
+          else if (role === 'MCA') router.push('/dashboard/mca');
+          else if (role === 'NES') router.push('/dashboard/nes');
+          else router.push('/');
         }
         router.refresh();
       } else {
@@ -94,84 +95,93 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-white selection:bg-emerald-200 selection:text-emerald-900">
+    <div className="min-h-screen flex flex-col md:flex-row bg-white dark:bg-[#0a0a0a]">
 
-      {/* Brand Side */}
-      <div className="hidden md:flex flex-col flex-1 bg-slate-950 p-12 lg:p-24 relative overflow-hidden justify-between">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(16,185,129,0.08),transparent_50%)]"></div>
-        <div className="absolute top-0 right-0 w-full h-full bg-[linear-gradient(to_bottom,transparent_0%,rgba(15,23,42,0.8)_100%)] z-0"></div>
+      {/* Brand side — dark, minimal */}
+      <div className="hidden md:flex flex-col flex-1 bg-[#0c0c0c] p-10 lg:p-16 xl:p-20 relative overflow-hidden justify-between">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_80%,rgba(99,102,241,0.06),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_20%,rgba(16,185,129,0.04),transparent_70%)]" />
 
-        <div className="relative z-10 flex items-center gap-3 animate-in fade-in duration-1000">
-          <div className="w-4 h-4 bg-emerald-500 rounded-sm"></div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            HALE<span className="text-emerald-500 font-light">PULSE</span>
-          </h1>
+        <div className="relative z-10 flex items-center gap-2.5">
+          <div
+            className="w-7 h-7 rounded-md flex items-center justify-center"
+            style={{ background: 'var(--primary-color, #6366f1)' }}
+          >
+            <span className="text-white text-xs font-medium leading-none">H</span>
+          </div>
+          <span className="text-[15px] font-medium text-white/90 tracking-tight">HalePulse</span>
         </div>
 
-        <div className="relative z-10 animate-in slide-in-from-bottom-10 fade-in duration-1000 delay-300 fill-mode-both">
-          <blockquote className="text-3xl lg:text-5xl font-light text-white leading-tight mb-6">
-            Intelligent retail operations for the modern, fast-paced pharmacy.
-          </blockquote>
-          <p className="text-slate-400 font-mono text-sm tracking-widest uppercase">System version 3.0 — Multi-tenant</p>
+        <div className="relative z-10 max-w-md">
+          <p className="text-3xl lg:text-[2.5rem] font-medium text-white/95 leading-[1.15] tracking-tight mb-5">
+            Intelligent retail operations for the modern pharmacy.
+          </p>
+          <p className="text-[13px] text-white/40 font-medium tracking-wide font-mono">
+            v3.0 — Multi-tenant
+          </p>
         </div>
       </div>
 
-      {/* Form Side */}
-      <div className="flex-1 flex flex-col justify-center items-center p-8 lg:p-24 relative z-10 bg-[#f8fafa]">
-        <div className="w-full max-w-sm animate-in slide-in-from-bottom-8 fade-in duration-700 delay-150 fill-mode-both">
+      {/* Form side */}
+      <div className="flex-1 flex flex-col justify-center items-center p-8 lg:p-16 xl:p-20 bg-[var(--surface)] dark:bg-[#0a0a0a]">
+        <div className="w-full max-w-[340px] animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both">
 
-          <div className="md:hidden flex items-center gap-3 mb-10">
-            <div className="w-4 h-4 bg-emerald-500 rounded-sm"></div>
-            <h1 className="text-2xl font-bold text-slate-950 tracking-tight">
-              HALE<span className="text-emerald-500 font-light">PULSE</span>
-            </h1>
+          {/* Mobile logo */}
+          <div className="md:hidden flex items-center gap-2.5 mb-10">
+            <div
+              className="w-7 h-7 rounded-md flex items-center justify-center"
+              style={{ background: 'var(--primary-color, #6366f1)' }}
+            >
+              <span className="text-white text-xs font-medium leading-none">H</span>
+            </div>
+            <span className="text-[15px] font-medium text-foreground tracking-tight">HalePulse</span>
           </div>
 
-          <div className="mb-10">
-            <h2 className="text-3xl font-black text-slate-950 tracking-tight mb-2">Sign in</h2>
-            <p className="text-slate-500 font-medium">Enter your business credentials to continue.</p>
+          <div className="mb-8">
+            <h2 className="text-xl font-medium text-foreground tracking-tight mb-1">Sign in</h2>
+            <p className="text-[13px] text-muted-foreground">Enter your business credentials to continue.</p>
           </div>
 
           {displayError && (
-            <Alert variant="destructive" className="mb-6 animate-in fade-in slide-in-from-top-2">
-              <AlertDescription>{displayError}</AlertDescription>
+            <Alert variant="destructive" className="mb-5 animate-in fade-in slide-in-from-top-1 duration-200">
+              <AlertDescription className="text-[13px]">{displayError}</AlertDescription>
             </Alert>
           )}
 
-          {/* ── Google Sign-In ──────────────────────────────────────────────── */}
+          {/* Google Sign-In */}
           <Button
             type="button"
             variant="outline"
             onClick={handleGoogleSignIn}
             disabled={isGoogleLoading || isSubmitting}
-            className="w-full h-12 gap-3 font-semibold mb-5"
+            className="w-full h-10 gap-2.5 font-medium mb-5 text-[13px]"
           >
             {isGoogleLoading ? (
-              <span className="text-sm">Redirecting<span className="animate-pulse">...</span></span>
+              <span>Redirecting<span className="animate-pulse">...</span></span>
             ) : (
               <>
                 <GoogleIcon />
-                <span className="text-sm">Sign in with Google</span>
+                <span>Sign in with Google</span>
               </>
             )}
           </Button>
 
-          {/* ── Divider ─────────────────────────────────────────────────────── */}
+          {/* Divider */}
           <div className="relative mb-5">
             <div className="absolute inset-0 flex items-center">
               <Separator />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#f8fafa] px-3 text-slate-400 font-semibold tracking-wider">
-                or sign in with credentials
+            <div className="relative flex justify-center text-[11px] uppercase">
+              <span className="bg-[var(--surface)] dark:bg-[#0a0a0a] px-3 text-muted-foreground font-medium tracking-wider">
+                or
               </span>
             </div>
           </div>
 
-          {/* ── Credentials Form ─────────────────────────────────────────────── */}
-          <form onSubmit={handleLogin} className="flex flex-col gap-5">
+          {/* Credentials form */}
+          <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="businessId" className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <Label htmlFor="businessId" className="text-[12px] font-medium text-muted-foreground">
                 Business ID
               </Label>
               <Input
@@ -181,13 +191,13 @@ function LoginContent() {
                 placeholder="0000"
                 maxLength={4}
                 autoComplete="organization"
-                className="h-12 font-mono font-medium tracking-wider"
+                className="h-10 font-mono font-medium tracking-wider text-[13px]"
                 value={businessId}
                 onChange={(e) => setBusinessId(e.target.value.replace(/\D/g, '').slice(0, 4))}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="username" className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <Label htmlFor="username" className="text-[12px] font-medium text-muted-foreground">
                 Username
               </Label>
               <Input
@@ -195,13 +205,13 @@ function LoginContent() {
                 type="text"
                 required
                 autoComplete="username"
-                className="h-12 font-medium"
+                className="h-10 font-medium text-[13px]"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="loginPassword" className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <Label htmlFor="loginPassword" className="text-[12px] font-medium text-muted-foreground">
                 Password
               </Label>
               <Input
@@ -209,7 +219,7 @@ function LoginContent() {
                 type="password"
                 required
                 autoComplete="current-password"
-                className="h-12 font-medium"
+                className="h-10 font-medium text-[13px]"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -218,32 +228,32 @@ function LoginContent() {
             <Button
               type="submit"
               disabled={isSubmitting || isGoogleLoading}
-              className="w-full h-12 bg-slate-950 hover:bg-slate-900 text-white font-bold mt-2"
+              className="w-full h-10 bg-foreground hover:bg-foreground/90 text-background font-medium mt-1 text-[13px]"
             >
               {isSubmitting ? (
                 <>Authenticating<span className="animate-pulse">...</span></>
               ) : (
-                'Sign In →'
+                'Sign In'
               )}
             </Button>
           </form>
 
-          <div className="mt-8 text-center">
+          <div className="mt-6 text-center">
             <Link
               href="/sp-login"
-              className="text-xs text-slate-400 hover:text-emerald-600 transition-colors font-medium"
+              className="text-[12px] text-muted-foreground hover:text-foreground transition-colors font-medium"
             >
               System Administrator? Sign in here
             </Link>
           </div>
 
           {process.env.NODE_ENV === 'development' && (
-            <div className="mt-8 flex flex-col gap-1 text-xs text-slate-400 font-medium border-t border-slate-200 pt-6">
-              <p className="font-semibold text-slate-500 mb-2">Development accounts:</p>
-              <p className="font-semibold text-emerald-600 mb-1">Business ID: <code className="bg-emerald-50 px-1.5 py-0.5 rounded">0721</code></p>
-              <p><code className="bg-slate-100 px-1 py-0.5 rounded">manager</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Manager@1234</code></p>
-              <p><code className="bg-slate-100 px-1 py-0.5 rounded">pharmacist</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Mca@1234</code></p>
-              <p><code className="bg-slate-100 px-1 py-0.5 rounded">viewer</code> / <code className="bg-slate-100 px-1 py-0.5 rounded">Nes@1234</code></p>
+            <div className="mt-8 flex flex-col gap-1 text-[12px] text-muted-foreground font-medium border-t border-border pt-5">
+              <p className="font-medium text-foreground/70 mb-1.5">Dev accounts:</p>
+              <p className="font-medium text-[var(--active-border)] mb-1">Business ID: <code className="bg-[var(--active-bg)] px-1.5 py-0.5 rounded text-[11px]">0721</code></p>
+              <p><code className="bg-[var(--surface)] border border-border px-1 py-0.5 rounded text-[11px]">manager</code> / <code className="bg-[var(--surface)] border border-border px-1 py-0.5 rounded text-[11px]">Manager@1234</code></p>
+              <p><code className="bg-[var(--surface)] border border-border px-1 py-0.5 rounded text-[11px]">pharmacist</code> / <code className="bg-[var(--surface)] border border-border px-1 py-0.5 rounded text-[11px]">Mca@1234</code></p>
+              <p><code className="bg-[var(--surface)] border border-border px-1 py-0.5 rounded text-[11px]">viewer</code> / <code className="bg-[var(--surface)] border border-border px-1 py-0.5 rounded text-[11px]">Nes@1234</code></p>
             </div>
           )}
         </div>
@@ -252,10 +262,6 @@ function LoginContent() {
   );
 }
 
-// ── Page export wraps LoginContent in Suspense ────────────────────────────────
-// Required by Next.js App Router when useSearchParams() is used in a
-// client component — prevents the route from accidentally opting out of
-// static rendering at the boundary level.
 export default function LoginPage() {
   return (
     <Suspense>

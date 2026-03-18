@@ -17,6 +17,7 @@ import { Phone, Award, Search, ArrowRight, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
+import PageHeader from '@/components/layout/PageHeader';
 import { Input } from '@/components/ui/input';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -80,12 +81,17 @@ export default function CustomersView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground">Track customer purchases and award loyalty points.</p>
-        <Link href="/customers/new" className={buttonVariants()}>
-          <Plus /> Add Customer
+      <PageHeader
+        title="Customers"
+        description="Track customer purchases and award loyalty points."
+      >
+        <Link
+          href="/customers/new"
+          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] border border-[#484ced] bg-primary text-white text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
+        >
+          <Plus size={14} /> Add Customer
         </Link>
-      </div>
+      </PageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -93,16 +99,14 @@ export default function CustomersView() {
         <div className="lg:col-span-2 flex flex-col gap-4">
 
           {/* Search — instant client-side filtering */}
-          <div className="bg-card p-4 rounded-xl border border-border shadow-sm">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search customers by name or phone..."
-                className="pl-10"
-              />
-            </div>
+          <div className="flex items-center gap-[5px] p-[12px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors">
+            <Search size={16} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search customers by name or phone..."
+              className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-[#626369] font-normal"
+            />
           </div>
 
           <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">

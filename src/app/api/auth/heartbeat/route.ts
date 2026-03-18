@@ -4,7 +4,12 @@ import { authOptions } from '@/lib/auth/authOptions';
 import prisma from '@/lib/prisma';
 
 export async function POST() {
-  const session = await getServerSession(authOptions);
+  let session;
+  try {
+    session = await getServerSession(authOptions);
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: 'Session expired' }, { status: 401 });
+  }
   if (!session) return NextResponse.json({ ok: false }, { status: 401 });
 
   await prisma.user.update({

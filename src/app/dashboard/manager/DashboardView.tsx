@@ -9,6 +9,7 @@ import {
   Info, AlertTriangle, Clock, Calendar, ChevronDown, CircleAlert,
 } from 'lucide-react';
 import Link from 'next/link';
+import PageHeader from '@/components/layout/PageHeader';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -135,14 +136,10 @@ export default function DashboardView({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* ── Greeting ── */}
-      <div>
-        <h1 className="text-[28px] font-medium text-card-foreground">
-          {getGreeting()}, {firstName}
-          <span className="ml-1">💙</span>
-        </h1>
-        <p className="text-muted-foreground mt-1">{getFormattedDate()}</p>
-      </div>
+      <PageHeader
+        title={`${getGreeting()}, ${firstName} 🩵`}
+        description={getFormattedDate()}
+      />
 
       {/* ── Filter bar ── */}
       <div className="flex gap-3">

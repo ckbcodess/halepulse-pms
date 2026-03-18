@@ -19,7 +19,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
           </p>
           <div className="ml-auto text-xs text-slate-400">{session.user.email}</div>
         </header>
-        <div className="flex-1 overflow-y-auto p-6 lg:p-8">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">
           {children}
         </div>
       </main>

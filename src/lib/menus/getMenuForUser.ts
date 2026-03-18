@@ -28,17 +28,27 @@ export const MASTER_MENU: (MenuItem & { defaultRoles: string[] })[] = [
 function mergeWithMaster(stored: MenuItem[], role: string): MenuItem[] {
   const storedMap = new Map(stored.map(i => [i.key, i]));
   return MASTER_MENU.map(master => {
+    const path = master.key === 'dashboard' ? dashboardPathForRole(role) : master.path;
     if (storedMap.has(master.key)) {
       const s = storedMap.get(master.key)!;
-      return { key: master.key, label: master.label, path: master.path, visible: s.visible };
+      return { key: master.key, label: master.label, path, visible: s.visible };
     }
-    return { key: master.key, label: master.label, path: master.path, visible: master.defaultRoles.includes(role) };
+    return { key: master.key, label: master.label, path, visible: master.defaultRoles.includes(role) };
   });
+}
+
+function dashboardPathForRole(role: string): string {
+  if (role === 'MANAGER') return '/dashboard/manager';
+  if (role === 'MCA')     return '/dashboard/mca';
+  if (role === 'NES')     return '/dashboard/nes';
+  return '/';
 }
 
 function defaultsForRole(role: string): MenuItem[] {
   return MASTER_MENU.map(m => ({
-    key: m.key, label: m.label, path: m.path,
+    key:     m.key,
+    label:   m.label,
+    path:    m.key === 'dashboard' ? dashboardPathForRole(role) : m.path,
     visible: m.defaultRoles.includes(role),
   }));
 }

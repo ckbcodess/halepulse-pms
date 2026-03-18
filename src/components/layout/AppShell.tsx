@@ -5,8 +5,8 @@ import type { Session } from 'next-auth';
 import Sidebar from './Sidebar';
 import TopHeader from './TopHeader';
 
-// Paths that render without the sidebar shell
 const NO_SHELL_PREFIXES = ['/login', '/super-admin'];
+const COLLAPSE_KEY = 'sidebar-collapsed';
 
 interface MenuItem {
   key:     string;
@@ -24,6 +24,13 @@ interface AppShellProps {
 export default function AppShell({ children, session, menuItems }: AppShellProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Restore collapsed state from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(COLLAPSE_KEY);
+    if (stored === 'true') setCollapsed(true);
+  }, []);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -32,6 +39,13 @@ export default function AppShell({ children, session, menuItems }: AppShellProps
 
   const toggleSidebar = useCallback(() => setSidebarOpen(prev => !prev), []);
   const closeSidebar  = useCallback(() => setSidebarOpen(false), []);
+  const toggleCollapse = useCallback(() => {
+    setCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem(COLLAPSE_KEY, String(next));
+      return next;
+    });
+  }, []);
 
   const hideShell =
     !session ||
@@ -42,48 +56,40 @@ export default function AppShell({ children, session, menuItems }: AppShellProps
   }
 
   return (
-    // Figma: Body bg-[#f7f7f7] — the ash background that shows around the white card
-    <div className="flex h-screen overflow-hidden bg-[#f7f7f7] dark:bg-[#0c0c0e]">
-
-      {/* Backdrop overlay — visible on mobile when sidebar is open */}
+    <div className="flex h-screen overflow-hidden bg-[var(--surface)] dark:bg-background">
+      {/* Backdrop overlay — mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-30 lg:hidden animate-in fade-in duration-150"
           onClick={closeSidebar}
         />
       )}
 
-      {/* Sidebar sits directly on the ash background — no white bg of its own */}
+      {/* Sidebar */}
       <Sidebar
         user={session.user}
         menuItems={menuItems}
         isOpen={sidebarOpen}
         onClose={closeSidebar}
+        collapsed={collapsed}
+        onToggleCollapse={toggleCollapse}
       />
 
-      {/*
-        Figma: Main Content — px-[12px] py-[16px]
-        This padding exposes the ash background on all sides of the white card,
-        making the card appear to "float" above the background.
-      */}
-      <div className="flex-1 flex flex-col px-3 py-4 overflow-hidden min-w-0">
+      {/* Main content area — floating card on surface background */}
+      <div className="flex-1 flex flex-col p-2.5 lg:p-3.5 overflow-hidden min-w-0">
+        <div className="flex-1 flex flex-col bg-white dark:bg-[var(--surface-raised)] rounded-2xl border border-border overflow-hidden min-h-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
 
-        {/*
-          Figma: Main Content Area — bg-white, border-[0.5px] border-[rgba(0,0,0,0.1)],
-          rounded-[12px], overflow-clip, px-[80px]
-        */}
-        <div className="flex-1 flex flex-col bg-white dark:bg-[#111113] rounded-[12px] border-[0.5px] border-black/10 dark:border-white/[0.07] overflow-hidden min-h-0">
+          {/* Top header inside the card */}
+          <TopHeader
+            user={session.user}
+            onMenuToggle={toggleSidebar}
+            collapsed={collapsed}
+            onToggleCollapse={toggleCollapse}
+          />
 
-          {/* TopNav is INSIDE the white card — not a separate bar above it */}
-          <TopHeader user={session.user} onMenuToggle={toggleSidebar} />
-
-          {/*
-            Figma: gap-[64px] between TopNav and Body.
-            Achieved via pt-16 (64px) top padding on the scrollable main area.
-            Horizontal padding px-20 (80px) matches Figma's px-[80px] on the card.
-          */}
-          <main className="flex-1 overflow-y-auto">
-            <div className="px-4 sm:px-10 lg:px-20 pt-16 pb-12 animate-in fade-in duration-300">
+          {/* Scrollable content */}
+          <main className="flex-1 overflow-y-auto custom-scrollbar" style={{ scrollbarGutter: 'stable' }}>
+            <div className="px-5 sm:px-8 lg:px-12 pt-8 pb-10">
               {children}
             </div>
           </main>

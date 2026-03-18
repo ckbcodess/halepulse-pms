@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Building2, Phone, Mail, User, FileText, Shield, Check, Loader2, Lock } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 import { toast } from 'sonner';
 
 type TenantSettings = {
@@ -103,19 +104,15 @@ export default function SettingsView({
 
   return (
     <div className="max-w-3xl space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          {tenant.subdomain}.halepulse.app
-          <span className={`ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${tierColors[tenant.subscriptionTier] ?? tierColors.basic}`}>
-            {tenant.subscriptionTier}
-          </span>
-        </p>
+      <PageHeader
+        title="Settings"
+        description={`${tenant.subdomain}.halepulse.app`}
+      >
         {canEdit && (
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
+            className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] border border-[#484ced] bg-primary text-white text-[12.25px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
           >
             {isSaving ? <Loader2 size={14} className="animate-spin" /> :
              saved    ? <Check size={14} />                              :
@@ -123,7 +120,7 @@ export default function SettingsView({
             {isSaving ? 'Saving…' : saved ? 'Saved!' : 'Save Changes'}
           </button>
         )}
-      </div>
+      </PageHeader>
 
       {!canEdit && (
         <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl text-sm text-amber-700 dark:text-amber-400">

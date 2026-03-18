@@ -1,8 +1,3 @@
-// Prisma Schema — Multi-Tenant Pharmacy SaaS
-// Strategy: purely additive — all existing models are EXTENDED with nullable new fields.
-// No existing tables are dropped. No existing columns are removed or changed.
-// For PostgreSQL production: change provider to "postgresql" and update DATABASE_URL.
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,179 +7,139 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── Enums ────────────────────────────────────────────────────────────────────
-
-enum Role {
-  SUPER_ADMIN
-  MANAGER
-  MCA
-  NES
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// EXISTING MODELS — extended with nullable new fields only
-// All existing columns and behaviour are PRESERVED.
-// ═══════════════════════════════════════════════════════════════════════════════
-
 model User {
-  // ── Existing fields (unchanged) ──
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String   // Legacy MD5 hash — kept for existing session compatibility
-  role      String   // Legacy: Admin, Manager, Seller
-  contact   String?
-  createdAt DateTime @default(now())
-
-  // ── New nullable fields (additive only — existing rows get NULL) ──
-  email        String?  @unique    // Used by NextAuth credentials provider
-  passwordHash String?             // bcrypt hash for new auth system
-  saasRole     Role?               // SUPER_ADMIN | MANAGER | MCA | NES (legacy enum — deprecated by DynamicRole)
-  tenantId     String?             // FK to Tenant (nullable — super admin has no tenant)
-  tenant       Tenant?  @relation(fields: [tenantId], references: [id])
-  branchId     String?             // FK to Branch (optional)
-  branch       Branch?  @relation(fields: [branchId], references: [id])
-  isActive     Boolean  @default(true)
-  lastActiveAt DateTime?           // Updated on each authenticated request (heartbeat)
-
-  // ── Phase 1 additions: Dynamic roles & security ──
-  dynamicRoleId      String?              // FK to DynamicRole (replaces saasRole)
+  id                 Int          @id @default(autoincrement())
+  username           String       @unique
+  password           String
+  role               String
+  contact            String?
+  createdAt          DateTime     @default(now())
+  email              String?      @unique
+  passwordHash       String?
+  saasRole           Role?
+  tenantId           String?
+  branchId           String?
+  isActive           Boolean      @default(true)
+  lastActiveAt       DateTime?
+  dynamicRoleId      String?
+  businessUsername   String?
+  mustChangePassword Boolean      @default(false)
+  failedLoginCount   Int          @default(0)
+  lockedUntil        DateTime?
+  lastPasswordChange DateTime?
+  branch             Branch?      @relation(fields: [branchId], references: [id])
   dynamicRole        DynamicRole? @relation(fields: [dynamicRoleId], references: [id])
-  businessUsername   String?              // Username within a business context (for 3-field login)
-  mustChangePassword Boolean  @default(false) // Force password change on first login
-  failedLoginCount   Int      @default(0)     // Track consecutive failed login attempts
-  lockedUntil        DateTime?            // Account lockout expiry (null = not locked)
-  lastPasswordChange DateTime?            // Track when password was last changed
+  tenant             Tenant?      @relation(fields: [tenantId], references: [id])
 }
 
 model Product {
-  // ── Existing fields (unchanged) ──
-  id          Int       @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   name        String
   category    String
   price       Float
   costPrice   Float?
-  stockQty    Int       @default(0)
+  stockQty    Int        @default(0)
   expiryDate  DateTime?
   description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  tenantId    String?
+  tenant      Tenant?    @relation(fields: [tenantId], references: [id])
   saleItems   SaleItem[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  // ── New nullable field ──
-  tenantId String?
-  tenant   Tenant?  @relation(fields: [tenantId], references: [id])
 }
 
 model Category {
-  // ── Existing fields (unchanged) ──
-  id   Int    @id @default(autoincrement())
-  name String @unique
-
-  // ── New nullable field ──
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
   tenantId String?
 }
 
 model Customer {
-  // ── Existing fields (unchanged) ──
   id            Int      @id @default(autoincrement())
   name          String
-  phone         String?             // Uniqueness enforced per-tenant via @@unique below
+  phone         String?
   loyaltyPoints Int      @default(0)
-  sales         Sale[]
   createdAt     DateTime @default(now())
+  tenantId      String?
+  tenant        Tenant?  @relation(fields: [tenantId], references: [id])
+  sales         Sale[]
 
-  // ── New nullable field ──
-  tenantId String?
-  tenant   Tenant?  @relation(fields: [tenantId], references: [id])
-
-  // Per-tenant phone uniqueness (replaces the old global @unique on phone)
   @@unique([tenantId, phone])
 }
 
 model Sale {
-  // ── Existing fields (unchanged) ──
-  id          Int       @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   totalAmount Float
-  discount    Float     @default(0)
+  discount    Float      @default(0)
   paymentType String
   status      String
   customerId  Int?
-  customer    Customer? @relation(fields: [customerId], references: [id])
-  items       SaleItem[]
-  sellerId    Int       // Plain Int — no new FK relation added to avoid migration risk
-  createdAt   DateTime  @default(now())
-
-  // ── New nullable fields ──
+  sellerId    Int
+  createdAt   DateTime   @default(now())
   tenantId    String?
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
-  clientToken String?  @unique  // Idempotency key: client-generated UUID prevents double-submission
+  clientToken String?    @unique
+  miscItems   String?
+  customer    Customer?  @relation(fields: [customerId], references: [id])
+  tenant      Tenant?    @relation(fields: [tenantId], references: [id])
+  items       SaleItem[]
 }
 
 model SaleItem {
-  // ── Existing fields (unchanged) ──
   id        Int     @id @default(autoincrement())
   saleId    Int
-  sale      Sale    @relation(fields: [saleId], references: [id])
   productId Int
-  product   Product @relation(fields: [productId], references: [id])
   quantity  Int
   price     Float
+  product   Product @relation(fields: [productId], references: [id])
+  sale      Sale    @relation(fields: [saleId], references: [id])
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// NEW MODELS — multi-tenant SaaS infrastructure (all brand-new tables)
-// ═══════════════════════════════════════════════════════════════════════════════
-
 model Tenant {
-  id             String   @id @default(cuid())
-  name           String
-  subdomain      String   @unique
-  primaryColor   String   @default("#6366f1")
-  secondaryColor String   @default("#8b5cf6")
-  baseColor      String?  @default("#6366f1")
-  logoUrl        String?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-
-  // ── Phase 1 additions: Business entity fields (from spec) ──
-  businessId       String?  @unique        // Human-readable Business ID (e.g., "PH-00001")
-  legalName        String?                 // Legal business name
-  address          String?                 // Full business address
-  licenceNumber    String?                 // Pharmacy licence number
-  taxVatNumber     String?                 // Tax/VAT registration number
-  subscriptionTier String   @default("basic") // "basic" | "standard" | "premium"
-  primaryContact   String?                 // Primary contact person name
-  primaryPhone     String?                 // Contact phone number
-  primaryEmail     String?                 // Contact email
-
-  // ── Existing relations ──
-  users           User[]
-  products        Product[]
-  customers       Customer[]
-  sales           Sale[]
-  branches        Branch[]
-  rolePermissions RolePermission[]
-  menuConfigs     MenuConfig[]
-  auditLogs       AuditLog[]
-
-  // ── New relations (Phase 1) ──
-  dynamicRoles            DynamicRole[]
-  dynamicRolePermissions  DynamicRolePermission[]
-  dynamicMenuConfigs      DynamicMenuConfig[]
-  featureFlags            TenantFeatureFlag[]
-  loginAttempts           LoginAttempt[]
+  id                     String                  @id @default(cuid())
+  name                   String
+  subdomain              String                  @unique
+  primaryColor           String                  @default("#6366f1")
+  secondaryColor         String                  @default("#8b5cf6")
+  logoUrl                String?
+  isActive               Boolean                 @default(true)
+  createdAt              DateTime                @default(now())
+  businessId             String?                 @unique
+  legalName              String?
+  address                String?
+  licenceNumber          String?
+  taxVatNumber           String?
+  subscriptionTier       String                  @default("basic")
+  primaryContact         String?
+  primaryPhone           String?
+  primaryEmail           String?
+  baseColor              String?                 @default("#6366f1")
+  contrast               Float?                  @default(0.7)
+  customSidebar          Boolean                 @default(false)
+  sidebarColor           String?
+  auditLogs              AuditLog[]
+  branches               Branch[]
+  customers              Customer[]
+  dynamicMenuConfigs     DynamicMenuConfig[]
+  dynamicRoles           DynamicRole[]
+  dynamicRolePermissions DynamicRolePermission[]
+  loginAttempts          LoginAttempt[]
+  menuConfigs            MenuConfig[]
+  products               Product[]
+  rolePermissions        RolePermission[]
+  sales                  Sale[]
+  featureFlags           TenantFeatureFlag[]
+  users                  User[]
 }
 
 model Branch {
   id       String  @id @default(cuid())
   name     String
   tenantId String
-  tenant   Tenant  @relation(fields: [tenantId], references: [id])
   address  String?
   phone    String?
   isActive Boolean @default(true)
-
-  users User[]
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  users    User[]
 }
 
 model Permission {
@@ -197,9 +152,9 @@ model Permission {
 model RolePermission {
   id            String @id @default(cuid())
   tenantId      String
-  tenant        Tenant @relation(fields: [tenantId], references: [id])
   role          Role
   permissionKey String
+  tenant        Tenant @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, role, permissionKey])
 }
@@ -207,48 +162,39 @@ model RolePermission {
 model MenuConfig {
   id        String @id @default(cuid())
   tenantId  String
-  tenant    Tenant @relation(fields: [tenantId], references: [id])
   role      Role
-  menuItems String // JSON array: [{ key, label, path, visible }]
+  menuItems String
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, role])
 }
 
 model AuditLog {
   id        String   @id @default(cuid())
-  // userId stored as string (Int cast to string for existing users, cuid for future)
-  // No Prisma @relation here — avoids Int/String type mismatch with legacy User.id
   userId    String
   tenantId  String?
-  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
   action    String
-  metadata  String?  // JSON string
+  metadata  String?
   createdAt DateTime @default(now())
   ipAddress String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 1 — Dynamic Roles, Feature Flags, Login Security
-// These models replace the hard-coded Role enum with a flexible, per-tenant
-// role system and add feature flag infrastructure.
-// ═══════════════════════════════════════════════════════════════════════════════
-
 model DynamicRole {
-  id          String   @id @default(cuid())
-  tenantId    String?                          // null = system-level role (e.g., Super Admin)
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
-  name        String                           // Display name: "Pharmacist", "Branch Manager"
-  slug        String                           // Machine name: "pharmacist", "branch_manager"
+  id          String                  @id @default(cuid())
+  tenantId    String?
+  name        String
+  slug        String
   description String?
-  level       Int      @default(3)             // Hierarchy: 0=SuperAdmin, 1=BusinessAdmin, 2=Manager, 3=Viewer
-  isSystem    Boolean  @default(false)         // true = cannot be deleted/renamed by tenant
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  level       Int                     @default(3)
+  isSystem    Boolean                 @default(false)
+  isActive    Boolean                 @default(true)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  menuConfigs DynamicMenuConfig[]
+  tenant      Tenant?                 @relation(fields: [tenantId], references: [id])
   permissions DynamicRolePermission[]
   users       User[]
-  menuConfigs DynamicMenuConfig[]
 
   @@unique([tenantId, slug])
 }
@@ -256,9 +202,9 @@ model DynamicRole {
 model DynamicRolePermission {
   id            String      @id @default(cuid())
   dynamicRoleId String
-  dynamicRole   DynamicRole @relation(fields: [dynamicRoleId], references: [id], onDelete: Cascade)
   permissionKey String
   tenantId      String
+  dynamicRole   DynamicRole @relation(fields: [dynamicRoleId], references: [id], onDelete: Cascade)
   tenant        Tenant      @relation(fields: [tenantId], references: [id])
 
   @@unique([dynamicRoleId, permissionKey])
@@ -267,33 +213,32 @@ model DynamicRolePermission {
 model DynamicMenuConfig {
   id            String      @id @default(cuid())
   dynamicRoleId String
-  dynamicRole   DynamicRole @relation(fields: [dynamicRoleId], references: [id], onDelete: Cascade)
   tenantId      String
+  menuItems     String
+  dynamicRole   DynamicRole @relation(fields: [dynamicRoleId], references: [id], onDelete: Cascade)
   tenant        Tenant      @relation(fields: [tenantId], references: [id])
-  menuItems     String                         // JSON array: [{ key, label, path, icon, visible }]
 
   @@unique([dynamicRoleId, tenantId])
 }
 
 model FeatureFlag {
-  id           String   @id @default(cuid())
-  key          String   @unique                // e.g., "module.pos", "module.mca_compliance"
-  label        String                          // Human-readable name
+  id           String              @id @default(cuid())
+  key          String              @unique
+  label        String
   description  String?
-  category     String                          // "module", "ui", "integration"
-  isGloballyOn Boolean  @default(false)        // If true, ON for all tenants regardless
-  createdAt    DateTime @default(now())
-
-  tenantFlags TenantFeatureFlag[]
+  category     String
+  isGloballyOn Boolean             @default(false)
+  createdAt    DateTime            @default(now())
+  tenantFlags  TenantFeatureFlag[]
 }
 
 model TenantFeatureFlag {
   id            String      @id @default(cuid())
   tenantId      String
-  tenant        Tenant      @relation(fields: [tenantId], references: [id])
   featureFlagId String
-  featureFlag   FeatureFlag @relation(fields: [featureFlagId], references: [id])
   isEnabled     Boolean     @default(false)
+  featureFlag   FeatureFlag @relation(fields: [featureFlagId], references: [id])
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, featureFlagId])
 }
@@ -303,9 +248,16 @@ model LoginAttempt {
   email     String?
   username  String?
   tenantId  String?
-  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
   success   Boolean
   ipAddress String?
   userAgent String?
   createdAt DateTime @default(now())
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+}
+
+enum Role {
+  SUPER_ADMIN
+  MANAGER
+  MCA
+  NES
 }

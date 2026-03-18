@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist_Mono, Instrument_Sans } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { DynamicThemeProvider } from '@/components/dynamic-theme-provider';
@@ -15,7 +15,7 @@ import ReactQueryProvider from '@/components/providers/ReactQueryProvider';
 import { getMenuForUser } from '@/lib/menus/getMenuForUser';
 import { getImpersonation } from '@/lib/auth/getImpersonation';
 
-const instrumentSans = Instrument_Sans({ variable: '--font-sans', subsets: ['latin'] });
+const geist = Geist({ variable: '--font-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -24,7 +24,12 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
+  let session = null;
+  try {
+    session = await getServerSession(authOptions);
+  } catch (error) {
+    console.error('NextAuth session decryption failed. This usually happens after a secret change. Clearing session.');
+  }
 
   // Load tenant branding for CSS variable injection
   let baseColor = '#6366f1';
@@ -54,10 +59,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${instrumentSans.variable} ${geistMono.variable}`}
+      className={`${geist.variable} ${geistMono.variable}`}
     >
       <head>
         <style dangerouslySetInnerHTML={{ __html: brandingCSS }} />
+        {/* figma capture — remove after capture */}
+        <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
       </head>
       <body className="antialiased">
         <ReactQueryProvider>
