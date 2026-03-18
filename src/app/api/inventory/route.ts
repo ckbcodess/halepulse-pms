@@ -34,7 +34,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
-      where.category = category;
+      const cats = category.split(',').map(c => c.trim()).filter(Boolean);
+      where.category = cats.length === 1 ? cats[0] : { in: cats };
     }
 
     const now      = new Date();

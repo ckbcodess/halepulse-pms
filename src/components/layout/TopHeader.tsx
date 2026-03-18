@@ -10,8 +10,6 @@ import { signOut } from 'next-auth/react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
-  DropdownMenuPortal,
-  DropdownMenuPositioner,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -148,21 +146,17 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
             <ChevronDown size={14} className="text-muted-foreground hidden sm:block flex-shrink-0" />
           </DropdownMenuTrigger>
 
-          <DropdownMenuPortal>
-            <DropdownMenuPositioner align="end" sideOffset={8}>
-              <DropdownMenuContent>
-                <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-rose-600 hover:bg-rose-50 focus:bg-rose-50 dark:hover:bg-rose-950/40 dark:focus:bg-rose-950/40"
-                  onClick={() => signOut({ callbackUrl: '/login' })}
-                >
-                  <LogOut size={14} />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenuPositioner>
-          </DropdownMenuPortal>
+          <DropdownMenuContent align="end" sideOffset={8}>
+            <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-rose-600 hover:bg-rose-50 focus:bg-rose-50 dark:hover:bg-rose-950/40 dark:focus:bg-rose-950/40"
+              onClick={() => signOut({ callbackUrl: '/login' })}
+            >
+              <LogOut size={14} />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
         </DropdownMenu>
 
       </div>

@@ -14,8 +14,12 @@ import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-quer
 import {
   Search, PackagePlus, ArrowRight, Plus, Upload,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-  AlertTriangle, Clock, TrendingDown, PackageX, ChevronDown,
+  AlertTriangle, Clock, TrendingDown, PackageX, ChevronDown, Check,
 } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuGroup, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 import { updateProduct, addStock } from '@/app/actions';
 import Link from 'next/link';
 import PageHeader from '@/components/layout/PageHeader';
@@ -96,11 +100,11 @@ const SORT_OPTIONS = [
 // ── Fetchers ──────────────────────────────────────────────────────────────────
 async function fetchInventory(
   page: number, limit: number, search: string,
-  filter: ActiveFilter, category: string, sort: string,
+  filter: ActiveFilter, categories: string[], sort: string,
 ): Promise<PaginatedResponse> {
   const params = new URLSearchParams({ page: page.toString(), limit: limit.toString(), filter, sort });
-  if (search)   params.set('search', search);
-  if (category) params.set('category', category);
+  if (search)             params.set('search', search);
+  if (categories.length)  params.set('category', categories.join(','));
   const res = await fetch(`/api/inventory?${params}`);
   if (!res.ok) throw new Error('Failed to load inventory');
   return res.json();
@@ -189,8 +193,8 @@ export default function InventoryView() {
   const [activeFilter, setActiveFilter]     = useState<ActiveFilter>('all');
   const [searchInput, setSearchInput]       = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState('');
-  const [activeSort, setActiveSort]         = useState('name_asc');
+  const [activeCategories, setActiveCategories] = useState<string[]>([]);
+  const [activeSort, setActiveSort]             = useState('name_asc');
 
   // Debounce search
   useEffect(() => {
@@ -199,8 +203,14 @@ export default function InventoryView() {
   }, [searchInput]);
 
   const handleFilterChange = (f: ActiveFilter) => { setActiveFilter(f); setPage(1); };
-  const handleCategoryChange = (c: string)    => { setActiveCategory(c); setPage(1); };
-  const handleSortChange = (s: string)        => { setActiveSort(s); setPage(1); };
+  const toggleCategory = (c: string) => {
+    setActiveCategories(prev =>
+      prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
+    );
+    setPage(1);
+  };
+  const clearCategories = () => { setActiveCategories([]); setPage(1); };
+  const handleSortChange = (s: string) => { setActiveSort(s); setPage(1); };
 
   // ── Queries ────────────────────────────────────────────────────────────────
   const { data: summary } = useQuery<Summary>({
@@ -210,8 +220,8 @@ export default function InventoryView() {
   });
 
   const { data, isLoading, isFetching } = useQuery<PaginatedResponse>({
-    queryKey:  ['inventory', page, PAGE_SIZE, debouncedSearch, activeFilter, activeCategory, activeSort],
-    queryFn:   () => fetchInventory(page, PAGE_SIZE, debouncedSearch, activeFilter, activeCategory, activeSort),
+    queryKey:  ['inventory', page, PAGE_SIZE, debouncedSearch, activeFilter, activeCategories, activeSort],
+    queryFn:   () => fetchInventory(page, PAGE_SIZE, debouncedSearch, activeFilter, activeCategories, activeSort),
     staleTime: 2 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
@@ -352,14 +362,14 @@ export default function InventoryView() {
 
       {/* ── Search + Filters Toolbar ─────────────────────────────────────────── */}
       <div
-        className="flex flex-col gap-3 animate-in slide-in-from-bottom-3 fade-in duration-500 ease-out-expo fill-mode-both"
+        className="flex items-center gap-[32px] overflow-x-auto animate-in slide-in-from-bottom-3 fade-in duration-500 ease-out-expo fill-mode-both"
         style={{ animationDelay: '100ms' }}
       >
-        {/* Row 1: Search + Category + Sort */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        {/* Left: Search + Category + Sort */}
+        <div className="flex items-center gap-[24px] shrink-0">
 
           {/* Search */}
-          <div className="flex-1 flex items-center gap-[5px] p-[12px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors">
+          <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors w-[342px]">
             <Search size={16} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
             <input
               value={searchInput}
@@ -369,44 +379,80 @@ export default function InventoryView() {
             />
           </div>
 
-          {/* Category select */}
-          <div className="relative flex items-center">
-            <select
-              value={activeCategory}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="appearance-none h-full pl-[12px] pr-[32px] border border-border rounded-[8px] bg-background text-[12.25px] text-foreground font-medium focus:outline-none focus:border-primary/40 transition-colors cursor-pointer min-w-[140px]"
+          {/* Category multi-select dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<button className={`flex items-center justify-between h-[44px] w-[145px] pl-[13px] pr-[10px] border rounded-[8px] bg-background text-[12.25px] font-normal hover:border-primary/40 focus:outline-none transition-colors cursor-pointer ${activeCategories.length > 0 ? 'border-primary/40 text-foreground' : 'border-border text-muted-foreground'}`} />}
             >
-              <option value="">All Categories</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            <ChevronDown size={13} className="absolute right-[10px] pointer-events-none text-muted-foreground" />
-          </div>
+              <span className="truncate flex items-center gap-1.5">
+                {activeCategories.length > 0 ? 'Categories' : 'All Categories'}
+                {activeCategories.length > 0 && (
+                  <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-primary text-white text-[10px] font-bold leading-none shrink-0">
+                    {activeCategories.length}
+                  </span>
+                )}
+              </span>
+              <ChevronDown size={13} className="shrink-0 text-muted-foreground" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[180px]" align="start">
+              {activeCategories.length > 0 && (
+                <>
+                  <DropdownMenuItem onClick={clearCategories} className="text-muted-foreground text-[11px]">
+                    Clear selection
+                  </DropdownMenuItem>
+                  <div role="separator" className="-mx-1 my-1 h-px bg-border" />
+                </>
+              )}
+              <DropdownMenuGroup>
+                {categories.map((c) => {
+                  const selected = activeCategories.includes(c);
+                  return (
+                    <DropdownMenuItem
+                      key={c}
+                      closeOnClick={false}
+                      onClick={() => toggleCategory(c)}
+                      className="gap-2.5"
+                    >
+                      <div className={`w-[15px] h-[15px] rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${selected ? 'bg-primary border-primary' : 'border-border bg-background'}`}>
+                        {selected && <Check size={10} className="text-white" strokeWidth={2.5} />}
+                      </div>
+                      <span className="flex-1 text-[12.25px]">{c}</span>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          {/* Sort select */}
-          <div className="relative flex items-center">
-            <select
-              value={activeSort}
-              onChange={(e) => handleSortChange(e.target.value)}
-              className="appearance-none h-full pl-[12px] pr-[32px] border border-border rounded-[8px] bg-background text-[12.25px] text-foreground font-medium focus:outline-none focus:border-primary/40 transition-colors cursor-pointer min-w-[130px]"
+          {/* Sort dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<button className="flex items-center justify-between h-[44px] w-[145px] pl-[13px] pr-[10px] border border-border rounded-[8px] bg-background text-[12.25px] text-muted-foreground font-normal hover:border-primary/40 focus:outline-none transition-colors cursor-pointer" />}
             >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-            <ChevronDown size={13} className="absolute right-[10px] pointer-events-none text-muted-foreground" />
-          </div>
+              <span className="truncate">{SORT_OPTIONS.find(o => o.value === activeSort)?.label ?? 'Name A→Z'}</span>
+              <ChevronDown size={13} className="shrink-0 text-muted-foreground" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[145px]" align="start">
+              <DropdownMenuGroup>
+                {SORT_OPTIONS.map((o) => (
+                  <DropdownMenuItem key={o.value} onClick={() => handleSortChange(o.value)}>
+                    <span className="flex-1">{o.label}</span>
+                    {activeSort === o.value && <Check size={12} className="text-primary" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {/* Row 2: Filter tabs */}
-        <div className="flex items-center gap-[5.25px] p-[6px] bg-primary/5 rounded-[8.75px] overflow-x-auto">
+        {/* Right: Filter tabs */}
+        <div className="flex items-center gap-[5.25px] pl-[6px] bg-primary/5 rounded-[8.75px] h-[48px] shrink-0">
           {FILTERS.map(({ key, label }) => (
             <button
               key={key}
               type="button"
               onClick={() => handleFilterChange(key)}
-              className={`rounded-[8px] whitespace-nowrap transition-all duration-150 text-[10.5px] font-medium capitalize px-[13px] py-[9px] border ${
+              className={`rounded-[8px] whitespace-nowrap transition-all duration-150 text-[10.5px] font-medium px-[13px] h-[35.75px] border ${
                 activeFilter === key
                   ? 'bg-card border-border/10 shadow-[0px_8px_30px_0px_rgba(0,0,0,0.04)] text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
