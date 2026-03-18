@@ -1,12 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, ShoppingCart, Package, Users,
-  Settings, LogOut, FileText, UserCog, X, PanelLeftClose, PanelLeftOpen,
+  Settings, FileText, UserCog, X, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   dashboard:  LayoutDashboard,
@@ -38,19 +37,28 @@ interface SidebarProps {
   onToggleCollapse?: () => void;
 }
 
-const DEFAULT_ITEMS: MenuItem[] = [
-  { key: 'dashboard', label: 'Dashboard',     path: '/',          visible: true },
-  { key: 'pos',       label: 'Point of Sale',  path: '/pos',       visible: true },
-  { key: 'customers', label: 'Customers',      path: '/customers', visible: true },
-  { key: 'inventory', label: 'Inventory',      path: '/inventory', visible: true },
-];
+const ROLE_DASHBOARD: Record<string, string> = {
+  MANAGER: '/dashboard/manager',
+  MCA:     '/dashboard/mca',
+  NES:     '/dashboard/nes',
+};
+
+function getDefaultItems(role: string): MenuItem[] {
+  const dashPath = ROLE_DASHBOARD[role] ?? '/dashboard/manager';
+  return [
+    { key: 'dashboard', label: 'Dashboard',     path: dashPath,     visible: true },
+    { key: 'pos',       label: 'Point of Sale',  path: '/pos',       visible: true },
+    { key: 'customers', label: 'Customers',      path: '/customers', visible: true },
+    { key: 'inventory', label: 'Inventory',      path: '/inventory', visible: true },
+  ];
+}
 
 export default function Sidebar({
   user, menuItems, isOpen = false, onClose,
   collapsed = false, onToggleCollapse,
 }: SidebarProps) {
   const pathname = usePathname();
-  const items = (menuItems ?? DEFAULT_ITEMS).filter(i => i.visible);
+  const items = (menuItems ?? getDefaultItems(user.role)).filter(i => i.visible);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   // Prevent body scroll when mobile sidebar is open
@@ -68,7 +76,7 @@ export default function Sidebar({
       className={`
         fixed inset-y-0 left-0 z-40
         flex flex-col
-        border-r border-border bg-[var(--surface)]
+        bg-[var(--surface)]
         transition-all duration-200 ease-[cubic-bezier(0.25,0.1,0.25,1)]
         lg:relative lg:z-20 lg:translate-x-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -76,29 +84,60 @@ export default function Sidebar({
       `}
       style={{ width: collapsed ? 68 : 260 }}
     >
-      {/* ── Header: Logo + collapse toggle ── */}
+      {/* ── Header ── */}
       <div className={`flex items-center h-14 flex-shrink-0 border-b border-border ${collapsed ? 'justify-center px-0' : 'justify-between px-4'}`}>
-        {!collapsed && (
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
-              style={{ background: 'var(--primary-color, #6366f1)' }}
-            >
-              <span className="text-white text-xs font-medium leading-none">H</span>
-            </div>
-            <span className="text-[13px] font-medium text-foreground/90 tracking-tight truncate">
-              HalePulse
-            </span>
-          </div>
-        )}
 
-        {collapsed && (
-          <div
-            className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
-            style={{ background: 'var(--primary-color, #6366f1)' }}
+        {collapsed ? (
+          /* Collapsed: purple "H" box fades out on hover, bare expand icon fades in */
+          <button
+            onClick={onToggleCollapse}
+            className="group/logo relative w-7 h-7 flex items-center justify-center flex-shrink-0 hidden lg:flex"
+            aria-label="Expand sidebar"
           >
-            <span className="text-white text-xs font-medium leading-none">H</span>
-          </div>
+            {/* Purple container — fades out on hover */}
+            <span className="
+              absolute inset-0 rounded-md flex items-center justify-center
+              transition-opacity duration-150 group-hover/logo:opacity-0
+            " style={{ background: 'var(--primary-color, #6366f1)' }}>
+              <span className="text-white text-xs font-medium leading-none">H</span>
+            </span>
+            {/* Bare expand icon — fades in on hover, no container */}
+            <PanelLeftOpen
+              size={16}
+              strokeWidth={1.7}
+              className="relative text-muted-foreground opacity-0 transition-opacity duration-150 group-hover/logo:opacity-100"
+            />
+          </button>
+        ) : (
+          /* Expanded: static logo on left, separate collapse button on right */
+          <>
+            <div className="flex items-center gap-3 min-w-0 group/brand cursor-default">
+              {/* Static purple logo */}
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20 transition-transform group-hover/brand:scale-110"
+                style={{ background: 'var(--primary, #6366f1)' }}
+              >
+                <span className="text-white text-[14px] font-black leading-none">H</span>
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[14px] font-bold text-foreground tracking-tight leading-none">
+                  HalePulse
+                </span>
+                <span className="text-[10px] text-muted-foreground/60 font-semibold uppercase tracking-widest mt-0.5">
+                  Pharmacy
+                </span>
+              </div>
+            </div>
+
+            {/* Collapse button — far right, desktop only */}
+            <button
+              onClick={onToggleCollapse}
+              className="p-1.5 rounded-lg border border-transparent hover:border-border hover:bg-muted/50 hidden lg:flex text-muted-foreground transition-all"
+              aria-label="Collapse sidebar"
+            >
+              <PanelLeftClose size={16} strokeWidth={2} />
+            </button>
+          </>
         )}
 
         {/* Mobile close */}
@@ -109,31 +148,7 @@ export default function Sidebar({
         >
           <X size={16} />
         </button>
-
-        {/* Desktop collapse toggle */}
-        {!collapsed && (
-          <button
-            onClick={onToggleCollapse}
-            className="p-1.5 rounded-md surface-interactive hidden lg:flex text-muted-foreground"
-            aria-label="Collapse sidebar"
-          >
-            <PanelLeftClose size={16} />
-          </button>
-        )}
       </div>
-
-      {/* ── Expand button when collapsed (desktop) ── */}
-      {collapsed && (
-        <div className="hidden lg:flex justify-center pt-3 pb-1">
-          <button
-            onClick={onToggleCollapse}
-            className="p-1.5 rounded-md surface-interactive text-muted-foreground"
-            aria-label="Expand sidebar"
-          >
-            <PanelLeftOpen size={16} />
-          </button>
-        </div>
-      )}
 
       {/* ── Navigation ── */}
       <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-3 ${collapsed ? 'px-2' : 'px-3'}`}>
@@ -147,7 +162,8 @@ export default function Sidebar({
             const Icon = ICON_MAP[item.key] ?? Package;
             const isActive =
               pathname === item.path ||
-              (item.path !== '/' && pathname.startsWith(item.path));
+              (item.key === 'dashboard' && pathname.startsWith('/dashboard')) ||
+              (item.key !== 'dashboard' && pathname.startsWith(item.path));
 
             if (collapsed) {
               return (
@@ -188,61 +204,27 @@ export default function Sidebar({
             }
 
             return (
-              <Link
-                key={item.key}
-                href={item.path}
-                onClick={onClose}
-                className={`
-                  relative flex items-center gap-2.5 px-2.5 h-9 text-[13px] font-medium
-                  rounded-md transition-all duration-120
-                  ${isActive
-                    ? 'bg-[var(--active-bg)] text-[var(--active-border)]'
-                    : 'text-muted-foreground surface-interactive hover:text-foreground'
-                  }
-                `}
-              >
-                {isActive && (
-                  <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-r-full bg-[var(--active-border)]" />
-                )}
-                <Icon size={18} strokeWidth={1.7} />
-                <span className="leading-none">{item.label}</span>
-              </Link>
+                <Link
+                  key={item.key}
+                  href={item.path}
+                  onClick={onClose}
+                  className={`
+                    relative flex items-center gap-3 px-3 h-10 text-[13px] font-semibold
+                    rounded-xl transition-all duration-200
+                    ${isActive
+                      ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                    }
+                  `}
+                >
+                  <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                  <span className="leading-none">{item.label}</span>
+                </Link>
             );
           })}
         </div>
       </nav>
 
-      {/* ── Footer: Sign out + branding ── */}
-      <div className={`flex-shrink-0 border-t border-border ${collapsed ? 'px-2 py-3' : 'px-3 py-3'}`}>
-        {collapsed ? (
-          <div className="relative group">
-            <button
-              onClick={() => signOut({ callbackUrl: '/login' })}
-              className="flex items-center justify-center w-full h-9 rounded-md text-muted-foreground surface-interactive hover:text-rose-600 dark:hover:text-rose-400"
-            >
-              <LogOut size={16} strokeWidth={1.7} />
-            </button>
-            <div className="
-              absolute left-full top-1/2 -translate-y-1/2 ml-2
-              px-2.5 py-1.5 rounded-md
-              bg-foreground text-background text-[12px] font-medium
-              opacity-0 pointer-events-none group-hover:opacity-100
-              transition-opacity duration-150 whitespace-nowrap z-50
-              shadow-sm
-            ">
-              Sign Out
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="w-full flex items-center gap-2.5 px-2.5 h-9 text-[13px] font-medium text-muted-foreground rounded-md surface-interactive hover:text-rose-600 dark:hover:text-rose-400"
-          >
-            <LogOut size={16} strokeWidth={1.7} />
-            <span>Sign Out</span>
-          </button>
-        )}
-      </div>
     </aside>
   );
 }

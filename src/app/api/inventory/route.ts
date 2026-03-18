@@ -1,23 +1,53 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getTenantContext } from '@/lib/auth/getTenantContext';
 import prisma from '@/lib/prisma';
 import { createProductSchema } from '@/lib/validation/schemas';
 import { ZodError } from 'zod';
+import { Prisma } from '@prisma/client';
 
 // ── GET /api/inventory ────────────────────────────────────────────────────────
-// Returns all tenant products as JSON. Used by React Query on the client for
-// client-side caching and instant re-navigation without a server round-trip.
-// All products are returned (no limit) so the client can filter in memory.
-export async function GET() {
+// Paginated inventory endpoint. Supports query params:
+//   page   – 1-based page number   (default 1)
+//   limit  – items per page         (default 20, max 100)
+//   search – case-insensitive name search
+//   filter – 'all' | 'low' | 'expired'
+export async function GET(request: NextRequest) {
   try {
     const { tenantId } = await getTenantContext();
+    const params = request.nextUrl.searchParams;
 
-    const products = await prisma.product.findMany({
-      where:   { tenantId },
-      orderBy: { name: 'asc' },
-    });
+    const page   = Math.max(1, parseInt(params.get('page')  ?? '1', 10));
+    const limit  = Math.min(100, Math.max(1, parseInt(params.get('limit') ?? '20', 10)));
+    const search = params.get('search')?.trim() ?? '';
+    const filter = params.get('filter') ?? 'all';
 
-    // Serialize Date objects — JSON.stringify doesn't handle them reliably
+    // ── Build where clause ──
+    const where: Prisma.ProductWhereInput = { tenantId };
+
+    if (search) {
+      where.name = { contains: search.toUpperCase() };
+    }
+
+    const now = new Date();
+
+    if (filter === 'low') {
+      where.stockQty = { lte: 5 };
+    } else if (filter === 'expired') {
+      where.expiryDate = { lt: now };
+    }
+
+    // ── Parallel count + fetch ──
+    const [total, products] = await Promise.all([
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        skip:    (page - 1) * limit,
+        take:    limit,
+      }),
+    ]);
+
+    // Serialize Date objects
     const serialized = products.map((p) => ({
       ...p,
       createdAt:  p.createdAt.toISOString(),
@@ -25,7 +55,13 @@ export async function GET() {
       expiryDate: p.expiryDate ? p.expiryDate.toISOString() : null,
     }));
 
-    return NextResponse.json(serialized);
+    return NextResponse.json({
+      items:      serialized,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (err: any) {
     if (err.message === 'Unauthorized' || err.message === 'No tenant context') {
       return NextResponse.json({ error: err.message }, { status: 401 });

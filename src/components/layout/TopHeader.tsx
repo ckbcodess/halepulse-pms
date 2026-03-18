@@ -1,7 +1,18 @@
 'use client';
 import { usePathname } from 'next/navigation';
-import { Bell, Menu, ChevronDown, Sun, Moon, Search } from 'lucide-react';
+import { Bell, Menu, ChevronDown, Sun, Moon, LogOut } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { signOut } from 'next-auth/react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuPortal,
+  DropdownMenuPositioner,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
 
 interface TopHeaderProps {
   user: {
@@ -47,11 +58,11 @@ function ThemeToggleButton() {
   return (
     <button
       onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-      className="w-8 h-8 flex items-center justify-center rounded-md surface-interactive text-muted-foreground"
+      className="w-7 h-7 flex items-center justify-center rounded-[7px] hover:bg-muted/50 text-muted-foreground transition-all"
       aria-label="Toggle theme"
     >
-      <Sun className="h-4 w-4 dark:hidden block" />
-      <Moon className="h-4 w-4 hidden dark:block" />
+      <Sun className="h-3.5 w-3.5 dark:hidden block" />
+      <Moon className="h-3.5 w-3.5 hidden dark:block" />
     </button>
   );
 }
@@ -74,7 +85,7 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
     .toUpperCase();
 
   return (
-    <header className="h-12 flex items-center justify-between flex-shrink-0 border-b border-border px-5 sm:px-8 lg:px-12">
+    <header className="h-[54px] flex items-center justify-between flex-shrink-0 border-b border-border px-5 sm:px-8 lg:px-12">
 
       {/* Left: hamburger (mobile) + page title */}
       <div className="flex items-center gap-2.5">
@@ -91,49 +102,62 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
         </h1>
       </div>
 
-      {/* Right side */}
-      <div className="flex items-center gap-1.5">
-
-        {/* Search hint */}
-        <button className="hidden sm:flex items-center gap-2 h-8 px-3 rounded-md border border-border text-muted-foreground surface-interactive mr-1">
-          <Search size={14} />
-          <span className="text-[12px] font-medium">Search</span>
-          <kbd className="hidden lg:inline text-[10px] font-medium bg-[var(--surface)] border border-border rounded px-1.5 py-0.5 ml-2 text-muted-foreground/70">
-            /
-          </kbd>
-        </button>
+      {/* Right side — matches Figma Control Panel (node 156:67) */}
+      <div className="flex items-center gap-2 py-1">
 
         {/* Notification */}
-        <button className="relative w-8 h-8 flex items-center justify-center rounded-md surface-interactive text-muted-foreground">
-          <Bell size={16} />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-[var(--surface-raised)]" />
+        <button className="relative w-[31.5px] h-[31.5px] flex items-center justify-center rounded-[12.25px] hover:bg-muted/50 text-muted-foreground transition-all">
+          <Bell size={16} strokeWidth={2} />
+          <span className="absolute top-[6px] right-[6px] w-[7px] h-[7px] bg-[#ff2056] rounded-full" />
         </button>
 
         {/* Theme toggle */}
         <ThemeToggleButton />
 
         {/* Separator */}
-        <div className="w-px h-5 bg-border mx-1.5 flex-shrink-0" />
+        <div className="w-px h-[17.5px] bg-[rgba(8,9,14,0.08)] flex-shrink-0" />
 
-        {/* User profile */}
-        <button className="flex items-center gap-2.5 rounded-md surface-interactive px-2 py-1.5 -mr-2">
-          <div className="w-7 h-7 rounded-md bg-[var(--active-bg)] flex items-center justify-center flex-shrink-0">
-            <span className="text-[11px] font-medium text-[var(--active-border)] leading-none">
-              {initials}
-            </span>
-          </div>
+        {/* User profile dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button className="flex items-center gap-[10.5px] rounded-[12.25px] hover:bg-muted/50 px-[7px] py-2 transition-all" />
+            }
+          >
+            <div className="w-7 h-7 rounded-[8.75px] bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20">
+              <span className="text-[11px] font-bold text-primary leading-none">
+                {initials}
+              </span>
+            </div>
 
-          <div className="hidden sm:flex flex-col items-start min-w-0">
-            <span className="text-[13px] font-medium text-foreground leading-tight truncate">
-              {displayName}
-            </span>
-            <span className="text-[11px] text-muted-foreground leading-tight truncate">
-              {roleLabel}
-            </span>
-          </div>
+            <div className="hidden sm:flex flex-col items-start min-w-0">
+              <span className="text-[13px] font-medium text-foreground leading-[16.25px] truncate">
+                {displayName}
+              </span>
+              <span className="text-[10px] text-muted-foreground/70 font-medium leading-[12.5px] truncate">
+                {roleLabel}
+              </span>
+            </div>
 
-          <ChevronDown size={14} className="text-muted-foreground hidden sm:block flex-shrink-0" />
-        </button>
+            <ChevronDown size={14} className="text-muted-foreground hidden sm:block flex-shrink-0" />
+          </DropdownMenuTrigger>
+
+          <DropdownMenuPortal>
+            <DropdownMenuPositioner align="end" sideOffset={8}>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-rose-600 hover:bg-rose-50 focus:bg-rose-50 dark:hover:bg-rose-950/40 dark:focus:bg-rose-950/40"
+                  onClick={() => signOut({ callbackUrl: '/login' })}
+                >
+                  <LogOut size={14} />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenuPositioner>
+          </DropdownMenuPortal>
+        </DropdownMenu>
 
       </div>
     </header>

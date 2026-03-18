@@ -78,6 +78,7 @@ model Sale {
   createdAt   DateTime   @default(now())
   tenantId    String?
   clientToken String?    @unique
+  miscItems   String?
   customer    Customer?  @relation(fields: [customerId], references: [id])
   tenant      Tenant?    @relation(fields: [tenantId], references: [id])
   items       SaleItem[]

@@ -1,23 +1,20 @@
 'use client';
 
 /**
- * InventoryView — client component that owns the full inventory UI.
+ * InventoryView — client component with server-side pagination.
  *
  * Data strategy:
- * - useQuery fetches /api/inventory once and caches for 5 minutes.
- * - Re-navigating to /inventory within 5 minutes renders instantly from cache.
- * - After edit/stockIn mutations, invalidateQueries triggers a silent background
- *   refetch so the cache stays accurate.
- *
- * Search + filter:
- * - Both are now client-side state (instant, no network per keystroke).
- * - The full product list is in memory — a pharmacy's ~500–3000 items is fine.
+ * - useQuery fetches /api/inventory with page, limit, search, and filter params.
+ * - Search and filter changes reset to page 1 and trigger a server request.
+ * - After edit/stockIn mutations, invalidateQueries triggers a background refetch.
+ * - Search is debounced (300ms) to avoid excessive requests.
  */
 
-import { useState, useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Search, AlertCircle, PackagePlus, ArrowRight, Plus, Upload,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
 } from 'lucide-react';
 import { updateProduct, addStock } from '@/app/actions';
 import Link from 'next/link';
@@ -25,8 +22,8 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -46,11 +43,30 @@ type Product = {
   tenantId:   string | null;
 };
 
+type PaginatedResponse = {
+  items:      Product[];
+  total:      number;
+  page:       number;
+  limit:      number;
+  totalPages: number;
+};
+
 type ActiveFilter = 'all' | 'low' | 'expired';
 
+const PAGE_SIZE = 20;
+
 // ── Fetcher ───────────────────────────────────────────────────────────────────
-async function fetchInventory(): Promise<Product[]> {
-  const res = await fetch('/api/inventory');
+async function fetchInventory(
+  page: number, limit: number, search: string, filter: ActiveFilter,
+): Promise<PaginatedResponse> {
+  const params = new URLSearchParams({
+    page:   page.toString(),
+    limit:  limit.toString(),
+    filter,
+  });
+  if (search) params.set('search', search);
+
+  const res = await fetch(`/api/inventory?${params}`);
   if (!res.ok) throw new Error('Failed to load inventory');
   return res.json();
 }
@@ -80,27 +96,37 @@ function SkeletonRow() {
 export default function InventoryView() {
   const queryClient = useQueryClient();
 
-  const { data: products = [], isLoading } = useQuery<Product[]>({
-    queryKey: ['inventory'],
-    queryFn:  fetchInventory,
-    staleTime: 5 * 60 * 1000,
+  // ── Pagination, search, filter state ─────────────────────────────────────
+  const [page, setPage]                 = useState(1);
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
+  const [searchInput, setSearchInput]   = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Reset page when filter changes
+  const handleFilterChange = (f: ActiveFilter) => {
+    setActiveFilter(f);
+    setPage(1);
+  };
+
+  const { data, isLoading, isFetching } = useQuery<PaginatedResponse>({
+    queryKey: ['inventory', page, PAGE_SIZE, debouncedSearch, activeFilter],
+    queryFn:  () => fetchInventory(page, PAGE_SIZE, debouncedSearch, activeFilter),
+    staleTime: 2 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 
-  // ── Client-side search + filter ────────────────────────────────────────────
-  const [search,       setSearch]       = useState('');
-  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
-
-  const filteredProducts = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const q = search.toUpperCase();
-    return products.filter((p) => {
-      if (q && !p.name.toUpperCase().includes(q)) return false;
-      if (activeFilter === 'low')     return p.stockQty <= 5;
-      if (activeFilter === 'expired') return !!p.expiryDate && new Date(p.expiryDate) < today;
-      return true;
-    });
-  }, [products, search, activeFilter]);
+  const products   = data?.items ?? [];
+  const total      = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
 
   // ── Modal state ────────────────────────────────────────────────────────────
   const [editingProduct,  setEditingProduct]  = useState<Product | null>(null);
@@ -123,7 +149,6 @@ export default function InventoryView() {
     setAddStockQty('');
   };
 
-  // After a mutation, invalidate the cache so the list silently refreshes
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -157,6 +182,10 @@ export default function InventoryView() {
     }
   };
 
+  // ── Pagination helpers ──────────────────────────────────────────────────────
+  const startItem = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const endItem   = Math.min(page * PAGE_SIZE, total);
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-8">
@@ -179,21 +208,21 @@ export default function InventoryView() {
       {/* Search + Filter Bar */}
       <div className="flex flex-col md:flex-row gap-4 animate-in slide-in-from-bottom-3 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '150ms' }}>
 
-        {/* Search — instant client-side, no form submission */}
+        {/* Search */}
         <div className="flex-1 relative group">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
             size={16} strokeWidth={2}
           />
           <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search inventory..."
             className="pl-9"
           />
         </div>
 
-        {/* Filter tabs — toggle local state, no page reload */}
+        {/* Filter tabs */}
         <div className="flex gap-1.5 p-1 bg-muted rounded-lg border border-border overflow-x-auto">
           {([
             { key: 'all',     label: 'All Data' },
@@ -203,7 +232,7 @@ export default function InventoryView() {
             <button
               key={key}
               type="button"
-              onClick={() => setActiveFilter(key)}
+              onClick={() => handleFilterChange(key)}
               className={`px-4 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5 whitespace-nowrap ${
                 activeFilter === key
                   ? key === 'low'
@@ -225,102 +254,163 @@ export default function InventoryView() {
         className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm animate-in slide-in-from-bottom-4 fade-in duration-500 ease-out-expo fill-mode-both"
         style={{ animationDelay: '250ms' }}
       >
-        <Table className="min-w-[800px]">
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Item Reference</TableHead>
-              <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-32">Volume</TableHead>
-              <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-32">UnitPrice</TableHead>
-              <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-right w-48">Audit Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-
-            {/* Loading skeleton — only shown on very first load */}
-            {isLoading && Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
-
-            {/* Empty state */}
-            {!isLoading && filteredProducts.length === 0 && (
+        <div className="overflow-x-auto">
+          <Table className="min-w-[800px]">
+            <TableHeader className="bg-muted/50">
               <TableRow>
-                <TableCell colSpan={4} className="px-6 py-24 text-center">
-                  <div className="flex flex-col items-center justify-center max-w-[280px] mx-auto">
-                    <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4 border border-border">
-                      <Search size={28} className="text-muted-foreground" />
-                    </div>
-                    <p className="text-base font-semibold text-card-foreground mb-1">No products found</p>
-                    <p className="text-sm font-medium text-muted-foreground leading-relaxed">
-                      {search
-                        ? `We couldn't find anything matching "${search}". Try adjusting your search or filters.`
-                        : 'There are currently no products in your inventory. Add your first product to get started.'}
-                    </p>
-                  </div>
-                </TableCell>
+                <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Item Reference</TableHead>
+                <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-32">Volume</TableHead>
+                <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-32">UnitPrice</TableHead>
+                <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-right w-48">Audit Actions</TableHead>
               </TableRow>
-            )}
+            </TableHeader>
+            <TableBody>
 
-            {/* Product rows */}
-            {!isLoading && filteredProducts.map((p) => (
-              <TableRow key={p.id} className="group">
-                <TableCell className="px-6 py-4">
-                  <p className="text-sm font-semibold text-card-foreground tracking-tight">{p.name}</p>
-                  <div className="flex gap-2 items-center mt-1">
-                    <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">{p.category}</span>
-                    {p.expiryDate && (
-                      <span className={`text-[10px] font-medium flex items-center gap-1 ${new Date(p.expiryDate) < new Date() ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground'}`}>
-                        EXP: {new Date(p.expiryDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
-                      </span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="px-6 py-4 align-middle">
-                  <Badge
-                    variant="outline"
-                    className={p.stockQty <= 5
-                      ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
-                      : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
-                    }
-                  >
-                    {p.stockQty.toString().padStart(3, '0')}
-                  </Badge>
-                </TableCell>
-                <TableCell className="px-6 py-4 align-middle">
-                  <span className="text-sm font-semibold text-card-foreground">₵ {p.price.toFixed(2)}</span>
-                </TableCell>
-                <TableCell className="px-6 py-4 text-right align-middle">
-                  <div className="flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                    <Button
+              {/* Loading skeleton */}
+              {isLoading && Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
+
+              {/* Empty state */}
+              {!isLoading && products.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="px-6 py-24 text-center">
+                    <div className="flex flex-col items-center justify-center max-w-[280px] mx-auto">
+                      <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4 border border-border">
+                        <Search size={28} className="text-muted-foreground" />
+                      </div>
+                      <p className="text-base font-semibold text-card-foreground mb-1">No products found</p>
+                      <p className="text-sm font-medium text-muted-foreground leading-relaxed">
+                        {debouncedSearch
+                          ? `We couldn't find anything matching "${debouncedSearch}". Try adjusting your search or filters.`
+                          : 'There are currently no products in your inventory. Add your first product to get started.'}
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {/* Product rows */}
+              {!isLoading && products.map((p) => (
+                <TableRow key={p.id} className="group">
+                  <TableCell className="px-6 py-4">
+                    <p className="text-sm font-semibold text-card-foreground tracking-tight">{p.name}</p>
+                    <div className="flex gap-2 items-center mt-1">
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">{p.category}</span>
+                      {p.expiryDate && (
+                        <span className={`text-[10px] font-medium flex items-center gap-1 ${new Date(p.expiryDate) < new Date() ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground'}`}>
+                          EXP: {new Date(p.expiryDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 align-middle">
+                    <Badge
                       variant="outline"
-                      size="sm"
-                      onClick={() => openStockIn(p)}
-                      className="text-[11px] uppercase tracking-wider"
+                      className={p.stockQty <= 5
+                        ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
+                        : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
+                      }
                     >
-                      Stock
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEdit(p)}
-                      className="text-[11px] uppercase tracking-wider text-primary border-primary/30 bg-primary/5 hover:bg-primary/10"
-                    >
-                      Edit
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                      {p.stockQty.toString().padStart(3, '0')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 align-middle">
+                    <span className="text-sm font-semibold text-card-foreground">₵ {p.price.toFixed(2)}</span>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 text-right align-middle">
+                    <div className="flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openStockIn(p)}
+                        className="text-[11px] uppercase tracking-wider"
+                      >
+                        Stock
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEdit(p)}
+                        className="text-[11px] uppercase tracking-wider text-primary border-primary/30 bg-primary/5 hover:bg-primary/10"
+                      >
+                        Edit
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* ── Pagination Footer ──────────────────────────────────────────────── */}
+        {!isLoading && total > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-border bg-muted/30">
+            <p className="text-xs font-medium text-muted-foreground">
+              Showing <span className="font-bold text-foreground">{startItem}–{endItem}</span> of{' '}
+              <span className="font-bold text-foreground">{total.toLocaleString()}</span> products
+              {isFetching && !isLoading && <span className="ml-2 text-primary animate-pulse">updating…</span>}
+            </p>
+
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                disabled={page <= 1}
+                onClick={() => setPage(1)}
+                aria-label="First page"
+              >
+                <ChevronsLeft size={14} />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={14} />
+              </Button>
+
+              <span className="px-3 text-xs font-bold text-foreground tabular-nums">
+                {page} / {totalPages}
+              </span>
+
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                aria-label="Next page"
+              >
+                <ChevronRight size={14} />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                disabled={page >= totalPages}
+                onClick={() => setPage(totalPages)}
+                aria-label="Last page"
+              >
+                <ChevronsRight size={14} />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── Edit Product Dialog ─────────────────────────────────────────────── */}
-      <Dialog open={!!editingProduct} onOpenChange={(open) => { if (!open) setEditingProduct(null); }}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
-          </DialogHeader>
+      {/* ── Edit Product Sheet ──────────────────────────────────────────────── */}
+      <Sheet open={!!editingProduct} onOpenChange={(open) => { if (!open) setEditingProduct(null); }}>
+        <SheetContent className="p-0 gap-0 sm:max-w-sm">
+          <SheetHeader className="px-5 pt-5">
+            <SheetTitle>Edit Product</SheetTitle>
+          </SheetHeader>
           {editingProduct && (
-            <>
-              <div className="pb-1">
+            <div className="px-5 py-4 flex flex-col gap-4">
+              <div>
                 <p className="font-bold text-base text-card-foreground mb-0.5 leading-tight">{editingProduct.name}</p>
                 <p className="text-xs text-muted-foreground">REF: {editingProduct.id.toString().padStart(6, '0')}</p>
               </div>
@@ -350,22 +440,22 @@ export default function InventoryView() {
                   {isSubmitting ? 'Saving...' : 'Save Changes'}
                 </Button>
               </form>
-            </>
+            </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
-      {/* ── Stock In Dialog ─────────────────────────────────────────────────── */}
-      <Dialog open={!!stockingProduct} onOpenChange={(open) => { if (!open) setStockingProduct(null); }}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* ── Stock In Sheet ──────────────────────────────────────────────────── */}
+      <Sheet open={!!stockingProduct} onOpenChange={(open) => { if (!open) setStockingProduct(null); }}>
+        <SheetContent className="p-0 gap-0 sm:max-w-sm">
+          <SheetHeader className="px-5 pt-5">
+            <SheetTitle className="flex items-center gap-2">
               <PackagePlus className="size-4 text-primary" /> Stock In
-            </DialogTitle>
-          </DialogHeader>
+            </SheetTitle>
+          </SheetHeader>
           {stockingProduct && (
-            <>
-              <div className="pb-1">
+            <div className="px-5 py-4 flex flex-col gap-4">
+              <div>
                 <p className="font-bold text-base text-card-foreground mb-0.5 leading-tight">{stockingProduct.name}</p>
                 <p className="text-xs text-muted-foreground">
                   Current Stock: <span className="font-bold text-card-foreground">{stockingProduct.stockQty}</span>
@@ -394,10 +484,10 @@ export default function InventoryView() {
                   )}
                 </Button>
               </form>
-            </>
+            </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
     </div>
   );

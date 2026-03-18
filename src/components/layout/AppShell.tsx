@@ -76,8 +76,8 @@ export default function AppShell({ children, session, menuItems }: AppShellProps
       />
 
       {/* Main content area — floating card on surface background */}
-      <div className="flex-1 flex flex-col p-2.5 overflow-hidden min-w-0">
-        <div className="flex-1 flex flex-col bg-white dark:bg-[var(--surface-raised)] rounded-xl border border-border overflow-hidden min-h-0 shadow-[0_0_0_1px_var(--border)]">
+      <div className="flex-1 flex flex-col p-2.5 lg:p-3.5 overflow-hidden min-w-0">
+        <div className="flex-1 flex flex-col bg-white dark:bg-[var(--surface-raised)] rounded-2xl border border-border overflow-hidden min-h-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
 
           {/* Top header inside the card */}
           <TopHeader
@@ -88,7 +88,7 @@ export default function AppShell({ children, session, menuItems }: AppShellProps
           />
 
           {/* Scrollable content */}
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto custom-scrollbar" style={{ scrollbarGutter: 'stable' }}>
             <div className="px-5 sm:px-8 lg:px-12 pt-8 pb-10">
               {children}
             </div>
