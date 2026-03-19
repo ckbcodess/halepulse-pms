@@ -126,12 +126,12 @@ export default function CustomersView() {
               </div>
             ) : (
               <Table>
-                <TableHeader className="bg-muted/40 border-b border-border">
+                <TableHeader>
                   <TableRow>
-                    <TableHead className="px-6 py-4 text-xs font-bold uppercase">Customer</TableHead>
-                    <TableHead className="px-6 py-4 text-xs font-bold uppercase">Phone</TableHead>
-                    <TableHead className="px-6 py-4 text-xs font-bold uppercase">Points</TableHead>
-                    <TableHead className="px-6 py-4 text-xs font-bold uppercase text-right">Join Date</TableHead>
+                    <TableHead className="px-6">Customer</TableHead>
+                    <TableHead className="px-6">Phone</TableHead>
+                    <TableHead className="px-6">Points</TableHead>
+                    <TableHead className="px-6 text-right">Join Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -139,8 +139,8 @@ export default function CustomersView() {
                     <TableRow key={c.id} className="group">
                       <TableCell className="px-6 py-4">
                         <Link href={`/customers/${c.id}`} className="flex items-center gap-3">
-                          <Avatar className="bg-blue-100 dark:bg-blue-500/20">
-                            <AvatarFallback className="bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold">
+                          <Avatar className="bg-blue-100 dark:bg-primary/20">
+                            <AvatarFallback className="bg-blue-100 dark:bg-primary/20 text-blue-600 dark:text-blue-400 text-xs font-bold">
                               {c.name[0]?.toUpperCase() ?? '?'}
                             </AvatarFallback>
                           </Avatar>

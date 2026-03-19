@@ -45,10 +45,10 @@ export default async function UsersPage() {
   ).length;
 
   const roleBadgeClass: Record<string, string> = {
-    MANAGER:    'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300',
-    MCA:        'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300',
-    NES:        'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300',
-    SUPER_ADMIN:'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-700 dark:bg-purple-950/30 dark:text-purple-300',
+    MANAGER:    'border-primary/20 bg-primary/5 text-primary',
+    MCA:        'border-emerald-200/50 bg-emerald-50/50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400',
+    NES:        'border-amber-200/50 bg-amber-50/50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400',
+    SUPER_ADMIN:'border-purple-200/50 bg-purple-50/50 text-purple-700 dark:border-purple-500/20 dark:bg-purple-500/10 dark:text-purple-400',
   };
 
   return (
@@ -61,10 +61,10 @@ export default async function UsersPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total Users',   value: users.length,                             icon: Users,        color: 'text-indigo-600' },
+          { label: 'Total Users',   value: users.length,                             icon: Users,        color: 'text-primary' },
           { label: 'Online Now',    value: onlineCount,                               icon: Clock,        color: 'text-emerald-600' },
           { label: 'Active',        value: users.filter(u => u.isActive).length,      icon: CheckCircle2, color: 'text-emerald-600' },
-          { label: 'Inactive',      value: users.filter(u => !u.isActive).length,     icon: XCircle,      color: 'text-rose-600' },
+          { label: 'Inactive',      value: users.filter(u => !u.isActive).length,     icon: XCircle,      color: 'text-destructive' },
         ].map((s, i) => (
           <Card key={i} className="py-0 gap-0">
             <div className="p-5">
@@ -90,13 +90,13 @@ export default async function UsersPage() {
             </div>
           ) : (
             <Table className="min-w-[600px]">
-              <TableHeader className="bg-muted/40">
+              <TableHeader>
                 <TableRow>
-                  <TableHead className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest">User</TableHead>
-                  <TableHead className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest">Role</TableHead>
-                  <TableHead className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest">Branch</TableHead>
-                  <TableHead className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest">Status</TableHead>
-                  <TableHead className="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-widest">Last Active</TableHead>
+                  <TableHead className="px-6">User</TableHead>
+                  <TableHead className="px-6">Role</TableHead>
+                  <TableHead className="px-6">Branch</TableHead>
+                  <TableHead className="px-6">Status</TableHead>
+                  <TableHead className="px-6 text-right">Last Active</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -112,7 +112,7 @@ export default async function UsersPage() {
                         <div className="flex items-center gap-3">
                           <div className="relative">
                             <Avatar>
-                              <AvatarFallback className="bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold">
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                                 {initials}
                               </AvatarFallback>
                             </Avatar>

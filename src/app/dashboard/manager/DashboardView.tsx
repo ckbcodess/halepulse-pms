@@ -1,12 +1,18 @@
 'use client';
 
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, XAxis, CartesianGrid,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Info, AlertTriangle, Clock, Calendar, ChevronDown, CircleAlert,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
+import {
+  Info, AlertTriangle, Clock, Calendar, ChevronDown, CircleAlert, TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
 import PageHeader from '@/components/layout/PageHeader';
@@ -61,6 +67,13 @@ function getFormattedDate() {
 
 const DONUT_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
 
+const salesChartConfig = {
+  amount: {
+    label: 'Revenue',
+    color: 'var(--chart-1)',
+  },
+} satisfies ChartConfig;
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -106,18 +119,7 @@ function StatCard({
   );
 }
 
-// Custom tooltip for the bar chart
-function ChartTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
-      <p className="text-xs font-medium text-card-foreground">{label}</p>
-      <p className="text-xs text-muted-foreground">
-        ₵{Number(payload[0].value).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-      </p>
-    </div>
-  );
-}
+
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -180,34 +182,43 @@ export default function DashboardView({
       {/* ── Charts row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
         {/* Monthly Progress */}
-        <Card className="p-6 py-6 gap-0">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-medium text-card-foreground">Monthly Progress</h3>
-            <span className="text-sm text-muted-foreground border border-border rounded-lg px-3 py-1">
-              Monthly
-            </span>
-          </div>
-          <div className="h-[260px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlySales} barCategoryGap="20%">
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Progress</CardTitle>
+            <CardDescription>
+              Revenue over the last {monthlySales.length} months
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={salesChartConfig}>
+              <BarChart accessibilityLayer data={monthlySales} barCategoryGap="20%">
+                <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                  axisLine={false}
                   tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                  tickMargin={10}
                   axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v)}
+                  tickFormatter={(value) => value.slice(0, 3)}
                 />
-                <Tooltip content={<ChartTooltip />} cursor={{ fill: 'hsl(var(--muted))' }} />
-                <Bar dataKey="amount" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={32} />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel />}
+                />
+                <Bar dataKey="amount" fill="var(--color-amount)" radius={8} maxBarSize={32} />
               </BarChart>
-            </ResponsiveContainer>
-          </div>
+            </ChartContainer>
+          </CardContent>
+          <CardFooter className="flex-col items-start gap-2 text-sm">
+            <div className="flex gap-2 leading-none font-medium">
+              {stats.salesChange != null && stats.salesChange >= 0
+                ? `Trending up ${stats.salesChange.toFixed(1)}% this month`
+                : 'Showing monthly revenue'}
+              <TrendingUp className="h-4 w-4" />
+            </div>
+            <div className="leading-none text-muted-foreground">
+              Total revenue by month
+            </div>
+          </CardFooter>
         </Card>
 
         {/* Today's Report (Donut) */}

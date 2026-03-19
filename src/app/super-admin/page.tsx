@@ -37,12 +37,12 @@ export default async function SuperAdminOverview() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">System Overview</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Monitor all tenants, users, and system activity.</p>
+          <h1 className="text-2xl font-bold text-foreground">System Overview</h1>
+          <p className="text-muted-foreground mt-1">Monitor all tenants, users, and system activity.</p>
         </div>
         <Link
           href="/super-admin/tenants/new"
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-lg transition-colors"
         >
           <Plus size={16} /> New Tenant
         </Link>
@@ -51,41 +51,41 @@ export default async function SuperAdminOverview() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s, i) => (
-          <div key={i} className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-slate-800 rounded-2xl p-6">
-            <s.icon size={20} className="text-indigo-500 mb-3" />
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{s.label}</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{s.value}</p>
-            <p className="text-[11px] text-slate-400 mt-1">{s.sub}</p>
+          <div key={i} className="bg-card border border-border rounded-2xl p-6">
+            <s.icon size={20} className="text-primary mb-3" />
+            <p className="text-xs font-semibold text-muted-foreground mb-1">{s.label}</p>
+            <p className="text-3xl font-bold text-foreground">{s.value}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{s.sub}</p>
           </div>
         ))}
       </div>
 
       {/* Tenants Overview */}
-      <div className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-slate-800 rounded-2xl">
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-900 dark:text-white">Tenants You Manage</h2>
+      <div className="bg-card border border-border rounded-2xl">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-base font-semibold text-foreground">Tenants You Manage</h2>
           <Link
             href="/super-admin/tenants"
-            className="text-xs text-indigo-500 hover:text-indigo-400 font-medium flex items-center gap-1"
+            className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1"
           >
             View all <ArrowRight size={12} />
           </Link>
         </div>
         {tenants.length === 0 ? (
           <div className="p-12 text-center">
-            <Building2 size={32} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p className="text-sm text-slate-400">No tenants yet. Create your first tenant to get started.</p>
+            <Building2 size={32} className="text-muted-foreground dark:text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">No tenants yet. Create your first tenant to get started.</p>
             <Link
               href="/super-admin/tenants/new"
-              className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-lg transition-colors"
             >
               <Plus size={16} /> Create Tenant
             </Link>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-border">
             {tenants.map(tenant => (
-              <Link key={tenant.id} href={`/super-admin/tenants/${tenant.id}`} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer block">
+              <Link key={tenant.id} href={`/super-admin/tenants/${tenant.id}`} className="px-6 py-4 flex items-center gap-4 hover:bg-muted/30 transition-colors cursor-pointer block">
                 {/* Avatar */}
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
@@ -97,7 +97,7 @@ export default async function SuperAdminOverview() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{tenant.name}</p>
+                    <p className="text-sm font-semibold text-foreground truncate">{tenant.name}</p>
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                       tenant.isActive
                         ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
@@ -107,8 +107,8 @@ export default async function SuperAdminOverview() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mt-0.5">
-                    <code className="text-[11px] text-slate-400">{tenant.subdomain}</code>
-                    <span className="text-[11px] text-slate-400">{tenant._count.users} user{tenant._count.users !== 1 ? 's' : ''}</span>
+                    <code className="text-[11px] text-muted-foreground">{tenant.subdomain}</code>
+                    <span className="text-[11px] text-muted-foreground">{tenant._count.users} user{tenant._count.users !== 1 ? 's' : ''}</span>
                     {tenant.users.length > 0 && (
                       <span className="text-[11px] text-emerald-500 font-semibold flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -119,7 +119,7 @@ export default async function SuperAdminOverview() {
                 </div>
 
                 {/* Arrow */}
-                <ArrowRight size={16} className="text-slate-300 flex-shrink-0" />
+                <ArrowRight size={16} className="text-muted-foreground flex-shrink-0" />
               </Link>
             ))}
           </div>
@@ -127,23 +127,23 @@ export default async function SuperAdminOverview() {
       </div>
 
       {/* Recent Audit Logs */}
-      <div className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-slate-800 rounded-2xl">
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-          <h2 className="text-base font-semibold text-slate-900 dark:text-white">Recent Audit Events</h2>
+      <div className="bg-card border border-border rounded-2xl">
+        <div className="px-6 py-4 border-b border-border">
+          <h2 className="text-base font-semibold text-foreground">Recent Audit Events</h2>
         </div>
         {recentLogs.length === 0 ? (
-          <p className="p-6 text-sm text-slate-400">No audit events yet.</p>
+          <p className="p-6 text-sm text-muted-foreground">No audit events yet.</p>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-border">
             {recentLogs.map(log => (
               <div key={log.id} className="px-6 py-3 flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded">
+                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
                     {log.action}
                   </span>
-                  <span className="text-xs text-slate-400 ml-3">user:{log.userId}</span>
+                  <span className="text-xs text-muted-foreground ml-3">user:{log.userId}</span>
                 </div>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-muted-foreground">
                   {new Date(log.createdAt).toLocaleString()}
                 </span>
               </div>

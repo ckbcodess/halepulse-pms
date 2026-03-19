@@ -112,14 +112,14 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
         {/* Notification */}
         <button className="relative w-[31.5px] h-[31.5px] flex items-center justify-center rounded-[12.25px] hover:bg-muted/50 text-muted-foreground transition-all">
           <Bell size={16} strokeWidth={2} />
-          <span className="absolute top-[6px] right-[6px] w-[7px] h-[7px] bg-[#ff2056] rounded-full" />
+          <span className="absolute top-[6px] right-[6px] w-[7px] h-[7px] bg-destructive rounded-full" />
         </button>
 
         {/* Theme toggle */}
         <ThemeToggleButton />
 
         {/* Separator */}
-        <div className="w-px h-[17.5px] bg-[rgba(8,9,14,0.08)] flex-shrink-0" />
+        <div className="w-px h-[17.5px] bg-border flex-shrink-0" />
 
         {/* User profile dropdown */}
         <DropdownMenu>
@@ -150,7 +150,7 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
             <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="text-rose-600 hover:bg-rose-50 focus:bg-rose-50 dark:hover:bg-rose-950/40 dark:focus:bg-rose-950/40"
+              className="text-destructive hover:bg-destructive/10 focus:bg-destructive/10 cursor-pointer"
               onClick={() => signOut({ callbackUrl: '/login' })}
             >
               <LogOut size={14} />

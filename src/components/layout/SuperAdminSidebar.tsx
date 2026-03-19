@@ -36,11 +36,11 @@ export default function SuperAdminSidebar() {
   const activeTenantId = extractTenantId(pathname);
 
   return (
-    <aside className="w-56 bg-slate-900 flex flex-col">
-      <div className="px-4 py-5 border-b border-slate-800">
+    <aside className="w-56 bg-sidebar flex flex-col border-r border-sidebar-border">
+      <div className="px-4 py-5 border-b border-sidebar-border">
         <div className="flex items-center gap-2">
-          <Shield size={20} className="text-indigo-400" />
-          <span className="text-sm font-bold text-white">HalePulse Admin</span>
+          <Shield size={20} className="text-sidebar-primary" />
+          <span className="text-sm font-bold text-sidebar-foreground">HalePulse Admin</span>
         </div>
       </div>
 
@@ -53,8 +53,8 @@ export default function SuperAdminSidebar() {
               href={href}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                  : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'
               }`}
             >
               <Icon size={16} />
@@ -66,8 +66,8 @@ export default function SuperAdminSidebar() {
         {/* Tenant sub-navigation when viewing a specific tenant */}
         {activeTenantId && (
           <>
-            <div className="pt-3 mt-3 border-t border-slate-800">
-              <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Tenant</p>
+            <div className="pt-3 mt-3 border-t border-sidebar-border">
+              <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/50 mb-2">Tenant</p>
             </div>
             {TENANT_SUB_NAV.map(({ label, suffix, icon: Icon }) => {
               const href = `/super-admin/tenants/${activeTenantId}${suffix}`;
@@ -78,8 +78,8 @@ export default function SuperAdminSidebar() {
                   href={href}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                      : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'
                   }`}
                 >
                   <Icon size={14} />
@@ -91,10 +91,10 @@ export default function SuperAdminSidebar() {
         )}
       </nav>
 
-      <div className="p-3 border-t border-slate-800">
+      <div className="p-3 border-t border-sidebar-border">
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
         >
           <LogOut size={16} />
           Sign Out

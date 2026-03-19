@@ -467,17 +467,17 @@ export default function POSPage() {
                     </div>
 
                     <div className="flex justify-between items-center mt-1">
-                      <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1">
-                        <button onClick={() => updateQuantity(item.id, -1)} className="p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-zinc-800 rounded-md transition-colors active:scale-95">
+                      <div className="flex items-center gap-1 bg-muted dark:bg-sidebar border border-border dark:border-border rounded-lg p-1">
+                        <button onClick={() => updateQuantity(item.id, -1)} className="p-1 text-muted-foreground hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-zinc-800 rounded-md transition-colors active:scale-95">
                           <Minus size={14} strokeWidth={2.5} />
                         </button>
-                        <span className="text-xs font-bold text-slate-900 dark:text-slate-200 w-6 text-center select-none">{item.quantity}</span>
-                        <button onClick={() => handleIncrement(item.id)} className="p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-zinc-800 rounded-md transition-colors active:scale-95">
+                        <span className="text-xs font-bold text-foreground dark:text-muted-foreground w-6 text-center select-none">{item.quantity}</span>
+                        <button onClick={() => handleIncrement(item.id)} className="p-1 text-muted-foreground hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-zinc-800 rounded-md transition-colors active:scale-95">
                           <Plus size={14} strokeWidth={2.5} />
                         </button>
                       </div>
 
-                      <button onClick={() => removeItem(item.id)} className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors p-2 rounded-lg">
+                      <button onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-rose-600 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors p-2 rounded-lg">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -808,22 +808,22 @@ export default function POSPage() {
       {/* ═══════════════════════ RECEIPT SHEET ═══════════════════════ */}
       <Sheet open={!!receiptData} onOpenChange={(open) => { if (!open) setReceiptData(null); }}>
         <SheetContent showCloseButton={false} className="p-0 gap-0 overflow-hidden sm:max-w-sm print:shadow-none">
-          <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 print:hidden">
-            <SheetTitle className="font-bold text-slate-900 flex items-center gap-2 text-sm uppercase tracking-widest">
+          <div className="p-4 border-b border-border flex justify-between items-center bg-muted print:hidden">
+            <SheetTitle className="font-bold text-foreground flex items-center gap-2 text-sm uppercase tracking-widest">
               <Printer size={16} /> Receipt
             </SheetTitle>
-            <button onClick={() => setReceiptData(null)} className="text-slate-400 hover:text-rose-500 transition-colors">
+            <button onClick={() => setReceiptData(null)} className="text-muted-foreground hover:text-rose-500 transition-colors">
               <X size={20} />
               <span className="sr-only">Close</span>
             </button>
           </div>
 
           {receiptData && (
-            <div className="print-receipt p-8 overflow-y-auto w-full text-slate-900 text-sm bg-white font-mono max-h-[60vh]">
+            <div className="print-receipt p-8 overflow-y-auto w-full text-foreground text-sm bg-white font-mono max-h-[60vh]">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-black font-sans tracking-tight mb-2">{tenantInfo.name?.toUpperCase() || 'PHARMACY'}</h2>
-                {tenantInfo.address && <p className="text-xs text-slate-500 font-mono">{tenantInfo.address}</p>}
-                {tenantInfo.primaryPhone && <p className="text-xs text-slate-500 font-mono">Tel: {tenantInfo.primaryPhone}</p>}
+                {tenantInfo.address && <p className="text-xs text-muted-foreground font-mono">{tenantInfo.address}</p>}
+                {tenantInfo.primaryPhone && <p className="text-xs text-muted-foreground font-mono">Tel: {tenantInfo.primaryPhone}</p>}
               </div>
 
               <div className="border-t border-b border-dotted border-slate-300 py-4 mb-6 space-y-2 text-xs">
@@ -839,8 +839,8 @@ export default function POSPage() {
                 {receiptData.items.map((item, idx) => (
                   <div key={idx} className="flex justify-between items-start text-xs">
                     <div className="pr-4">
-                      <p className="font-bold text-slate-900 mb-1 leading-tight">{item.name}</p>
-                      <p className="text-[10px] text-slate-500">{item.quantity} x ₵{item.price.toFixed(2)}</p>
+                      <p className="font-bold text-foreground mb-1 leading-tight">{item.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{item.quantity} x ₵{item.price.toFixed(2)}</p>
                     </div>
                     <span className="font-bold whitespace-nowrap">₵{(item.price * item.quantity).toFixed(2)}</span>
                   </div>
@@ -860,15 +860,15 @@ export default function POSPage() {
               </div>
 
               <div className="mt-12 text-center">
-                <p className="text-[10px] uppercase tracking-widest text-slate-400">Thank you for your patronage</p>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Thank you for your patronage</p>
               </div>
             </div>
           )}
 
-          <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-3 print:hidden">
+          <div className="p-4 bg-muted border-t border-border flex gap-3 print:hidden">
             <Button
               onClick={() => window.print()}
-              className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-md font-bold text-sm tracking-wide flex justify-center items-center gap-2"
+              className="flex-1 bg-sidebar hover:bg-sidebar text-white py-3 rounded-md font-bold text-sm tracking-wide flex justify-center items-center gap-2"
             >
               <Printer size={16} /> PRINT
             </Button>

@@ -21,12 +21,12 @@ export default function ImpersonationBanner() {
   if (!ctx) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[9999] bg-amber-500 text-amber-950 px-4 py-2 flex items-center justify-center gap-3 text-sm font-bold shadow-lg">
+    <div className="fixed top-0 left-0 right-0 z-[9999] bg-primary text-primary-foreground px-4 py-2 flex items-center justify-center gap-3 text-sm font-bold shadow-lg">
       <Eye size={16} />
       <span>Viewing as {ctx.role} — Impersonation Mode</span>
       <a
         href="/super-admin/stop-impersonate"
-        className="ml-4 flex items-center gap-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded-md text-xs font-bold transition-colors"
+        className="ml-4 flex items-center gap-1 bg-primary-foreground text-primary px-3 py-1 rounded-md text-xs font-bold transition-colors hover:bg-primary-foreground/90"
       >
         <X size={12} /> Exit
       </a>

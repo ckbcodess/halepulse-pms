@@ -471,13 +471,13 @@ export default function InventoryView() {
       >
         <div className="overflow-x-auto">
           <Table className="min-w-[800px]">
-            <TableHeader className="bg-muted/50">
+            <TableHeader>
               <TableRow>
-                <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Item Reference</TableHead>
-                <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-36">Category</TableHead>
-                <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-32">Volume</TableHead>
-                <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-32">Unit Price</TableHead>
-                <TableHead className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-right w-48">Audit Actions</TableHead>
+                <TableHead className="px-6">Item Reference</TableHead>
+                <TableHead className="px-6 w-36">Category</TableHead>
+                <TableHead className="px-6 w-32">Volume</TableHead>
+                <TableHead className="px-6 w-32">Unit Price</TableHead>
+                <TableHead className="px-6 text-right w-48">Audit Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
