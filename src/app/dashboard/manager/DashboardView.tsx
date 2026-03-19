@@ -139,7 +139,7 @@ export default function DashboardView({
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title={`${getGreeting()}, ${firstName} 💙`}
+        title={`${getGreeting()}, ${firstName} 🩵`}
         description={getFormattedDate()}
       />
 
