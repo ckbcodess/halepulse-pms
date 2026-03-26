@@ -2,11 +2,13 @@
  * Dynamic Theme Engine
  *
  * Takes a single hex color and generates a full set of shadcn-compatible
- * CSS custom properties in OKLCH. Inspired by Linear's theming approach.
+ * CSS custom properties in OKLCH.
  *
- * Uses `culori` for perceptually uniform color conversions.
+ * For known preset colors, uses exact Tailwind v4 reference scale values.
+ * For arbitrary hex colors, falls back to perceptual math via `culori`.
  */
-import { parse, converter, formatCss } from 'culori';
+import { parse, converter } from 'culori';
+import { COLOR_SCALES, isNeutralScale, type ColorScale, type NeutralScaleName } from './color-scales';
 
 // ---------------------------------------------------------------------------
 // Internals
@@ -33,11 +35,10 @@ function parseToOklch(color: string): Oklch | null {
 }
 
 /** Format OKLCH triplet as a CSS oklch() value string. */
-function oklch(l: number, c: number, h: number, alpha?: number): string {
-  // Clamp values to valid ranges
+function oklchStr(l: number, c: number, h: number, alpha?: number): string {
   const cl = Math.max(0, Math.min(1, l));
   const cc = Math.max(0, Math.min(0.4, c));
-  const ch = ((h % 360) + 360) % 360; // normalise hue
+  const ch = ((h % 360) + 360) % 360;
   if (alpha !== undefined && alpha < 1) {
     return `oklch(${n(cl)} ${n(cc)} ${n(ch)} / ${Math.round(alpha * 100)}%)`;
   }
@@ -59,17 +60,38 @@ function clamp(v: number, min: number, max: number): number {
 // ---------------------------------------------------------------------------
 
 export const PRESET_COLORS = [
-  { name: 'Indigo',  hex: '#6366f1' },
-  { name: 'Blue',    hex: '#3b82f6' },
-  { name: 'Cyan',    hex: '#06b6d4' },
-  { name: 'Teal',    hex: '#14b8a6' },
-  { name: 'Emerald', hex: '#10b981' },
-  { name: 'Amber',   hex: '#f59e0b' },
-  { name: 'Rose',    hex: '#f43f5e' },
-  { name: 'Purple',  hex: '#a855f7' },
-  { name: 'Fuchsia', hex: '#d946ef' },
-  { name: 'Slate',   hex: '#64748b' },
+  { name: 'Zinc', hex: '#09090b', scale: 'zinc' },
+  { name: 'Slate', hex: '#020617', scale: 'slate' },
+  { name: 'Stone', hex: '#1c1917', scale: 'stone' },
+  { name: 'Gray', hex: '#111827', scale: 'gray' },
+  { name: 'Neutral', hex: '#0a0a0a', scale: 'neutral' },
+  { name: 'Red', hex: '#ef4444', scale: 'red' },
+  { name: 'Rose', hex: '#f43f5e', scale: 'rose' },
+  { name: 'Orange', hex: '#f97316', scale: 'orange' },
+  { name: 'Amber', hex: '#f59e0b', scale: 'amber' },
+  { name: 'Yellow', hex: '#f8c600', scale: 'yellow' },
+  { name: 'Green', hex: '#22c55e', scale: 'green' },
+  { name: 'Emerald', hex: '#10b981', scale: 'emerald' },
+  { name: 'Cyan', hex: '#06b6d4', scale: 'cyan' },
+  { name: 'Sky', hex: '#0ea5e9', scale: 'sky' },
+  { name: 'Blue', hex: '#3b82f6', scale: 'blue' },
+  { name: 'Indigo', hex: '#6366f1', scale: 'indigo' },
+  { name: 'Violet', hex: '#8b5cf6', scale: 'violet' },
+  { name: 'Purple', hex: '#a855f7', scale: 'purple' },
+  { name: 'Fuchsia', hex: '#d946ef', scale: 'fuchsia' },
+  { name: 'Pink', hex: '#ec4899', scale: 'pink' },
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Neutral palettes — now backed by full scales
+// ---------------------------------------------------------------------------
+
+export const NEUTRAL_PALETTES = [
+  'zinc', 'slate', 'stone', 'gray', 'neutral',
+  'mauve', 'olive', 'mist', 'taupe',
+] as const;
+
+export type NeutralType = (typeof NEUTRAL_PALETTES)[number];
 
 // ---------------------------------------------------------------------------
 // Theme generator
@@ -80,116 +102,291 @@ export interface ThemePalette {
   dark: Record<string, string>;
 }
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 /**
- * Generate a full shadcn-compatible theme from a single hex color.
- *
- * The returned records contain CSS custom property names (e.g. `--primary`)
- * as keys and `oklch(…)` value strings as values.
+ * Parses a combined theme string like "#6366f1|stone" into hex and neutral values.
+ * Falls back to stone if no neutral is specified.
  */
-export function generateTheme(baseHex: string): ThemePalette {
-  const brand = parseToOklch(baseHex);
+export function unpackTheme(combined: string): { hex: string; neutral: NeutralType } {
+  const [hex, neutral] = combined.split('|');
+  const validNeutral = (neutral && (NEUTRAL_PALETTES as readonly string[]).includes(neutral))
+    ? (neutral as NeutralType)
+    : 'stone';
+  return { hex: hex || '#6366f1', neutral: validNeutral };
+}
+
+/**
+ * Combines hex and neutral into a single storage string.
+ */
+export function packTheme(hex: string, neutral: NeutralType): string {
+  return `${hex}|${neutral}`;
+}
+
+// ---------------------------------------------------------------------------
+// Scale-based theme generation (exact values)
+// ---------------------------------------------------------------------------
+
+/** Find the scale name that matches a given hex color. */
+function findScaleForHex(hex: string): string | null {
+  const lower = hex.toLowerCase();
+  const preset = PRESET_COLORS.find(p => p.hex.toLowerCase() === lower);
+  return preset ? preset.scale : null;
+}
+
+/**
+ * Bright/warm accents need dark text on their primary button
+ * because their mid-range shades (500-600) are still very light.
+ * shadcn handles this by using shade 500 + dark foreground (950).
+ */
+const BRIGHT_ACCENTS = new Set(['yellow', 'amber', 'lime']);
+
+/**
+ * Generate theme from exact scale values.
+ * Uses specific shade positions following shadcn conventions.
+ */
+function generateFromScales(
+  accent: ColorScale,
+  neutral: ColorScale,
+  accentIsNeutral: boolean,
+  accentName?: string,
+): ThemePalette {
+  const isBright = accentName ? BRIGHT_ACCENTS.has(accentName) : false;
+  const light: Record<string, string> = {
+    // Backgrounds
+    '--background': 'oklch(1 0 0)',
+    '--foreground': neutral[950],
+    '--card': 'oklch(1 0 0)',
+    '--card-foreground': neutral[950],
+    '--popover': 'oklch(1 0 0)',
+    '--popover-foreground': neutral[950],
+
+    // Primary — neutral: 900/white, bright: 500/950, standard: 600/50
+    '--primary': accentIsNeutral ? accent[900] : (isBright ? accent[500] : accent[600]),
+    '--primary-foreground': accentIsNeutral ? 'oklch(1 0 0)' : (isBright ? accent[950] : accent[50]),
+
+    // Secondary & Accent (neutral-based)
+    '--secondary': neutral[100],
+    '--secondary-foreground': neutral[900],
+    '--muted': neutral[100],
+    '--muted-foreground': neutral[500],
+    '--accent': neutral[100],
+    '--accent-foreground': neutral[900],
+
+    // Destructive
+    '--destructive': COLOR_SCALES.red[600],
+    '--destructive-foreground': 'oklch(1 0 0)',
+
+    // Borders & Input
+    '--border': neutral[200],
+    '--input': neutral[200],
+    '--ring': accentIsNeutral ? accent[950] : accent[500],
+
+    // Charts (accent gradient across shades)
+    '--chart-1': accent[300],
+    '--chart-2': accent[400],
+    '--chart-3': accent[500],
+    '--chart-4': accent[600],
+    '--chart-5': accent[700],
+
+    // Sidebar
+    '--sidebar': neutral[50],
+    '--sidebar-foreground': neutral[600],
+    '--sidebar-primary': accentIsNeutral ? accent[900] : (isBright ? accent[500] : accent[600]),
+    '--sidebar-primary-foreground': accentIsNeutral ? 'oklch(1 0 0)' : (isBright ? accent[950] : accent[50]),
+    '--sidebar-accent': neutral[100],
+    '--sidebar-accent-foreground': neutral[900],
+    '--sidebar-border': neutral[200],
+    '--sidebar-ring': accentIsNeutral ? accent[950] : accent[500],
+  };
+
+  const dark: Record<string, string> = {
+    // Backgrounds
+    '--background': neutral[950],
+    '--foreground': neutral[100], // text color
+    '--card': neutral[900],
+    '--card-foreground': neutral[50], 
+    '--popover': neutral[800],
+    '--popover-foreground': neutral[50],
+
+    // Primary — neutral: 50/900, bright: 500/950, standard: 500/950
+    '--primary': accentIsNeutral ? accent[50] : accent[500],
+    '--primary-foreground': accentIsNeutral ? accent[900] : (isBright ? accent[950] : accent[950]),
+
+    // Secondary & Accent
+    '--secondary': neutral[800],
+    '--secondary-foreground': neutral[50],
+    '--muted': neutral[800],
+    '--muted-foreground': neutral[400],
+    '--accent': neutral[800],
+    '--accent-foreground': neutral[50],
+
+    // Destructive
+    '--destructive': COLOR_SCALES.red[500],
+    '--destructive-foreground': 'oklch(1 0 0)',
+
+    // Borders & Input
+    '--border': neutral[900],
+    '--input': neutral[700],
+    '--ring': accentIsNeutral ? accent[50] : accent[400],
+
+    // Charts
+    '--chart-1': accent[300],
+    '--chart-2': accent[400],
+    '--chart-3': accent[500],
+    '--chart-4': accent[600],
+    '--chart-5': accent[700],
+
+    // Sidebar
+    '--sidebar': neutral[900],
+    '--sidebar-foreground': neutral[400],
+    '--sidebar-primary': accentIsNeutral ? accent[50] : accent[500],
+    '--sidebar-primary-foreground': accentIsNeutral ? accent[900] : (isBright ? accent[950] : accent[950]),
+    '--sidebar-accent': neutral[800],
+    '--sidebar-accent-foreground': neutral[50],
+    '--sidebar-border': neutral[800],
+    '--sidebar-ring': accentIsNeutral ? accent[50] : accent[400],
+  };
+
+  return { light, dark };
+}
+
+// ---------------------------------------------------------------------------
+// Math-based fallback (for arbitrary hex colors)
+// ---------------------------------------------------------------------------
+
+function generateMathFallback(hex: string, neutralName: NeutralType): ThemePalette {
+  const brand = parseToOklch(hex);
   if (!brand) {
-    // Fallback to indigo if parse fails
-    return generateTheme('#6366f1');
+    return generateTheme('#6366f1', neutralName);
   }
 
   const h = brand.h;
   const c = brand.c;
 
-  // Normalise brand lightness for primary (target 0.55 for good contrast on
-  // both white and dark backgrounds)
+  // Get neutral scale for neutral tokens
+  const nScale = COLOR_SCALES[neutralName];
+  if (!nScale) {
+    return generateTheme('#6366f1', neutralName);
+  }
+
+  // Normalise brand lightness for primary
   const primaryL = clamp(brand.l, 0.48, 0.62);
-  const primaryC = Math.max(c, 0.08); // ensure minimum saturation
-
-  // Auto-contrast: primary-foreground
-  const primaryFg = primaryL > 0.65 ? oklch(0.15, 0, 0) : oklch(1, 0, 0);
-
-  // Dark-mode primary needs slightly more lightness for legibility
+  const primaryC = Math.max(c, 0.08);
+  const primaryFg = primaryL > 0.65 ? 'oklch(0.15 0 0)' : 'oklch(1 0 0)';
   const darkPrimaryL = clamp(primaryL + 0.08, 0.55, 0.72);
 
-  // Tiny brand tint for neutrals (makes the palette feel cohesive)
-  const tintC = Math.min(c * 0.06, 0.012);
-
-  // ------------------------------------------------------------------
-  // Chart colors — 5 harmonic hues rotated from brand
-  // ------------------------------------------------------------------
   const chartHues = [0, 55, 120, 185, 250].map((offset) => (h + offset) % 360);
 
   const light: Record<string, string> = {
-    '--background':                oklch(1, 0, 0),
-    '--foreground':                oklch(0.141, tintC, h),
-    '--card':                      oklch(1, 0, 0),
-    '--card-foreground':           oklch(0.141, tintC, h),
-    '--popover':                   oklch(1, 0, 0),
-    '--popover-foreground':        oklch(0.141, tintC, h),
-    '--primary':                   oklch(primaryL, primaryC, h),
-    '--primary-foreground':        primaryFg,
-    '--secondary':                 oklch(0.965, 0.012, h),
-    '--secondary-foreground':      oklch(0.205, tintC, h),
-    '--muted':                     oklch(0.965, 0.008, h),
-    '--muted-foreground':          oklch(0.50, 0.01, h),
-    '--accent':                    oklch(0.955, 0.018, h),
-    '--accent-foreground':         oklch(0.205, tintC, h),
-    '--destructive':               oklch(0.577, 0.245, 27.325),
-    // Glass borders — semi-transparent foreground
-    '--border':                    oklch(0.141, tintC, h, 0.08),
-    '--input':                     oklch(0.141, tintC, h, 0.11),
-    '--ring':                      oklch(0.65, primaryC * 0.5, h),
-    // Chart
-    '--chart-1':                   oklch(0.75, 0.14, chartHues[0]),
-    '--chart-2':                   oklch(0.65, 0.18, chartHues[1]),
-    '--chart-3':                   oklch(0.55, 0.20, chartHues[2]),
-    '--chart-4':                   oklch(0.50, 0.18, chartHues[3]),
-    '--chart-5':                   oklch(0.45, 0.15, chartHues[4]),
-    // Sidebar
-    '--sidebar':                   oklch(0.98, 0.005, h),
-    '--sidebar-foreground':        oklch(0.35, 0.012, h),
-    '--sidebar-primary':           oklch(0.25, primaryC * 0.3, h),
-    '--sidebar-primary-foreground': oklch(0.985, 0, 0),
-    '--sidebar-accent':            oklch(0.955, 0.01, h),
-    '--sidebar-accent-foreground': oklch(0.25, tintC, h),
-    '--sidebar-border':            oklch(0.141, tintC, h, 0.08),
-    '--sidebar-ring':              oklch(0.65, primaryC * 0.5, h),
+    '--background': 'oklch(1 0 0)',
+    '--foreground': nScale[950],
+    '--card': 'oklch(1 0 0)',
+    '--card-foreground': nScale[950],
+    '--popover': 'oklch(1 0 0)',
+    '--popover-foreground': nScale[950],
+    '--primary': oklchStr(primaryL, primaryC, h),
+    '--primary-foreground': primaryFg,
+    '--secondary': nScale[100],
+    '--secondary-foreground': nScale[900],
+    '--muted': nScale[100],
+    '--muted-foreground': nScale[500],
+    '--accent': nScale[100],
+    '--accent-foreground': nScale[900],
+    '--destructive': COLOR_SCALES.red[600],
+    '--destructive-foreground': 'oklch(1 0 0)',
+    '--border': nScale[200],
+    '--input': nScale[200],
+    '--ring': oklchStr(0.65, primaryC * 0.5, h),
+    '--chart-1': oklchStr(0.75, 0.14, chartHues[0]),
+    '--chart-2': oklchStr(0.65, 0.18, chartHues[1]),
+    '--chart-3': oklchStr(0.55, 0.20, chartHues[2]),
+    '--chart-4': oklchStr(0.50, 0.18, chartHues[3]),
+    '--chart-5': oklchStr(0.45, 0.15, chartHues[4]),
+    '--sidebar': nScale[50],
+    '--sidebar-foreground': nScale[600],
+    '--sidebar-primary': oklchStr(primaryL, primaryC, h),
+    '--sidebar-primary-foreground': primaryFg,
+    '--sidebar-accent': nScale[100],
+    '--sidebar-accent-foreground': nScale[900],
+    '--sidebar-border': nScale[200],
+    '--sidebar-ring': oklchStr(0.65, primaryC * 0.5, h),
   };
 
   const dark: Record<string, string> = {
-    '--background':                oklch(0.145, tintC, h),
-    '--foreground':                oklch(0.985, 0, 0),
-    '--card':                      oklch(0.195, tintC * 1.4, h),
-    '--card-foreground':           oklch(0.985, 0, 0),
-    '--popover':                   oklch(0.195, tintC * 1.4, h),
-    '--popover-foreground':        oklch(0.985, 0, 0),
-    '--primary':                   oklch(darkPrimaryL, primaryC, h),
-    '--primary-foreground':        oklch(1, 0, 0),
-    '--secondary':                 oklch(0.265, tintC * 1.4, h),
-    '--secondary-foreground':      oklch(0.985, 0, 0),
-    '--muted':                     oklch(0.265, tintC * 1.4, h),
-    '--muted-foreground':          oklch(0.68, 0.012, h),
-    '--accent':                    oklch(0.275, 0.015, h),
-    '--accent-foreground':         oklch(0.985, 0, 0),
-    '--destructive':               oklch(0.704, 0.191, 22.216),
-    // Glass borders — semi-transparent white
-    '--border':                    oklch(0.985, 0, 0, 0.10),
-    '--input':                     oklch(0.985, 0, 0, 0.14),
-    '--ring':                      oklch(0.55, primaryC * 0.4, h),
-    // Chart (bump lightness for dark bg)
-    '--chart-1':                   oklch(0.80, 0.12, chartHues[0]),
-    '--chart-2':                   oklch(0.68, 0.17, chartHues[1]),
-    '--chart-3':                   oklch(0.58, 0.19, chartHues[2]),
-    '--chart-4':                   oklch(0.52, 0.17, chartHues[3]),
-    '--chart-5':                   oklch(0.47, 0.14, chartHues[4]),
-    // Sidebar
-    '--sidebar':                   oklch(0.175, tintC * 1.4, h),
-    '--sidebar-foreground':        oklch(0.785, 0.012, h),
-    '--sidebar-primary':           oklch(darkPrimaryL, primaryC, h),
-    '--sidebar-primary-foreground': oklch(0.985, 0, 0),
-    '--sidebar-accent':            oklch(0.265, 0.012, h),
-    '--sidebar-accent-foreground': oklch(0.985, 0, 0),
-    '--sidebar-border':            oklch(0.985, 0, 0, 0.10),
-    '--sidebar-ring':              oklch(0.55, primaryC * 0.4, h),
+    '--background': nScale[950],
+    '--foreground': nScale[50],
+    '--card': nScale[800],
+    '--card-foreground': nScale[50],
+    '--popover': nScale[700],
+    '--popover-foreground': nScale[50],
+    '--primary': oklchStr(darkPrimaryL, primaryC, h),
+    '--primary-foreground': 'oklch(1 0 0)',
+    '--secondary': nScale[800],
+    '--secondary-foreground': nScale[50],
+    '--muted': nScale[800],
+    '--muted-foreground': nScale[400],
+    '--accent': nScale[800],
+    '--accent-foreground': nScale[50],
+    '--destructive': COLOR_SCALES.red[500],
+    '--destructive-foreground': 'oklch(1 0 0)',
+    '--border': nScale[800],
+    '--input': nScale[800],
+    '--ring': oklchStr(0.55, primaryC * 0.4, h),
+    '--chart-1': oklchStr(0.80, 0.12, chartHues[0]),
+    '--chart-2': oklchStr(0.68, 0.17, chartHues[1]),
+    '--chart-3': oklchStr(0.58, 0.19, chartHues[2]),
+    '--chart-4': oklchStr(0.52, 0.17, chartHues[3]),
+    '--chart-5': oklchStr(0.47, 0.14, chartHues[4]),
+    '--sidebar': nScale[900],
+    '--sidebar-foreground': nScale[400],
+    '--sidebar-primary': oklchStr(darkPrimaryL, primaryC, h),
+    '--sidebar-primary-foreground': 'oklch(1 0 0)',
+    '--sidebar-accent': nScale[800],
+    '--sidebar-accent-foreground': nScale[50],
+    '--sidebar-border': nScale[800],
+    '--sidebar-ring': oklchStr(0.55, primaryC * 0.4, h),
   };
 
   return { light, dark };
+}
+
+// ---------------------------------------------------------------------------
+// Main entry point
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate a full shadcn-compatible theme from a primary base color
+ * and a neutral palette. Can accept a combined string or separate values.
+ *
+ * For known preset colors, uses exact Tailwind v4 reference values.
+ * For arbitrary hex colors, computes values via perceptual math.
+ */
+export function generateTheme(base: string, baseNeutral?: NeutralType): ThemePalette {
+  // If base contains a pipe, it's a combined string
+  const { hex, neutral: neutralName } = base.includes('|')
+    ? unpackTheme(base)
+    : { hex: base, neutral: baseNeutral || 'stone' };
+
+  const neutralScale = COLOR_SCALES[neutralName];
+  if (!neutralScale) {
+    return generateTheme('#6366f1|stone');
+  }
+
+  // Try to match the hex to a known preset scale
+  const accentScaleName = findScaleForHex(hex);
+
+  if (accentScaleName && COLOR_SCALES[accentScaleName]) {
+    // Use exact scale values
+    const accentScale = COLOR_SCALES[accentScaleName];
+    const accentIsNeutral = isNeutralScale(accentScaleName);
+    return generateFromScales(accentScale, neutralScale, accentIsNeutral, accentScaleName);
+  }
+
+  // Fallback: compute mathematically for custom hex colors
+  return generateMathFallback(hex, neutralName);
 }
 
 // ---------------------------------------------------------------------------
@@ -220,8 +417,8 @@ export function removeTheme(vars: Record<string, string>): void {
  * Generate a complete `<style>` block string for SSR injection.
  * Contains both `:root` (light) and `.dark` overrides.
  */
-export function generateThemeCSS(baseHex: string): string {
-  const { light, dark } = generateTheme(baseHex);
+export function generateThemeCSS(base: string, baseNeutral?: NeutralType): string {
+  const { light, dark } = generateTheme(base, baseNeutral);
 
   const lightVars = Object.entries(light)
     .map(([k, v]) => `  ${k}: ${v};`)

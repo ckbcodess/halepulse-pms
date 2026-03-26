@@ -58,7 +58,7 @@ export default function SPLoginPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(59,130,246,0.08),transparent_50%)]"></div>
 
         <div className="relative z-10 flex items-center gap-3 animate-in fade-in duration-1000">
-          <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
+          <div className="w-4 h-4 bg-primary rounded-sm"></div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
             HALE<span className="text-blue-500 font-light">PULSE</span>
           </h1>
@@ -68,16 +68,16 @@ export default function SPLoginPage() {
           <blockquote className="text-3xl lg:text-5xl font-light text-white leading-tight mb-6">
             System administration portal.
           </blockquote>
-          <p className="text-slate-400 font-mono text-sm tracking-widest uppercase">Super Admin Access Only</p>
+          <p className="text-muted-foreground font-mono text-sm tracking-widest uppercase">Super Admin Access Only</p>
         </div>
       </div>
 
       {/* Form Side */}
-      <div className="flex-1 flex flex-col justify-center items-center p-8 lg:p-24 relative z-10 bg-slate-900">
+      <div className="flex-1 flex flex-col justify-center items-center p-8 lg:p-24 relative z-10 bg-sidebar">
         <div className="w-full max-w-sm animate-in slide-in-from-bottom-8 fade-in duration-700 delay-150 fill-mode-both">
 
           <div className="md:hidden flex items-center gap-3 mb-10">
-            <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
+            <div className="w-4 h-4 bg-primary rounded-sm"></div>
             <h1 className="text-2xl font-bold text-white tracking-tight">
               HALE<span className="text-blue-500 font-light">PULSE</span>
             </h1>
@@ -85,12 +85,12 @@ export default function SPLoginPage() {
 
           <div className="mb-10">
             <div className="flex items-center gap-2 mb-3">
-              <div className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-blue-400 text-[10px] font-bold uppercase tracking-widest">
+              <div className="px-2 py-0.5 bg-primary/10 border border-blue-500/20 rounded text-blue-400 text-[10px] font-bold uppercase tracking-widest">
                 Admin Portal
               </div>
             </div>
             <h2 className="text-3xl font-black text-white tracking-tight mb-2">SP Login</h2>
-            <p className="text-slate-400 font-medium">Authorized system administrators only.</p>
+            <p className="text-muted-foreground font-medium">Authorized system administrators only.</p>
           </div>
 
           {error && (
@@ -101,7 +101,7 @@ export default function SPLoginPage() {
 
           <form onSubmit={handleLogin} className="flex flex-col gap-6">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Email
               </Label>
               <Input
@@ -109,13 +109,13 @@ export default function SPLoginPage() {
                 type="email"
                 required
                 autoComplete="email"
-                className="h-12 bg-slate-800 border-slate-700 text-white font-medium placeholder:text-slate-500"
+                className="h-12 bg-sidebar border-border text-white font-medium placeholder:text-muted-foreground"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="spPassword" className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              <Label htmlFor="spPassword" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Password
               </Label>
               <Input
@@ -123,7 +123,7 @@ export default function SPLoginPage() {
                 type="password"
                 required
                 autoComplete="current-password"
-                className="h-12 bg-slate-800 border-slate-700 text-white font-medium placeholder:text-slate-500"
+                className="h-12 bg-sidebar border-border text-white font-medium placeholder:text-muted-foreground"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -132,7 +132,7 @@ export default function SPLoginPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-bold mt-4"
+              className="w-full h-12 bg-blue-600 hover:bg-primary text-white font-bold mt-4"
             >
               {isSubmitting ? (
                 <>Authenticating<span className="animate-pulse">...</span></>
@@ -145,16 +145,16 @@ export default function SPLoginPage() {
           <div className="mt-8 text-center">
             <Link
               href="/login"
-              className="text-xs text-slate-500 hover:text-blue-400 transition-colors font-medium"
+              className="text-xs text-muted-foreground hover:text-blue-400 transition-colors font-medium"
             >
               \u2190 Back to Client Portal
             </Link>
           </div>
 
           {process.env.NODE_ENV === 'development' && (
-            <div className="mt-8 flex flex-col gap-1 text-xs text-slate-500 font-medium border-t border-slate-800 pt-6">
-              <p className="font-semibold text-slate-400 mb-2">Development:</p>
-              <p><code className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">superadmin@system.com</code> / <code className="bg-slate-800 px-1 py-0.5 rounded text-slate-300">Admin@1234</code></p>
+            <div className="mt-8 flex flex-col gap-1 text-xs text-muted-foreground font-medium border-t border-border pt-6">
+              <p className="font-semibold text-muted-foreground mb-2">Development:</p>
+              <p><code className="bg-sidebar px-1 py-0.5 rounded text-muted-foreground">superadmin@system.com</code> / <code className="bg-sidebar px-1 py-0.5 rounded text-muted-foreground">Admin@1234</code></p>
             </div>
           )}
         </div>

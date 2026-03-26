@@ -68,24 +68,31 @@ export async function getMenuForUser(
 ): Promise<MenuItem[]> {
   if (!tenantId) return [];
 
-  // Strategy 1: Dynamic menu config (preferred path)
-  if (dynamicRoleId) {
-    const dynamicConfig = await prisma.dynamicMenuConfig.findUnique({
-      where: { dynamicRoleId_tenantId: { dynamicRoleId, tenantId } },
-    });
-    if (dynamicConfig) {
-      const items: MenuItem[] = JSON.parse(dynamicConfig.menuItems);
-      return mergeWithMaster(items, role).filter(i => i.visible);
+  try {
+    // Strategy 1: Dynamic menu config (preferred path)
+    if (dynamicRoleId) {
+      const dynamicConfig = await prisma.dynamicMenuConfig.findUnique({
+        where: { dynamicRoleId_tenantId: { dynamicRoleId, tenantId } },
+      });
+      if (dynamicConfig) {
+        const items: MenuItem[] = JSON.parse(dynamicConfig.menuItems);
+        return mergeWithMaster(items, role).filter(i => i.visible);
+      }
     }
+
+    // Strategy 2: Legacy MenuConfig — merge so new pages always appear
+    const config = await prisma.menuConfig.findUnique({
+      where: { tenantId_role: { tenantId, role: role as any } },
+    });
+
+    if (!config) return defaultsForRole(role).filter(i => i.visible);
+
+    const stored: MenuItem[] = JSON.parse(config.menuItems);
+    return mergeWithMaster(stored, role).filter(i => i.visible);
+  } catch (error) {
+    // DB unavailable (e.g. Neon cold start) — fall back to role defaults
+    console.error('[getMenuForUser] DB unavailable, using role defaults:', (error as Error).message);
+    return defaultsForRole(role).filter(i => i.visible);
   }
-
-  // Strategy 2: Legacy MenuConfig — merge so new pages always appear
-  const config = await prisma.menuConfig.findUnique({
-    where: { tenantId_role: { tenantId, role: role as any } },
-  });
-
-  if (!config) return defaultsForRole(role).filter(i => i.visible);
-
-  const stored: MenuItem[] = JSON.parse(config.menuItems);
-  return mergeWithMaster(stored, role).filter(i => i.visible);
 }
+

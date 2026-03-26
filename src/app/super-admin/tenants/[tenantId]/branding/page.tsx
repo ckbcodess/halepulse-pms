@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { generateTheme, PRESET_COLORS, type ThemePalette } from '@/lib/theme/theme-utils';
+import { generateTheme, PRESET_COLORS, NEUTRAL_PALETTES, type NeutralType, unpackTheme, packTheme, type ThemePalette } from '@/lib/theme/theme-utils';
 
 // ---------------------------------------------------------------------------
 // Component preview rendered inside a scoped CSS-var container
@@ -191,6 +191,7 @@ export default function BrandingPage() {
   const [form, setForm] = useState({
     name: '',
     baseColor: '#6366f1',
+    baseNeutral: 'stone' as NeutralType,
     logoUrl: '',
   });
   const [loading, setLoading] = useState(true);
@@ -205,9 +206,12 @@ export default function BrandingPage() {
       .then((tenants: any[]) => {
         const t = tenants.find((t: any) => t.id === tenantId);
         if (t) {
+          const rawColor = t.baseColor ?? t.primaryColor ?? '#6366f1';
+          const { hex, neutral } = unpackTheme(rawColor);
           setForm({
             name: t.name,
-            baseColor: t.baseColor ?? t.primaryColor ?? '#6366f1',
+            baseColor: hex,
+            baseNeutral: neutral,
             logoUrl: t.logoUrl ?? '',
           });
         }
@@ -216,21 +220,22 @@ export default function BrandingPage() {
   }, [tenantId]);
 
   // Generate palette from current base color (memoised)
-  const palette = useMemo(() => generateTheme(form.baseColor), [form.baseColor]);
+  const palette = useMemo(() => generateTheme(form.baseColor, form.baseNeutral), [form.baseColor, form.baseNeutral]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError('');
+    const packedColor = packTheme(form.baseColor, form.baseNeutral);
     try {
       const res = await fetch(`/api/super-admin/tenants/${tenantId}/branding`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name,
-          baseColor: form.baseColor,
+          baseColor: packedColor,
           primaryColor: form.baseColor,
-          secondaryColor: form.baseColor,
+          secondaryColor: form.baseNeutral,
           logoUrl: form.logoUrl,
         }),
       });
@@ -313,7 +318,7 @@ export default function BrandingPage() {
               {/* Preset swatches */}
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                  Presets
+                  Primary Themes
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {PRESET_COLORS.map((preset) => {
@@ -326,7 +331,7 @@ export default function BrandingPage() {
                         onClick={() =>
                           setForm((p) => ({ ...p, baseColor: preset.hex }))
                         }
-                        className={`group relative w-9 h-9 rounded-lg border-2 transition-all hover:scale-110 active:scale-95 ${
+                        className={`group relative w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 active:scale-95 ${
                           isActive
                             ? 'border-foreground shadow-md scale-110'
                             : 'border-transparent hover:border-border'
@@ -336,10 +341,36 @@ export default function BrandingPage() {
                       >
                         {isActive && (
                           <Check
-                            size={14}
+                            size={12}
                             className="absolute inset-0 m-auto text-white drop-shadow-md"
                           />
                         )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Neutral Base selection */}
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                  Neutral Backdrop (Base)
+                </p>
+                <div className="flex gap-2">
+                  {NEUTRAL_PALETTES.map((key) => {
+                    const isActive = form.baseNeutral === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setForm((p) => ({ ...p, baseNeutral: key }))}
+                        className={`flex-1 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all ${
+                          isActive
+                            ? 'bg-foreground text-background border-foreground shadow-sm'
+                            : 'bg-background text-muted-foreground border-border hover:border-foreground/30'
+                        }`}
+                      >
+                        {key}
                       </button>
                     );
                   })}

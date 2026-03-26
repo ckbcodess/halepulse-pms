@@ -62,21 +62,21 @@ export default function TenantDetailPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-slate-400">Loading tenant...</div>;
+    return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading tenant...</div>;
   }
 
   if (!tenant) {
-    return <div className="flex items-center justify-center h-64 text-slate-400">Tenant not found.</div>;
+    return <div className="flex items-center justify-center h-64 text-muted-foreground">Tenant not found.</div>;
   }
 
   const onlineCount = users.filter(u => u.isActive && isOnline(u.lastActiveAt)).length;
 
   const stats = [
-    { label: 'Users', value: tenant._count.users, icon: Users, color: 'text-indigo-500' },
+    { label: 'Users', value: tenant._count.users, icon: Users, color: 'text-primary' },
     { label: 'Online Now', value: onlineCount, icon: Circle, color: 'text-emerald-500' },
     { label: 'Products', value: tenant._count.products, icon: Package, color: 'text-amber-500' },
-    { label: 'Sales', value: tenant._count.sales, icon: ShoppingBag, color: 'text-rose-500' },
-    { label: 'Branches', value: tenant._count.branches, icon: GitBranch, color: 'text-cyan-500' },
+    { label: 'Sales', value: tenant._count.sales, icon: ShoppingBag, color: 'text-destructive' },
+    { label: 'Branches', value: tenant._count.branches, icon: GitBranch, color: 'text-sky-500' },
   ];
 
   return (
@@ -92,12 +92,12 @@ export default function TenantDetailPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{tenant.name}</h1>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${tenant.isActive ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400'}`}>
+              <h1 className="text-2xl font-bold text-foreground">{tenant.name}</h1>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${tenant.isActive ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-destructive/10 text-destructive'}`}>
                 {tenant.isActive ? 'Active' : 'Disabled'}
               </span>
             </div>
-            <p className="text-sm text-slate-400 mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5">
               <code>{tenant.subdomain}</code> &middot; Created {new Date(tenant.createdAt).toLocaleDateString()}
             </p>
           </div>
@@ -107,10 +107,10 @@ export default function TenantDetailPage() {
       {/* Stats */}
       <div className="grid grid-cols-5 gap-3">
         {stats.map((s, i) => (
-          <div key={i} className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+          <div key={i} className="bg-card border border-border rounded-xl p-4">
             <s.icon size={16} className={`${s.color} mb-2`} />
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">{s.value}</p>
-            <p className="text-[11px] text-slate-400">{s.label}</p>
+            <p className="text-2xl font-bold text-foreground">{s.value}</p>
+            <p className="text-[11px] text-muted-foreground">{s.label}</p>
           </div>
         ))}
       </div>
@@ -118,10 +118,10 @@ export default function TenantDetailPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Branding', href: `/super-admin/tenants/${tenantId}/branding`, icon: Paintbrush, bg: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300' },
+          { label: 'Branding', href: `/super-admin/tenants/${tenantId}/branding`, icon: Paintbrush, bg: 'bg-primary/10 text-primary' },
           { label: 'Permissions', href: `/super-admin/tenants/${tenantId}/permissions`, icon: Shield, bg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
           { label: 'Menus', href: `/super-admin/tenants/${tenantId}/menus`, icon: Menu, bg: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300' },
-          { label: 'Create User', href: `/super-admin/tenants/${tenantId}/users/new`, icon: UserPlus, bg: 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300' },
+          { label: 'Create User', href: `/super-admin/tenants/${tenantId}/users/new`, icon: UserPlus, bg: 'bg-destructive/10 text-destructive' },
         ].map(a => (
           <Link key={a.href} href={a.href} className={`${a.bg} rounded-xl p-4 flex items-center gap-3 hover:opacity-80 transition-opacity`}>
             <a.icon size={18} />
@@ -132,15 +132,15 @@ export default function TenantDetailPage() {
       </div>
 
       {/* View As (Impersonation) */}
-      <div className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-slate-800 rounded-xl p-5">
-        <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3">View Dashboard As</h3>
-        <p className="text-xs text-slate-400 mb-4">Preview what each role sees in this tenant&apos;s dashboard.</p>
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h3 className="text-sm font-bold text-foreground mb-3">View Dashboard As</h3>
+        <p className="text-xs text-muted-foreground mb-4">Preview what each role sees in this tenant&apos;s dashboard.</p>
         <div className="flex gap-3">
           {(['MANAGER', 'MCA', 'NES'] as const).map(role => (
             <Link
               key={role}
               href={`/super-admin/impersonate?tenantId=${tenantId}&role=${role}`}
-              className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-sm font-semibold text-slate-700 dark:text-slate-300 rounded-lg transition-colors"
+              className="px-4 py-2 bg-muted hover:bg-primary/10 text-sm font-semibold text-muted-foreground hover:text-primary rounded-lg transition-colors"
             >
               View as {role}
             </Link>
@@ -149,21 +149,21 @@ export default function TenantDetailPage() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-slate-900 dark:text-white">Users ({users.length})</h3>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+          <h3 className="text-base font-semibold text-foreground">Users ({users.length})</h3>
           <Link
             href={`/super-admin/tenants/${tenantId}/users/new`}
-            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg transition-colors"
           >
             <UserPlus size={13} /> Add User
           </Link>
         </div>
         <table className="w-full text-left">
-          <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
+          <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
             <tr>
               {['User', 'Role', 'Branch', 'Status', 'Activity', 'Actions'].map(h => (
-                <th key={h} className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{h}</th>
+                <th key={h} className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">{h}</th>
               ))}
             </tr>
           </thead>
@@ -171,21 +171,21 @@ export default function TenantDetailPage() {
             {users.map(user => {
               const online = isOnline(user.lastActiveAt);
               return (
-                <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                <tr key={user.id} className="transition-colors">
                   <td className="px-6 py-3">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{user.email || user.username}</p>
-                    <p className="text-[11px] text-slate-400">ID: {user.id}</p>
+                    <p className="text-sm font-medium text-foreground">{user.email || user.username}</p>
+                    <p className="text-[11px] text-muted-foreground">ID: {user.id}</p>
                   </td>
                   <td className="px-6 py-3">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-muted text-muted-foreground">
                       {user.saasRole || user.username}
                     </span>
                   </td>
-                  <td className="px-6 py-3 text-xs text-slate-500 dark:text-slate-400">
+                  <td className="px-6 py-3 text-xs text-muted-foreground">
                     {user.branch?.name || '—'}
                   </td>
                   <td className="px-6 py-3">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${user.isActive ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400'}`}>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${user.isActive ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-destructive/10 text-destructive'}`}>
                       {user.isActive ? 'Active' : 'Disabled'}
                     </span>
                   </td>
@@ -195,7 +195,7 @@ export default function TenantDetailPage() {
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Online
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-muted-foreground">
                         {user.lastActiveAt ? new Date(user.lastActiveAt).toLocaleString() : 'Never'}
                       </span>
                     )}
@@ -203,7 +203,7 @@ export default function TenantDetailPage() {
                   <td className="px-6 py-3">
                     <button
                       onClick={() => toggleUser(user.id, user.isActive)}
-                      className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-400"
+                      className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground"
                       title={user.isActive ? 'Disable user' : 'Enable user'}
                     >
                       {user.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -215,7 +215,7 @@ export default function TenantDetailPage() {
           </tbody>
         </table>
         {users.length === 0 && (
-          <div className="p-12 text-center text-slate-400 text-sm">No users in this tenant yet.</div>
+          <div className="p-12 text-center text-muted-foreground text-sm">No users in this tenant yet.</div>
         )}
       </div>
     </div>

@@ -102,10 +102,10 @@ export default function ImportPage() {
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => router.push('/inventory')} className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-          <ArrowLeft size={18} className="text-slate-500" />
+        <button onClick={() => router.push('/inventory')} className="p-2 rounded-xl border border-border dark:border-border hover:bg-muted dark:hover:bg-sidebar transition-colors">
+          <ArrowLeft size={18} className="text-muted-foreground" />
         </button>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Upload a CSV file to bulk-add products to your inventory</p>
+        <p className="text-sm text-muted-foreground dark:text-muted-foreground">Upload a CSV file to bulk-add products to your inventory</p>
       </div>
 
       {/* Upload Step */}
@@ -113,27 +113,27 @@ export default function ImportPage() {
         <div className="space-y-6">
           <div
             onClick={() => fileRef.current?.click()}
-            className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-12 text-center cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/5 transition-all"
+            className="border-2 border-dashed border-slate-300 dark:border-border rounded-2xl p-12 text-center cursor-pointer hover:border-indigo-400 dark:hover:border-primary hover:bg-indigo-50/50 dark:hover:bg-primary/5 transition-all"
           >
-            <Upload size={40} className="mx-auto text-slate-400 dark:text-slate-500 mb-4" />
-            <p className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-1">Click to upload CSV</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">or drag and drop your file here</p>
+            <Upload size={40} className="mx-auto text-muted-foreground dark:text-muted-foreground mb-4" />
+            <p className="text-lg font-medium text-foreground dark:text-muted-foreground mb-1">Click to upload CSV</p>
+            <p className="text-sm text-muted-foreground dark:text-muted-foreground">or drag and drop your file here</p>
             <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
           </div>
 
           {/* Expected format */}
-          <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+          <div className="bg-muted dark:bg-sidebar rounded-xl p-6 border border-border dark:border-border">
+            <h3 className="text-sm font-semibold text-foreground dark:text-muted-foreground mb-3 flex items-center gap-2">
               <FileSpreadsheet size={16} /> Expected CSV Format
             </h3>
-            <code className="text-xs text-slate-600 dark:text-slate-400 block bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
+            <code className="text-xs text-muted-foreground dark:text-muted-foreground block bg-white dark:bg-sidebar p-3 rounded-lg border border-border dark:border-border overflow-x-auto">
               name,price,costPrice,stockQty,expiryDate,barcode,category
             </code>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
+            <p className="text-xs text-muted-foreground dark:text-muted-foreground mt-3">
               Only <strong>name</strong> is required. All other columns are optional. The importer also recognizes
-              alternate column names like <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">ITEM_NAME</code>, <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">RATE_A</code>, <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">PRATE</code>, <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">STOCK</code>.
+              alternate column names like <code className="bg-muted dark:bg-slate-700 px-1 rounded">ITEM_NAME</code>, <code className="bg-muted dark:bg-slate-700 px-1 rounded">RATE_A</code>, <code className="bg-muted dark:bg-slate-700 px-1 rounded">PRATE</code>, <code className="bg-muted dark:bg-slate-700 px-1 rounded">STOCK</code>.
             </p>
-            <a href="/import-template.csv" download className="inline-flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-3 hover:underline">
+            <a href="/import-template.csv" download className="inline-flex items-center gap-2 text-xs text-primary dark:text-primary/80 font-medium mt-3 hover:underline">
               <Download size={14} /> Download your pre-formatted import file (1,896 products)
             </a>
           </div>
@@ -143,57 +143,57 @@ export default function ImportPage() {
       {/* Preview Step */}
       {step === 'preview' && (
         <div className="space-y-6">
-          <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-indigo-50 dark:bg-primary/10 border border-indigo-200 dark:border-primary/20 rounded-xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <FileSpreadsheet size={20} className="text-indigo-600 dark:text-indigo-400" />
+              <FileSpreadsheet size={20} className="text-primary dark:text-primary/80" />
               <div>
                 <p className="text-sm font-medium text-indigo-900 dark:text-indigo-200">{fileName}</p>
-                <p className="text-xs text-indigo-700 dark:text-indigo-300">{rows.length} products ready to import</p>
+                <p className="text-xs text-indigo-700 dark:text-primary/70">{rows.length} products ready to import</p>
               </div>
             </div>
-            <button onClick={() => { setStep('upload'); setRows([]); }} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+            <button onClick={() => { setStep('upload'); setRows([]); }} className="text-xs text-primary dark:text-primary/80 hover:underline">
               Change file
             </button>
           </div>
 
           {/* Preview table */}
-          <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+          <div className="border border-border dark:border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 dark:bg-slate-900 sticky top-0">
+                <thead className="sticky top-0 bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">#</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Name</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Price</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Stock</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Category</th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">#</th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
+                    <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground">Price</th>
+                    <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground">Stock</th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Category</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {rows.slice(0, 100).map((r, i) => (
-                    <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <td className="px-4 py-2 text-xs text-slate-400">{i + 1}</td>
-                      <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{r.name}</td>
-                      <td className="px-4 py-2 text-right text-slate-600 dark:text-slate-300">{r.price.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-right text-slate-600 dark:text-slate-300">{r.stockQty}</td>
-                      <td className="px-4 py-2 text-slate-500 dark:text-slate-400 text-xs">{r.category}</td>
+                    <tr key={i}>
+                      <td className="px-4 py-2 text-xs text-muted-foreground">{i + 1}</td>
+                      <td className="px-4 py-2 font-medium text-foreground dark:text-white">{r.name}</td>
+                      <td className="px-4 py-2 text-right text-muted-foreground dark:text-muted-foreground">{r.price.toFixed(2)}</td>
+                      <td className="px-4 py-2 text-right text-muted-foreground dark:text-muted-foreground">{r.stockQty}</td>
+                      <td className="px-4 py-2 text-muted-foreground dark:text-muted-foreground text-xs">{r.category}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             {rows.length > 100 && (
-              <div className="bg-slate-50 dark:bg-slate-900 px-4 py-2 text-xs text-slate-500 text-center border-t border-slate-200 dark:border-slate-800">
+              <div className="bg-muted dark:bg-sidebar px-4 py-2 text-xs text-muted-foreground text-center border-t border-border dark:border-border">
                 Showing first 100 of {rows.length} products
               </div>
             )}
           </div>
 
           <div className="flex gap-3 justify-end">
-            <button onClick={() => { setStep('upload'); setRows([]); }} className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+            <button onClick={() => { setStep('upload'); setRows([]); }} className="px-5 py-2.5 rounded-xl border border-border dark:border-border text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-sidebar transition-colors">
               Cancel
             </button>
-            <button onClick={handleImport} className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">
+            <button onClick={handleImport} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors">
               Import {rows.length} Products
             </button>
           </div>
@@ -204,8 +204,8 @@ export default function ImportPage() {
       {step === 'importing' && (
         <div className="text-center py-20">
           <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-6" />
-          <p className="text-lg font-medium text-slate-700 dark:text-slate-300">Importing {rows.length} products...</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">This may take a minute for large files</p>
+          <p className="text-lg font-medium text-foreground dark:text-muted-foreground">Importing {rows.length} products...</p>
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-2">This may take a minute for large files</p>
         </div>
       )}
 
@@ -243,10 +243,10 @@ export default function ImportPage() {
           )}
 
           <div className="flex gap-3 justify-center">
-            <button onClick={() => router.push('/inventory')} className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">
+            <button onClick={() => router.push('/inventory')} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors">
               Go to Inventory
             </button>
-            <button onClick={() => { setStep('upload'); setRows([]); setResult(null); }} className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+            <button onClick={() => { setStep('upload'); setRows([]); setResult(null); }} className="px-5 py-2.5 rounded-xl border border-border dark:border-border text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-sidebar transition-colors">
               Import More
             </button>
           </div>

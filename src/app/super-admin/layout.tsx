@@ -10,14 +10,14 @@ export default async function SuperAdminLayout({ children }: { children: React.R
   if (session.user.role !== 'SUPER_ADMIN') redirect('/');
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[#0a0a0c]">
+    <div className="flex h-screen overflow-hidden bg-muted dark:bg-[#0a0a0c]">
       <SuperAdminSidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-14 bg-white dark:bg-[#111113] border-b border-slate-200 dark:border-slate-800 flex items-center px-6 flex-shrink-0">
-          <p className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">
+        <header className="h-14 bg-white dark:bg-[#111113] border-b border-border dark:border-border flex items-center px-6 flex-shrink-0">
+          <p className="text-xs font-mono font-bold text-muted-foreground uppercase tracking-widest">
             Super Admin Console
           </p>
-          <div className="ml-auto text-xs text-slate-400">{session.user.email}</div>
+          <div className="ml-auto text-xs text-muted-foreground">{session.user.email}</div>
         </header>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">
           {children}

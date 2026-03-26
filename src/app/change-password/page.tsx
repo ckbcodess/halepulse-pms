@@ -162,7 +162,7 @@ export default function ChangePasswordPage() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-12 bg-slate-950 hover:bg-slate-900 text-white font-bold mt-2"
+                className="w-full h-12 bg-slate-950 hover:bg-sidebar text-white font-bold mt-2"
               >
                 {isSubmitting ? 'Updating...' : 'Update Password'}
               </Button>

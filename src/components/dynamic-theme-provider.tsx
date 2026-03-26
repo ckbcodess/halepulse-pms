@@ -1,6 +1,15 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from 'react';
 import { useTheme } from 'next-themes';
 import { generateTheme, applyTheme, removeTheme, type ThemePalette } from '@/lib/theme/theme-utils';
 
@@ -33,6 +42,10 @@ export function useDynamicTheme() {
 
 const STORAGE_KEY = 'theme-base-color';
 
+// Use useLayoutEffect on the client, useEffect on the server (avoids SSR warnings)
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
 // ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------
@@ -43,6 +56,9 @@ interface DynamicThemeProviderProps {
   initialBaseColor?: string;
 }
 
+const hexRegex = /^#[0-9a-fA-F]{6}$/;
+const combinedRegex = /^#[0-9a-fA-F]{6}\|[a-z]+$/;
+
 export function DynamicThemeProvider({
   children,
   initialBaseColor = '#6366f1',
@@ -50,13 +66,14 @@ export function DynamicThemeProvider({
   const { resolvedTheme } = useTheme();
   const [baseColor, setBaseColorState] = useState(initialBaseColor);
   const [palette, setPalette] = useState<ThemePalette | null>(null);
-  const [prevVars, setPrevVars] = useState<Record<string, string> | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const prevVarsRef = useRef<Record<string, string> | null>(null);
 
   // On mount, check localStorage for a persisted color
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored && /^#[0-9a-fA-F]{6}$/.test(stored)) {
+      if (stored && (combinedRegex.test(stored) || hexRegex.test(stored))) {
         setBaseColorState(stored);
       }
     } catch {
@@ -64,8 +81,10 @@ export function DynamicThemeProvider({
     }
   }, []);
 
-  // Generate + apply palette whenever baseColor or theme mode changes
-  useEffect(() => {
+  // Generate + apply palette whenever baseColor or theme mode changes.
+  // Uses useLayoutEffect to paint variables BEFORE the browser renders,
+  // preventing FOUC when localStorage has a different color than SSR.
+  useIsomorphicLayoutEffect(() => {
     const theme = generateTheme(baseColor);
     setPalette(theme);
 
@@ -73,12 +92,15 @@ export function DynamicThemeProvider({
     const vars = theme[mode];
 
     // Remove previous overrides first (avoids stale vars if palette shape changes)
-    if (prevVars) {
-      removeTheme(prevVars);
+    if (prevVarsRef.current) {
+      removeTheme(prevVarsRef.current);
     }
 
     applyTheme(vars);
-    setPrevVars(vars);
+    prevVarsRef.current = vars;
+
+    // Mark as ready after first paint
+    if (!isReady) setIsReady(true);
 
     // Cleanup on unmount
     return () => {
@@ -87,8 +109,9 @@ export function DynamicThemeProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseColor, resolvedTheme]);
 
-  const setBaseColor = useCallback((hex: string) => {
-    const normalised = hex.startsWith('#') ? hex : `#${hex}`;
+  const setBaseColor = useCallback((value: string) => {
+    // If it's a simple hex without #, add it. If it's combined, leave it.
+    const normalised = (value.startsWith('#') || value.includes('|')) ? value : `#${value}`;
     setBaseColorState(normalised);
     try {
       localStorage.setItem(STORAGE_KEY, normalised);
@@ -99,7 +122,10 @@ export function DynamicThemeProvider({
 
   return (
     <DynamicThemeContext.Provider value={{ baseColor, setBaseColor, palette }}>
-      {children}
+      <div style={isReady ? undefined : { visibility: 'hidden' }}>
+        {children}
+      </div>
     </DynamicThemeContext.Provider>
   );
 }
+

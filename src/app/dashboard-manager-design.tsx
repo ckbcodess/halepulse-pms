@@ -28,17 +28,17 @@ export default function ManagerDashboard() {
   const COLORS = ['#5B5BFF'];
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen bg-muted">
       {/* ===== LEFT SIDEBAR ===== */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
+      <aside className="w-64 bg-white border-r border-border flex flex-col">
         {/* Logo Section */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
               H
             </div>
             <div>
-              <div className="font-bold text-sm text-gray-900">HalePulse</div>
+              <div className="font-bold text-sm text-foreground">HalePulse</div>
               <div className="text-xs text-gray-500">PHARMACY</div>
             </div>
           </div>
@@ -65,7 +65,7 @@ export default function ManagerDashboard() {
               { icon: '👤', label: 'Team' },
             ].map((item) => (
               <li key={item.label}>
-                <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 font-medium text-sm hover:bg-gray-100 rounded-lg">
+                <button className="w-full flex items-center gap-3 px-4 py-3 text-muted-foreground font-medium text-sm hover:bg-gray-100 rounded-lg">
                   <div className="w-5 h-5">{item.icon}</div>
                   {item.label}
                 </button>
@@ -75,8 +75,8 @@ export default function ManagerDashboard() {
         </nav>
 
         {/* Sign Out */}
-        <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 font-medium text-sm hover:bg-gray-100 rounded-lg">
+        <div className="p-4 border-t border-border">
+          <button className="w-full flex items-center gap-3 px-4 py-3 text-muted-foreground font-medium text-sm hover:bg-gray-100 rounded-lg">
             <LogOut className="w-5 h-5" />
             Sign Out
           </button>
@@ -84,24 +84,24 @@ export default function ManagerDashboard() {
       </aside>
 
       {/* ===== MAIN CONTENT ===== */}
-      <main className="flex-1 flex flex-col bg-slate-50">
+      <main className="flex-1 flex flex-col bg-muted">
         {/* TOP HEADER */}
-        <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
+        <header className="bg-white border-b border-border px-8 py-4 flex items-center justify-between">
+          <h1 className="text-lg font-semibold text-foreground">Dashboard</h1>
           <div className="flex items-center gap-4">
             <button className="p-2 hover:bg-gray-100 rounded-lg relative">
-              <Bell className="w-5 h-5 text-gray-600" />
+              <Bell className="w-5 h-5 text-muted-foreground" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
             <button className="p-2 hover:bg-gray-100 rounded-lg">
-              <Settings className="w-5 h-5 text-gray-600" />
+              <Settings className="w-5 h-5 text-muted-foreground" />
             </button>
             <button className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white font-bold text-xs">
                 M
               </div>
               <div className="text-sm">
-                <div className="font-semibold text-gray-900">Manager</div>
+                <div className="font-semibold text-foreground">Manager</div>
                 <div className="text-xs text-gray-500">MANAGER</div>
               </div>
             </button>
@@ -112,10 +112,10 @@ export default function ManagerDashboard() {
         <div className="flex-1 overflow-auto p-8">
           {/* Greeting Section */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-1">
+            <h2 className="text-3xl font-bold text-foreground mb-1">
               Good afternoon, Manager 💙
             </h2>
-            <p className="text-gray-600 text-sm">Tuesday, March 17, 2026</p>
+            <p className="text-muted-foreground text-sm">Tuesday, March 17, 2026</p>
           </div>
 
           {/* Filters */}
@@ -138,13 +138,13 @@ export default function ManagerDashboard() {
               { label: 'Expiring Soon', value: '0', info: true },
               { label: 'Sales Today', value: '₵39.00', trend: '+1000.0%', info: true },
             ].map((card, idx) => (
-              <div key={idx} className="bg-white border border-gray-200 rounded-xl p-6">
+              <div key={idx} className="bg-white border border-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium text-gray-700">{card.label}</h3>
                   {card.info && <AlertCircle className="w-4 h-4 text-gray-400" />}
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <div className="text-3xl font-bold text-gray-900">{card.value}</div>
+                  <div className="text-3xl font-bold text-foreground">{card.value}</div>
                   {card.alert && <span className="w-2 h-2 bg-red-500 rounded-full"></span>}
                   {card.trend && <span className="text-green-600 text-sm font-medium">{card.trend}</span>}
                 </div>
@@ -155,10 +155,10 @@ export default function ManagerDashboard() {
           {/* Charts Section */}
           <div className="grid grid-cols-2 gap-6 mb-8">
             {/* Monthly Progress Chart */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-border rounded-xl p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-gray-900">Monthly Progress</h3>
-                <button className="text-sm text-gray-600 hover:text-gray-900">Monthly</button>
+                <h3 className="text-lg font-bold text-foreground">Monthly Progress</h3>
+                <button className="text-sm text-muted-foreground hover:text-foreground">Monthly</button>
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={monthlyData}>
@@ -174,8 +174,8 @@ export default function ManagerDashboard() {
             </div>
 
             {/* Today's Report Chart */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-6">Today's Report</h3>
+            <div className="bg-white border border-border rounded-xl p-6">
+              <h3 className="text-lg font-bold text-foreground mb-6">Today's Report</h3>
               <div className="flex flex-col items-center justify-center py-6">
                 <ResponsiveContainer width="100%" height={240}>
                   <PieChart>
@@ -194,12 +194,12 @@ export default function ManagerDashboard() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="text-center mt-4">
-                  <p className="text-sm text-gray-600">Total Earning</p>
-                  <p className="text-2xl font-bold text-gray-900">₵39.00</p>
+                  <p className="text-sm text-muted-foreground">Total Earning</p>
+                  <p className="text-2xl font-bold text-foreground">₵39.00</p>
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                  <span className="text-sm text-gray-600">Cash</span>
+                  <span className="text-sm text-muted-foreground">Cash</span>
                 </div>
               </div>
             </div>
@@ -208,42 +208,42 @@ export default function ManagerDashboard() {
           {/* Transactions & Alerts Section */}
           <div className="grid grid-cols-2 gap-6">
             {/* Recent Transactions */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-border rounded-xl p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-gray-900">Recent Transactions</h3>
+                <h3 className="text-lg font-bold text-foreground">Recent Transactions</h3>
                 <a href="#" className="text-blue-600 text-sm font-medium hover:underline">
                   View report
                 </a>
               </div>
               <div className="space-y-4">
-                <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <div className="flex items-center justify-between pb-4 border-b border-border">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-xs">
+                    <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center text-muted-foreground font-bold text-xs">
                       W
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Walk-in Customer</p>
+                      <p className="font-medium text-foreground">Walk-in Customer</p>
                     </div>
                   </div>
-                  <p className="font-medium text-gray-900">₵39.00</p>
+                  <p className="font-medium text-foreground">₵39.00</p>
                 </div>
               </div>
             </div>
 
             {/* Inventory Alerts */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="bg-white border border-border rounded-xl p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-gray-900">Inventory Alerts</h3>
+                <h3 className="text-lg font-bold text-foreground">Inventory Alerts</h3>
                 <a href="#" className="text-blue-600 text-sm font-medium hover:underline">
                   View report
                 </a>
               </div>
               <div className="space-y-4">
-                <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <div className="flex items-center justify-between pb-4 border-b border-border">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
                     <div>
-                      <p className="font-medium text-gray-900">Low Stock Remaining</p>
+                      <p className="font-medium text-foreground">Low Stock Remaining</p>
                     </div>
                   </div>
                 </div>

@@ -50,20 +50,20 @@ export default function MenuEditor() {
     setTimeout(() => setSavedMsg(''), 2000);
   };
 
-  if (loading) return <div className="text-slate-400 text-sm p-6">Loading…</div>;
-  if (!menus)  return <div className="text-slate-400 text-sm p-6">No menu config found.</div>;
+  if (loading) return <div className="text-muted-foreground text-sm p-6">Loading…</div>;
+  if (!menus)  return <div className="text-muted-foreground text-sm p-6">No menu config found.</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Menu Visibility</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Control which menu items each role can see.</p>
+          <h1 className="text-xl font-bold text-foreground dark:text-white">Menu Visibility</h1>
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5">Control which menu items each role can see.</p>
         </div>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-lg transition-colors"
         >
           <Save size={14} /> {saving ? 'Saving…' : savedMsg || 'Save Changes'}
         </button>
@@ -71,10 +71,10 @@ export default function MenuEditor() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {ROLES.map(role => (
-          <div key={role} className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{role}</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+          <div key={role} className="bg-white dark:bg-[#18181b] border border-border dark:border-border rounded-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-border dark:border-border">
+              <h3 className="text-sm font-bold text-foreground dark:text-white">{role}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {(menus[role] ?? []).filter(i => i.visible).length} visible items
               </p>
             </div>
@@ -85,8 +85,8 @@ export default function MenuEditor() {
                   onClick={() => toggleItem(role, item.key)}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
                     item.visible
-                      ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
-                      : 'text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      ? 'bg-indigo-50 dark:bg-primary/10 text-indigo-700 dark:text-primary/70'
+                      : 'text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-sidebar/50'
                   }`}
                 >
                   <span className="font-medium">{item.label}</span>

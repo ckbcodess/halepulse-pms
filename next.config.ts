@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",                    // Tailwind inline styles
               "img-src 'self' data: blob: https:",                   // allow tenant logos via https
               "font-src 'self' data: https://fonts.gstatic.com",
-              "connect-src 'self' https:",                           // API + Vercel analytics
+              `connect-src 'self' https:${process.env.NODE_ENV === 'development' ? ' http://localhost:4747 ws://localhost:4747' : ''}`,  // API + Vercel analytics; localhost:4747 for Agentation in dev
               "frame-ancestors 'none'",                              // same as X-Frame-Options DENY
               "base-uri 'self'",
               "form-action 'self'",
