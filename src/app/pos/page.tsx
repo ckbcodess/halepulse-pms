@@ -246,7 +246,7 @@ export default function POSPage() {
       <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-6rem)] print:hidden animate-in slide-in-from-bottom-2 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '50ms' }}>
 
         {/* Product Search & List */}
-        <div className="flex-1 flex flex-col gap-6 min-h-0 bg-white dark:bg-[var(--surface-raised)] border border-border rounded-2xl p-6 shadow-sm">
+        <div className="flex-1 flex flex-col gap-6 min-h-0 bg-white dark:bg-card border border-border rounded-2xl p-6 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="relative group flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} strokeWidth={2} />
@@ -328,7 +328,7 @@ export default function POSPage() {
         </div>
 
         {/* Cart & Checkout */}
-        <div className="w-full lg:w-[400px] bg-white dark:bg-[var(--surface-raised)] border border-border text-foreground rounded-2xl flex flex-col overflow-hidden shadow-premium animate-in slide-in-from-right-4 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '150ms' }}>
+        <div className="w-full lg:w-[400px] bg-white dark:bg-card border border-border text-foreground rounded-2xl flex flex-col overflow-hidden shadow-premium animate-in slide-in-from-right-4 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '150ms' }}>
 
           <div className="p-6 border-b border-border flex items-center justify-between">
             <h3 className="text-[15px] font-semibold flex items-center gap-2">
@@ -488,7 +488,7 @@ export default function POSPage() {
           </div>
 
           {/* Cart Footer with Actions & Totals */}
-          <div className="p-6 bg-background dark:bg-[var(--surface-raised)] border-t border-border flex flex-col gap-4">
+          <div className="p-6 bg-background dark:bg-card border-t border-border flex flex-col gap-4">
             {/* Action Buttons */}
             <div className="flex gap-2">
               <Button

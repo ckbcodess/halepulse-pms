@@ -14,6 +14,7 @@ import ReactQueryProvider from '@/components/providers/ReactQueryProvider';
 import { getMenuForUser } from '@/lib/menus/getMenuForUser';
 import { getImpersonation } from '@/lib/auth/getImpersonation';
 import { cn } from "@/lib/utils";
+import AgentationToolbar from '@/components/AgentationToolbar';
 import { cookies } from 'next/headers';
 
 const geist = Geist({ variable: '--font-sans', subsets: ['latin'] });
@@ -66,6 +67,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <style dangerouslySetInnerHTML={{ __html: brandingCSS }} />
       </head>
       <body className="antialiased">
+        <AgentationToolbar />
         <ReactQueryProvider>
           <SessionProvider session={session}>
             <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>

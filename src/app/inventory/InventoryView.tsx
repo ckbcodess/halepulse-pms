@@ -24,7 +24,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetDescription,
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -240,92 +240,113 @@ function AddProductSheet({ open, onClose, onSuccess }: { open: boolean; onClose:
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent className="p-0 gap-0 sm:max-w-md overflow-y-auto">
-        <SheetHeader className="px-5 pt-5">
-          <SheetTitle>Add Product</SheetTitle>
-        </SheetHeader>
-        <form onSubmit={handleSubmit} className="px-5 py-4 flex flex-col gap-3.5">
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-semibold text-muted-foreground">Product Name *</Label>
-            <Input required value={form.name} onChange={e => update('name', e.target.value)} placeholder="e.g. Paracetamol 500mg" />
+      <SheetContent className="p-0 gap-0 sm:max-w-md flex flex-col" showCloseButton={false}>
+        {/* Sticky header */}
+        <div className="shrink-0 px-6 pt-5 pb-4 border-b border-border flex items-start justify-between gap-4">
+          <div>
+            <SheetTitle className="text-[15px] font-semibold leading-tight">Add Product</SheetTitle>
+            <p className="text-[12px] text-muted-foreground mt-0.5">Fill in the details to add a new item to inventory.</p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground">Brand</Label>
-              <Input value={form.brand} onChange={e => update('brand', e.target.value)} placeholder="e.g. GSK" />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground">SKU / Barcode</Label>
-              <Input value={form.sku} onChange={e => update('sku', e.target.value)} placeholder="Auto-generated" />
-              <span className="text-[10px] text-muted-foreground">Leave blank to auto-generate</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground">Category *</Label>
-              <select
-                value={form.category}
-                onChange={e => update('category', e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground">Unit *</Label>
-              <select
-                value={form.unit}
-                onChange={e => update('unit', e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-              </select>
-            </div>
-          </div>
+          <SheetClose render={<button className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors mt-0.5" />}>
+            <X size={15} />
+          </SheetClose>
+        </div>
 
-          <div className="border-t border-border pt-3 mt-1">
-            <p className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-widest">Pricing</p>
-            <div className="grid grid-cols-3 gap-3">
+        {/* Scrollable body */}
+        <form id="add-product-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="px-6 py-5 flex flex-col gap-6">
+
+            {/* Basic Info */}
+            <div className="flex flex-col gap-3">
+              <p className="text-[10.5px] font-semibold uppercase tracking-widest text-muted-foreground">Basic Info</p>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground">Cost (GHS)</Label>
-                <Input type="number" step="0.01" min="0" value={form.costPrice} onChange={e => update('costPrice', e.target.value)} placeholder="0.00" />
+                <Label className="text-[12px] font-medium">Product Name <span className="text-rose-500">*</span></Label>
+                <Input required value={form.name} onChange={e => update('name', e.target.value)} placeholder="e.g. Paracetamol 500mg" />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground">Markup %</Label>
-                <Input type="number" step="0.01" min="0" value={form.markupPercent} onChange={e => update('markupPercent', e.target.value)} placeholder="30" />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[12px] font-medium">Brand</Label>
+                  <Input value={form.brand} onChange={e => update('brand', e.target.value)} placeholder="e.g. GSK" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[12px] font-medium">SKU / Barcode</Label>
+                  <Input value={form.sku} onChange={e => update('sku', e.target.value)} placeholder="Auto-generated" />
+                  <span className="text-[10px] text-muted-foreground leading-tight">Leave blank to auto-generate</span>
+                </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground">Selling (GHS)</Label>
-                <div className="h-9 flex items-center px-3 rounded-md border border-input bg-muted/50 text-sm font-semibold text-foreground">
-                  {sellingPrice > 0 ? `₵ ${sellingPrice.toFixed(2)}` : '—'}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[12px] font-medium">Category <span className="text-rose-500">*</span></Label>
+                  <select value={form.category} onChange={e => update('category', e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-[12.5px]">
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[12px] font-medium">Unit <span className="text-rose-500">*</span></Label>
+                  <select value={form.unit} onChange={e => update('unit', e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-[12.5px]">
+                    {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground">Initial Stock</Label>
-              <Input type="number" min="0" value={form.stockQty} onChange={e => update('stockQty', e.target.value)} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground">Low Stock Threshold</Label>
-              <Input type="number" min="0" value={form.lowStockThreshold} onChange={e => update('lowStockThreshold', e.target.value)} />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-semibold text-muted-foreground">Expiry Date</Label>
-            <Input type="date" value={form.expiryDate} onChange={e => update('expiryDate', e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-semibold text-muted-foreground">Description</Label>
-            <Input value={form.description} onChange={e => update('description', e.target.value)} placeholder="Optional notes" />
-          </div>
+            <div className="h-px bg-border" />
 
-          <Button type="submit" disabled={submitting} className="w-full mt-2">
+            {/* Pricing */}
+            <div className="flex flex-col gap-3">
+              <p className="text-[10.5px] font-semibold uppercase tracking-widest text-muted-foreground">Pricing</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[12px] font-medium">Cost (GHS)</Label>
+                  <Input type="number" step="0.01" min="0" value={form.costPrice} onChange={e => update('costPrice', e.target.value)} placeholder="0.00" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[12px] font-medium">Markup %</Label>
+                  <Input type="number" step="0.01" min="0" value={form.markupPercent} onChange={e => update('markupPercent', e.target.value)} placeholder="30" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[12px] font-medium">Selling</Label>
+                  <div className="h-9 flex items-center px-3 rounded-md border border-input bg-muted/40 text-[12.5px] font-semibold text-foreground">
+                    {sellingPrice > 0 ? `₵${sellingPrice.toFixed(2)}` : '—'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-px bg-border" />
+
+            {/* Stock & Details */}
+            <div className="flex flex-col gap-3">
+              <p className="text-[10.5px] font-semibold uppercase tracking-widest text-muted-foreground">Stock & Details</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[12px] font-medium">Initial Stock</Label>
+                  <Input type="number" min="0" value={form.stockQty} onChange={e => update('stockQty', e.target.value)} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[12px] font-medium">Low Stock Alert</Label>
+                  <Input type="number" min="0" value={form.lowStockThreshold} onChange={e => update('lowStockThreshold', e.target.value)} />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[12px] font-medium">Expiry Date</Label>
+                <Input type="date" value={form.expiryDate} onChange={e => update('expiryDate', e.target.value)} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[12px] font-medium">Notes</Label>
+                <Input value={form.description} onChange={e => update('description', e.target.value)} placeholder="Optional notes about this product" />
+              </div>
+            </div>
+
+          </div>
+        </form>
+
+        {/* Sticky footer */}
+        <div className="shrink-0 px-6 py-4 border-t border-border bg-background">
+          <Button type="submit" form="add-product-form" disabled={submitting} className="w-full">
             {submitting ? 'Creating...' : 'Create Product'}
           </Button>
-        </form>
+        </div>
       </SheetContent>
     </Sheet>
   );
@@ -468,7 +489,9 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent className="p-0 gap-0 sm:max-w-lg overflow-y-auto">
+      <SheetContent className="p-0 gap-0 sm:max-w-lg flex flex-col" showCloseButton={false}>
+
+        {/* Loading skeleton */}
         {isLoading && (
           <div className="p-6 flex flex-col gap-4">
             <div className="h-6 w-48 bg-muted rounded animate-pulse" />
@@ -481,194 +504,196 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
 
         {!isLoading && product && (
           <>
-            {/* Header */}
-            <div className="px-5 pt-5 pb-4 border-b border-border">
-              <div className="flex items-center justify-between mb-3">
-                <SheetTitle className="text-lg font-bold">{editing ? 'Edit Product' : product.name}</SheetTitle>
-                <div className="flex items-center gap-1.5">
-                  {editing ? (
-                    <>
-                      <Button variant="outline" size="sm" onClick={() => { setEditing(false); setForm({}); }} disabled={submitting}>
-                        <X size={13} className="mr-1" /> Cancel
-                      </Button>
-                      <Button size="sm" onClick={handleSave} disabled={submitting}>
-                        <Save size={13} className="mr-1" /> {submitting ? 'Saving...' : 'Save'}
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button variant="outline" size="sm" onClick={startEditing}>
-                        <Pencil size={13} className="mr-1" /> Edit
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleArchive}
-                        className={product.isActive ? 'text-rose-600 hover:text-rose-700' : 'text-emerald-600 hover:text-emerald-700'}>
-                        {product.isActive ? <><Archive size={13} className="mr-1" /> Archive</> : <><RotateCcw size={13} className="mr-1" /> Restore</>}
-                      </Button>
-                    </>
+            {/* Sticky header */}
+            <div className="shrink-0 px-6 pt-5 pb-4 border-b border-border">
+              <div className="flex items-start justify-between gap-4 mb-2">
+                <div className="min-w-0">
+                  <SheetTitle className="text-[15px] font-semibold leading-tight truncate">
+                    {editing ? 'Edit Product' : product.name}
+                  </SheetTitle>
+                  {!editing && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                      {product.brand && <span className="text-[11.5px] text-muted-foreground">{product.brand}</span>}
+                      {product.brand && <span className="text-muted-foreground/40">·</span>}
+                      <span className="text-[11.5px] text-muted-foreground">{product.category} · {product.unit}</span>
+                      {product.sku && <span className="text-[11px] font-mono text-muted-foreground/70">{product.sku}</span>}
+                    </div>
                   )}
                 </div>
-              </div>
-
-              {!editing && (
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  {product.brand && <span>{product.brand}</span>}
-                  <span>{product.category} · {product.unit}</span>
-                  {product.sku && <span className="font-mono">{product.sku}</span>}
-                  <Badge variant="outline" className={
-                    stockStatus === 'OUT' ? 'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-700 dark:bg-rose-950/30 dark:text-rose-400'
-                      : stockStatus === 'LOW' ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
-                      : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
-                  }>
-                    {stockStatus === 'OUT' ? 'Out of Stock' : stockStatus === 'LOW' ? 'Low Stock' : 'In Stock'}
-                  </Badge>
-                  {!product.isActive && <Badge variant="outline" className="border-rose-300 text-rose-600">Archived</Badge>}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {!editing && (
+                    <Badge variant="outline" className={
+                      stockStatus === 'OUT' ? 'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-700 dark:bg-rose-950/30 dark:text-rose-400'
+                        : stockStatus === 'LOW' ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
+                        : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
+                    }>
+                      {stockStatus === 'OUT' ? 'Out of Stock' : stockStatus === 'LOW' ? 'Low Stock' : 'In Stock'}
+                    </Badge>
+                  )}
+                  {!product.isActive && !editing && (
+                    <Badge variant="outline" className="border-rose-300 text-rose-600">Archived</Badge>
+                  )}
+                  <SheetClose render={<button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" />}>
+                    <X size={15} />
+                  </SheetClose>
                 </div>
+              </div>
+              {!editing && product.description && (
+                <p className="text-[11.5px] text-muted-foreground leading-relaxed">{product.description}</p>
               )}
-              {!editing && product.description && <p className="mt-2 text-xs text-muted-foreground">{product.description}</p>}
             </div>
 
-            {/* Body */}
-            <div className="px-5 py-4 flex flex-col gap-4">
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-5 flex flex-col gap-5">
               {editing ? (
                 /* ── Edit Form ── */
                 <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs font-semibold text-muted-foreground">Name *</Label>
-                      <Input value={form.name} onChange={e => update('name', e.target.value)} />
+                  <div className="flex flex-col gap-3">
+                    <p className="text-[10.5px] font-semibold uppercase tracking-widest text-muted-foreground">Basic Info</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[12px] font-medium">Name <span className="text-rose-500">*</span></Label>
+                        <Input value={form.name} onChange={e => update('name', e.target.value)} />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[12px] font-medium">Brand</Label>
+                        <Input value={form.brand} onChange={e => update('brand', e.target.value)} />
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs font-semibold text-muted-foreground">Brand</Label>
-                      <Input value={form.brand} onChange={e => update('brand', e.target.value)} />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[12px] font-medium">Category</Label>
+                        <select value={form.category} onChange={e => update('category', e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-[12.5px]">
+                          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[12px] font-medium">Unit</Label>
+                        <select value={form.unit} onChange={e => update('unit', e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-[12.5px]">
+                          {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs font-semibold text-muted-foreground">Category</Label>
-                      <select value={form.category} onChange={e => update('category', e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
-                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs font-semibold text-muted-foreground">Unit</Label>
-                      <select value={form.unit} onChange={e => update('unit', e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
-                        {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs font-semibold text-muted-foreground">SKU</Label>
-                      <Input value={form.sku} onChange={e => update('sku', e.target.value)} />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs font-semibold text-muted-foreground">Low Stock Threshold</Label>
-                      <Input type="number" min="0" value={form.lowStockThreshold} onChange={e => update('lowStockThreshold', e.target.value)} />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[12px] font-medium">SKU</Label>
+                        <Input value={form.sku} onChange={e => update('sku', e.target.value)} />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[12px] font-medium">Low Stock Alert</Label>
+                        <Input type="number" min="0" value={form.lowStockThreshold} onChange={e => update('lowStockThreshold', e.target.value)} />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="border-t border-border pt-3">
-                    <p className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-widest">Pricing</p>
+                  <div className="h-px bg-border" />
+
+                  <div className="flex flex-col gap-3">
+                    <p className="text-[10.5px] font-semibold uppercase tracking-widest text-muted-foreground">Pricing</p>
                     <div className="grid grid-cols-3 gap-3">
-                      <div className="flex flex-col gap-1">
-                        <Label className="text-xs font-semibold text-muted-foreground">Cost (GHS)</Label>
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[12px] font-medium">Cost (GHS)</Label>
                         <Input type="number" step="0.01" min="0" value={form.costPrice} onChange={e => update('costPrice', e.target.value)} />
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <Label className="text-xs font-semibold text-muted-foreground">Markup %</Label>
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[12px] font-medium">Markup %</Label>
                         <Input type="number" step="0.01" min="0" value={form.markupPercent} onChange={e => update('markupPercent', e.target.value)} />
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <Label className="text-xs font-semibold text-muted-foreground">Selling (GHS)</Label>
-                        <div className="h-9 flex items-center px-3 rounded-md border border-input bg-muted/50 text-sm font-semibold">
-                          {sellingPrice > 0 ? `₵ ${sellingPrice.toFixed(2)}` : '—'}
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[12px] font-medium">Selling</Label>
+                        <div className="h-9 flex items-center px-3 rounded-md border border-input bg-muted/40 text-[12.5px] font-semibold">
+                          {sellingPrice > 0 ? `₵${sellingPrice.toFixed(2)}` : '—'}
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs font-semibold text-muted-foreground">Expiry Date</Label>
-                      <Input type="date" value={form.expiryDate} onChange={e => update('expiryDate', e.target.value)} />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs font-semibold text-muted-foreground">Description</Label>
-                      <Input value={form.description} onChange={e => update('description', e.target.value)} />
+                  <div className="h-px bg-border" />
+
+                  <div className="flex flex-col gap-3">
+                    <p className="text-[10.5px] font-semibold uppercase tracking-widest text-muted-foreground">Other</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[12px] font-medium">Expiry Date</Label>
+                        <Input type="date" value={form.expiryDate} onChange={e => update('expiryDate', e.target.value)} />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[12px] font-medium">Notes</Label>
+                        <Input value={form.description} onChange={e => update('description', e.target.value)} />
+                      </div>
                     </div>
                   </div>
                 </>
               ) : (
                 /* ── Read-only Info ── */
                 <>
-                  {/* Stats Grid */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-start gap-2.5 p-3 rounded-xl border border-border bg-card">
+                    <div className="flex items-start gap-2.5 p-3.5 rounded-xl border border-border bg-muted/20">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <Package size={14} className="text-primary" />
                       </div>
                       <div>
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Stock</p>
-                        <p className="text-base font-bold text-card-foreground leading-tight">{product.stockQty}</p>
-                        <p className="text-[10px] text-muted-foreground">Threshold: {product.lowStockThreshold}</p>
+                        <p className="text-base font-bold text-foreground leading-tight">{product.stockQty}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Alert at {product.lowStockThreshold}</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-2.5 p-3 rounded-xl border border-border bg-card">
+                    <div className="flex items-start gap-2.5 p-3.5 rounded-xl border border-border bg-muted/20">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <DollarSign size={14} className="text-primary" />
                       </div>
                       <div>
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Price</p>
-                        <p className="text-base font-bold text-card-foreground leading-tight">₵ {product.price.toFixed(2)}</p>
+                        <p className="text-base font-bold text-foreground leading-tight">₵{product.price.toFixed(2)}</p>
                         {product.costPrice != null && product.costPrice > 0 && (
-                          <p className="text-[10px] text-muted-foreground">Cost: ₵ {product.costPrice.toFixed(2)} · {product.markupPercent}%</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">Cost ₵{product.costPrice.toFixed(2)} · {product.markupPercent}%</p>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-start gap-2.5 p-3 rounded-xl border border-border bg-card">
+                    <div className="flex items-start gap-2.5 p-3.5 rounded-xl border border-border bg-muted/20">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <Clock size={14} className="text-primary" />
                       </div>
                       <div>
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Expiry</p>
-                        <p className="text-sm font-bold text-card-foreground leading-tight">
+                        <p className="text-sm font-bold text-foreground leading-tight">
                           {product.expiryDate ? new Date(product.expiryDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-2.5 p-3 rounded-xl border border-border bg-card">
+                    <div className="flex items-start gap-2.5 p-3.5 rounded-xl border border-border bg-muted/20">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <Truck size={14} className="text-primary" />
                       </div>
                       <div>
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Supplier</p>
-                        <p className="text-sm font-bold text-card-foreground leading-tight">{product.supplier?.name ?? 'Not set'}</p>
-                        {product.supplier?.phone && <p className="text-[10px] text-muted-foreground">{product.supplier.phone}</p>}
+                        <p className="text-sm font-bold text-foreground leading-tight">{product.supplier?.name ?? 'Not set'}</p>
+                        {product.supplier?.phone && <p className="text-[10px] text-muted-foreground mt-0.5">{product.supplier.phone}</p>}
                       </div>
                     </div>
                   </div>
 
                   {/* Adjustment History */}
                   {product.stockAdjustments.length > 0 && (
-                    <div className="border border-border rounded-xl overflow-hidden mt-1">
-                      <div className="px-4 py-2.5 border-b border-border bg-muted/30">
-                        <h3 className="text-xs font-bold text-card-foreground">Adjustment History</h3>
+                    <div className="border border-border rounded-xl overflow-hidden">
+                      <div className="px-4 py-2.5 border-b border-border bg-muted/30 flex items-center justify-between">
+                        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Adjustment History</h3>
                       </div>
-                      <div className="divide-y divide-border max-h-48 overflow-y-auto">
+                      <div className="divide-y divide-border max-h-52 overflow-y-auto">
                         {product.stockAdjustments.map(a => (
-                          <div key={a.id} className="px-4 py-2.5 flex items-center justify-between">
-                            <div>
-                              <span className="text-xs font-medium">
+                          <div key={a.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <span className="text-[12.5px] font-medium text-foreground">
                                 {a.oldQuantity} → {a.newQuantity}{' '}
-                                <span className={a.delta > 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                                <span className={a.delta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
                                   ({a.delta > 0 ? '+' : ''}{a.delta})
                                 </span>
                               </span>
-                              <p className="text-[10px] text-muted-foreground">{a.reason}{a.notes ? ` — ${a.notes}` : ''}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{a.reason}{a.notes ? ` — ${a.notes}` : ''}</p>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="text-[10px] text-muted-foreground">{a.adjuster.username}</p>
-                              <p className="text-[10px] text-muted-foreground">
+                              <p className="text-[11px] text-muted-foreground">{a.adjuster.username}</p>
+                              <p className="text-[10.5px] text-muted-foreground/70">
                                 {new Date(a.adjustedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
                               </p>
                             </div>
@@ -677,6 +702,36 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
                       </div>
                     </div>
                   )}
+                </>
+              )}
+            </div>
+
+            {/* Sticky footer with actions */}
+            <div className="shrink-0 px-6 py-4 border-t border-border bg-background flex items-center gap-2">
+              {editing ? (
+                <>
+                  <Button variant="outline" className="flex-1" onClick={() => { setEditing(false); setForm({}); }} disabled={submitting}>
+                    Cancel
+                  </Button>
+                  <Button className="flex-1" onClick={handleSave} disabled={submitting}>
+                    <Save size={13} className="mr-1.5" /> {submitting ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" className="flex-1" onClick={startEditing}>
+                    <Pencil size={13} className="mr-1.5" /> Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className={`flex-1 ${product.isActive ? 'text-rose-600 hover:text-rose-700 hover:border-rose-300' : 'text-emerald-600 hover:text-emerald-700 hover:border-emerald-300'}`}
+                    onClick={handleArchive}
+                  >
+                    {product.isActive
+                      ? <><Archive size={13} className="mr-1.5" /> Archive</>
+                      : <><RotateCcw size={13} className="mr-1.5" /> Restore</>
+                    }
+                  </Button>
                 </>
               )}
             </div>
@@ -781,7 +836,7 @@ export default function InventoryView() {
       >
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<button className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] border border-[#e2e8f0] dark:border-border bg-white dark:bg-card text-[#08090e] dark:text-foreground text-[12.25px] font-medium hover:bg-muted/50 transition-colors cursor-pointer" />}
+            render={<button className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] border border-[#e2e8f0] dark:border-border bg-white dark:bg-card text-[#08090e] dark:text-foreground text-[12.25px] font-medium hover:bg-muted/50 dark:hover:bg-muted transition-colors cursor-pointer" />}
           >
             More Actions
             <ChevronDown size={13} className="text-muted-foreground" />
@@ -826,8 +881,8 @@ export default function InventoryView() {
             onClick={() => handleFilterChange(key)}
             className={`flex items-center gap-1 px-4 py-2 rounded-full border text-[12.5px] font-medium transition-all ${
               activeFilter === key
-                ? 'border-[#08090e]/20 bg-white dark:bg-card shadow-sm text-[#08090e] dark:text-foreground'
-                : 'border-[#08090e]/10 text-[#08090e] dark:text-foreground hover:border-[#08090e]/20'
+                ? 'border-[#08090e]/20 bg-[#f8f8f7] dark:bg-[#f8f8f7] dark:text-[#08090e] shadow-sm text-[#08090e]'
+                : 'border-[#08090e]/10 dark:border-foreground/25 text-[#08090e] dark:text-foreground hover:border-[#08090e]/20 dark:hover:border-foreground/40'
             }`}
           >
             {label}
@@ -841,7 +896,7 @@ export default function InventoryView() {
       {/* Search + Sort + Filter Toolbar */}
       <div className="flex items-center gap-6 animate-in slide-in-from-bottom-3 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '100ms' }}>
         {/* Search */}
-        <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-[#08090e14] rounded-[8px] bg-white dark:bg-card focus-within:border-primary/40 transition-colors w-[342px]">
+        <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-[#08090e14] dark:border-border rounded-[8px] bg-white dark:bg-card focus-within:border-primary/40 transition-colors w-[342px]">
           <Search size={16} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
           <input
             value={searchInput}
@@ -860,7 +915,7 @@ export default function InventoryView() {
           {/* Sort dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
-              render={<button className="flex items-center justify-between h-[36px] w-[115px] pl-[13px] pr-[10px] border border-[#08090e14] rounded-[8px] bg-white dark:bg-card text-[12.25px] text-foreground font-normal hover:border-primary/40 focus:outline-none transition-colors cursor-pointer" />}
+              render={<button className="flex items-center justify-between h-[36px] w-[115px] pl-[13px] pr-[10px] border border-[#08090e14] dark:border-border rounded-[8px] bg-white dark:bg-card text-[12.25px] text-foreground font-normal hover:border-primary/40 focus:outline-none transition-colors cursor-pointer" />}
             >
               <span className="truncate">{SORT_OPTIONS.find(o => o.value === activeSort)?.label ?? 'Name A→Z'}</span>
               <ChevronDown size={13} className="shrink-0 text-muted-foreground" />
@@ -880,7 +935,7 @@ export default function InventoryView() {
           {/* Category dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
-              render={<button className={`flex items-center justify-between h-[36px] w-[115px] pl-[13px] pr-[10px] border rounded-[8px] bg-white dark:bg-card text-[12.25px] font-normal hover:border-primary/40 focus:outline-none transition-colors cursor-pointer ${activeCategories.length > 0 ? 'border-primary/40 text-foreground' : 'border-[#08090e14] text-foreground'}`} />}
+              render={<button className={`flex items-center justify-between h-[36px] w-[115px] pl-[13px] pr-[10px] border rounded-[8px] bg-white dark:bg-card text-[12.25px] font-normal hover:border-primary/40 focus:outline-none transition-colors cursor-pointer ${activeCategories.length > 0 ? 'border-primary/40 text-foreground' : 'border-[#08090e14] dark:border-border text-foreground'}`} />}
             >
               <span className="truncate">Category{activeCategories.length > 0 ? ` (${activeCategories.length})` : ''}</span>
               <ChevronDown size={13} className="shrink-0 text-muted-foreground" />
@@ -911,7 +966,7 @@ export default function InventoryView() {
           {/* Stock level dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
-              render={<button className="flex items-center justify-between h-[36px] w-[115px] pl-[13px] pr-[10px] border border-[#08090e14] rounded-[8px] bg-white dark:bg-card text-[12.25px] text-foreground font-normal hover:border-primary/40 focus:outline-none transition-colors cursor-pointer" />}
+              render={<button className="flex items-center justify-between h-[36px] w-[115px] pl-[13px] pr-[10px] border border-[#08090e14] dark:border-border rounded-[8px] bg-white dark:bg-card text-[12.25px] text-foreground font-normal hover:border-primary/40 focus:outline-none transition-colors cursor-pointer" />}
             >
               <span className="truncate">Stock Level</span>
               <ChevronDown size={13} className="shrink-0 text-muted-foreground" />
@@ -1065,37 +1120,54 @@ export default function InventoryView() {
 
         {/* Bulk Markup Sheet */}
         <Sheet open={showBulkMarkup} onOpenChange={setShowBulkMarkup}>
-          <SheetContent side="right" className="w-[360px] sm:w-[400px]">
-            <SheetHeader>
-              <SheetTitle>Bulk Update Markup</SheetTitle>
-            </SheetHeader>
-            <form className="mt-6 space-y-4" onSubmit={async (e) => {
-              e.preventDefault();
-              const markup = parseFloat((e.currentTarget.elements.namedItem('bulkMarkup') as HTMLInputElement).value);
-              if (isNaN(markup) || markup < 0) { toast.error('Enter a valid markup %'); return; }
-              try {
-                await Promise.all(Array.from(selectedIds).map(pid =>
-                  fetch(`/api/inventory/products/${pid}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ markupPercent: markup }),
-                  })
-                ));
-                toast.success(`Updated markup to ${markup}% for ${selectedIds.size} product(s)`);
-                setShowBulkMarkup(false);
-                clearSelection();
-                invalidateAll();
-              } catch { toast.error('Failed to update markup'); }
-            }}>
-              <div className="space-y-2">
-                <Label htmlFor="bulkMarkup">Markup Percentage (%)</Label>
-                <Input id="bulkMarkup" name="bulkMarkup" type="number" step="0.01" min="0" placeholder="30" defaultValue="30" />
-                <p className="text-xs text-muted-foreground">This will apply to all {selectedIds.size} selected product(s).</p>
+          <SheetContent side="right" className="p-0 gap-0 w-[360px] sm:w-[400px] flex flex-col" showCloseButton={false}>
+            {/* Header */}
+            <div className="shrink-0 px-6 pt-5 pb-4 border-b border-border flex items-start justify-between gap-4">
+              <div>
+                <SheetTitle className="text-[15px] font-semibold leading-tight">Bulk Update Markup</SheetTitle>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Applies to {selectedIds.size} selected product{selectedIds.size !== 1 ? 's' : ''}.</p>
               </div>
-              <Button type="submit" className="w-full">
-                <Save size={14} className="mr-2" /> Apply Markup
-              </Button>
+              <SheetClose render={<button className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors mt-0.5" />}>
+                <X size={15} />
+              </SheetClose>
+            </div>
+
+            {/* Body */}
+            <form
+              id="bulk-markup-form"
+              className="flex-1 px-6 py-5"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const markup = parseFloat((e.currentTarget.elements.namedItem('bulkMarkup') as HTMLInputElement).value);
+                if (isNaN(markup) || markup < 0) { toast.error('Enter a valid markup %'); return; }
+                try {
+                  await Promise.all(Array.from(selectedIds).map(pid =>
+                    fetch(`/api/inventory/products/${pid}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ markupPercent: markup }),
+                    })
+                  ));
+                  toast.success(`Updated markup to ${markup}% for ${selectedIds.size} product(s)`);
+                  setShowBulkMarkup(false);
+                  clearSelection();
+                  invalidateAll();
+                } catch { toast.error('Failed to update markup'); }
+              }}
+            >
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="bulkMarkup" className="text-[12px] font-medium">Markup Percentage (%)</Label>
+                <Input id="bulkMarkup" name="bulkMarkup" type="number" step="0.01" min="0" placeholder="e.g. 30" defaultValue="30" />
+                <p className="text-[11px] text-muted-foreground mt-0.5">The selling price will be recalculated automatically based on cost + markup.</p>
+              </div>
             </form>
+
+            {/* Footer */}
+            <div className="shrink-0 px-6 py-4 border-t border-border bg-background">
+              <Button type="submit" form="bulk-markup-form" className="w-full">
+                <Percent size={13} className="mr-1.5" /> Apply Markup
+              </Button>
+            </div>
           </SheetContent>
         </Sheet>
 

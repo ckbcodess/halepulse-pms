@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import type { Session } from 'next-auth';
 import Sidebar from './Sidebar';
 import TopHeader from './TopHeader';
+import { Agentation } from 'agentation';
 
 const NO_SHELL_PREFIXES = ['/login', '/super-admin'];
 const COLLAPSE_KEY = 'sidebar-collapsed';
@@ -56,7 +57,8 @@ export default function AppShell({ children, session, menuItems }: AppShellProps
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--surface)] dark:bg-background">
+    <div className="flex h-screen overflow-hidden bg-[var(--surface)] dark:bg-[oklch(0.02_0_0)]">
+      <Agentation />
       {/* Backdrop overlay — mobile */}
       {sidebarOpen && (
         <div
@@ -75,9 +77,9 @@ export default function AppShell({ children, session, menuItems }: AppShellProps
         onToggleCollapse={toggleCollapse}
       />
 
-      {/* Main content area — floating card on surface background */}
-      <div className="flex-1 flex flex-col p-2.5 lg:p-3.5 overflow-hidden min-w-0">
-        <div className="flex-1 flex flex-col bg-white dark:bg-[var(--surface-raised)] rounded-2xl border border-border overflow-hidden min-h-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
+      {/* Main content area — floating card on card background */}
+      <div className="flex-1 flex flex-col p-2.5 lg:p-3.5 overflow-hidden min-w-0 bg-[var(--surface)]">
+        <div className="flex-1 flex flex-col bg-white dark:bg-card rounded-2xl border border-border overflow-hidden min-h-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
 
           {/* Top header inside the card */}
           <TopHeader
