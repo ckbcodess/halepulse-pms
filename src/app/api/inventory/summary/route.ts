@@ -3,45 +3,49 @@ import { getTenantContext } from '@/lib/auth/getTenantContext';
 import prisma from '@/lib/prisma';
 
 // ── GET /api/inventory/summary ────────────────────────────────────────────────
-// Returns alert counts + product lists for dashboard cards.
-// Thresholds: low stock ≤ 10, expiring = within 90 days.
 export async function GET() {
   try {
     const { tenantId } = await getTenantContext();
 
     const now       = new Date();
+    const in30Days  = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const in60Days  = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
     const in90Days  = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+    const activeFilter = { tenantId, isActive: true } as const;
 
     const [
       outOfStockCount,
       lowStockCount,
       expiringCount,
       expiredCount,
+      totalProducts,
       lowStockProducts,
       expiringProducts,
       categoryRows,
     ] = await Promise.all([
-      prisma.product.count({ where: { tenantId, stockQty: { lte: 0 } } }),
-      prisma.product.count({ where: { tenantId, stockQty: { gt: 0, lte: 10 } } }),
-      prisma.product.count({ where: { tenantId, expiryDate: { gte: now, lte: in90Days } } }),
-      prisma.product.count({ where: { tenantId, expiryDate: { lt: now } } }),
+      prisma.product.count({ where: { ...activeFilter, stockQty: { lte: 0 } } }),
+      prisma.product.count({ where: { ...activeFilter, stockQty: { gt: 0, lte: 10 } } }),
+      prisma.product.count({ where: { ...activeFilter, expiryDate: { gte: now, lte: in90Days } } }),
+      prisma.product.count({ where: { ...activeFilter, expiryDate: { lt: now } } }),
+      prisma.product.count({ where: activeFilter }),
 
       prisma.product.findMany({
-        where:   { tenantId, stockQty: { lte: 10 } },
+        where:   { ...activeFilter, stockQty: { lte: 10 } },
         orderBy: { stockQty: 'asc' },
         take:    10,
-        select:  { id: true, name: true, category: true, stockQty: true, price: true },
+        select:  { id: true, name: true, brand: true, category: true, stockQty: true, price: true, lowStockThreshold: true },
       }),
 
       prisma.product.findMany({
-        where:   { tenantId, expiryDate: { not: null, lte: in90Days } },
+        where:   { ...activeFilter, expiryDate: { not: null, lte: in90Days } },
         orderBy: { expiryDate: 'asc' },
         take:    10,
-        select:  { id: true, name: true, category: true, stockQty: true, expiryDate: true, price: true },
+        select:  { id: true, name: true, brand: true, category: true, stockQty: true, expiryDate: true, price: true },
       }),
 
       prisma.product.findMany({
-        where:   { tenantId },
+        where:   activeFilter,
         select:  { category: true },
         distinct: ['category'],
         orderBy: { category: 'asc' },
@@ -53,6 +57,7 @@ export async function GET() {
       lowStockCount,
       expiringCount,
       expiredCount,
+      totalProducts,
       lowStockProducts,
       expiringProducts: expiringProducts.map((p) => ({
         ...p,

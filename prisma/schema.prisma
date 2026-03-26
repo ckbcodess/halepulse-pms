@@ -30,28 +30,109 @@ model User {
   branch             Branch?      @relation(fields: [branchId], references: [id])
   dynamicRole        DynamicRole? @relation(fields: [dynamicRoleId], references: [id])
   tenant             Tenant?      @relation(fields: [tenantId], references: [id])
+  createdProducts    Product[]    @relation("ProductCreator")
+  stockAdjustments   StockAdjustment[] @relation("StockAdjuster")
+  inventoryAuditLogs InventoryAuditLog[] @relation("AuditPerformer")
 }
 
 model Product {
-  id          Int        @id @default(autoincrement())
-  name        String
-  category    String
-  price       Float
-  costPrice   Float?
-  stockQty    Int        @default(0)
-  expiryDate  DateTime?
-  description String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id                  Int        @id @default(autoincrement())
+  name                String
+  brand               String?
+  category            String
+  unit                String     @default("Piece")
+  sku                 String?
+  price               Float                              // selling_price (derived from cost × markup)
+  costPrice           Float?                             // wholesale cost price
+  markupPercent       Float      @default(0)             // markup percentage
+  stockQty            Int        @default(0)
+  lowStockThreshold   Int        @default(10)
+  expiryDate          DateTime?                          // nearest_expiry_date across batches
+  description         String?
+  isActive            Boolean    @default(true)          // soft-delete
+  supplierId          Int?
+  createdBy           Int?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  tenantId            String?
+
+  tenant              Tenant?             @relation(fields: [tenantId], references: [id])
+  supplier            Supplier?           @relation(fields: [supplierId], references: [id])
+  creator             User?               @relation("ProductCreator", fields: [createdBy], references: [id])
+  saleItems           SaleItem[]
+  stockAdjustments    StockAdjustment[]
+  inventoryAuditLogs  InventoryAuditLog[] @relation("AuditProduct")
+
+  @@unique([tenantId, sku])
+  @@index([name])
+  @@index([isActive])
+  @@index([supplierId])
+}
+
+model Supplier {
+  id           Int        @id @default(autoincrement())
+  name         String
+  contactName  String?
+  phone        String?
+  email        String?
+  address      String?
+  notes        String?
+  isActive     Boolean    @default(true)
+  tenantId     String?
+  createdAt    DateTime   @default(now())
+
+  tenant       Tenant?             @relation(fields: [tenantId], references: [id])
+  products     Product[]
+  inventoryAuditLogs InventoryAuditLog[] @relation("AuditSupplier")
+
+  @@index([name])
+}
+
+model StockAdjustment {
+  id          Int      @id @default(autoincrement())
+  productId   Int
+  adjustedBy  Int
+  oldQuantity Int
+  newQuantity Int
+  delta       Int                                    // new - old
+  reason      String                                 // enum value
+  notes       String?
   tenantId    String?
-  tenant      Tenant?    @relation(fields: [tenantId], references: [id])
-  saleItems   SaleItem[]
+  adjustedAt  DateTime @default(now())
+
+  product     Product  @relation(fields: [productId], references: [id])
+  adjuster    User     @relation("StockAdjuster", fields: [adjustedBy], references: [id])
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+
+  @@index([productId])
+}
+
+model InventoryAuditLog {
+  id           Int      @id @default(autoincrement())
+  actionType   String                                // e.g. PRODUCT_CREATED, PRICE_UPDATED, etc.
+  productId    Int?
+  supplierId   Int?
+  performedBy  Int
+  oldValue     Json?                                 // snapshot before change
+  newValue     Json?                                 // snapshot after change
+  notes        String?
+  tenantId     String?
+  performedAt  DateTime @default(now())
+
+  product      Product?  @relation("AuditProduct", fields: [productId], references: [id])
+  supplier     Supplier? @relation("AuditSupplier", fields: [supplierId], references: [id])
+  performer    User      @relation("AuditPerformer", fields: [performedBy], references: [id])
+  tenant       Tenant?   @relation(fields: [tenantId], references: [id])
+
+  @@index([productId])
+  @@index([performedAt(sort: Desc)])
 }
 
 model Category {
-  id       Int     @id @default(autoincrement())
-  name     String  @unique
-  tenantId String?
+  id            Int     @id @default(autoincrement())
+  name          String  @unique
+  markupPercent Float   @default(30)    // default markup % for this category
+  tenantId      String?
 }
 
 model Customer {
@@ -125,6 +206,9 @@ model Tenant {
   loginAttempts          LoginAttempt[]
   menuConfigs            MenuConfig[]
   products               Product[]
+  suppliers              Supplier[]
+  stockAdjustments       StockAdjustment[]
+  inventoryAuditLogs     InventoryAuditLog[]
   rolePermissions        RolePermission[]
   sales                  Sale[]
   featureFlags           TenantFeatureFlag[]
