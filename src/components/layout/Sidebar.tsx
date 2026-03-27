@@ -99,7 +99,7 @@ export default function Sidebar({
               absolute inset-0 rounded-md flex items-center justify-center
               transition-opacity duration-150 group-hover/logo:opacity-0
             " style={{ background: 'var(--primary-color, #6366f1)' }}>
-              <span className="text-white text-xs font-medium leading-none">H</span>
+              <span className="text-primary-foreground text-xs font-medium leading-none">H</span>
             </span>
             {/* Bare expand icon — fades in on hover, no container */}
             <PanelLeftOpen
@@ -117,7 +117,7 @@ export default function Sidebar({
                 className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20 transition-transform group-hover/brand:scale-110"
                 style={{ background: 'var(--primary, #6366f1)' }}
               >
-                <span className="text-white text-[14px] font-black leading-none">H</span>
+                <span className="text-primary-foreground text-[14px] font-black leading-none">H</span>
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-[14px] font-bold text-foreground tracking-tight leading-none">
