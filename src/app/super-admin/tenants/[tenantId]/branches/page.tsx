@@ -98,7 +98,7 @@ export default function BranchesPage() {
   };
 
   const FormFields = ({ onSubmit, onCancel }: { onSubmit: (e: React.FormEvent) => void; onCancel: () => void }) => (
-    <form onSubmit={onSubmit} className="p-6 space-y-4 border-b border-border dark:border-white/5 bg-indigo-50/50 dark:bg-primary/5">
+    <form onSubmit={onSubmit} className="p-6 space-y-4 border-b border-border dark:border-white/5 bg-muted/30 dark:bg-muted/20">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-muted-foreground dark:text-muted-foreground">Branch Name <span className="text-rose-500">*</span></label>
@@ -119,7 +119,7 @@ export default function BranchesPage() {
       {error && <p className="text-xs text-rose-600 dark:text-rose-400">{error}</p>}
       <div className="flex gap-2">
         <button type="submit" disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-60">
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-semibold transition-colors disabled:opacity-60">
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
           {saving ? 'Saving…' : 'Save'}
         </button>
@@ -140,7 +140,7 @@ export default function BranchesPage() {
         </div>
         <button
           onClick={() => { setShowCreate(true); setEditingId(null); setForm(emptyForm); setError(''); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-semibold transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-sm font-semibold transition-colors"
         >
           <Plus size={14} /> New Branch
         </button>
@@ -174,8 +174,8 @@ export default function BranchesPage() {
                   />
                 ) : (
                   <div className="flex items-center gap-4 px-6 py-4 hover:bg-muted dark:hover:bg-white/[0.02] group">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-primary/20 flex items-center justify-center flex-shrink-0">
-                      <Building2 size={16} className="text-primary dark:text-primary/80" />
+                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                      <Building2 size={16} className="text-muted-foreground" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">

@@ -72,7 +72,7 @@ export default function NewTenantPage() {
             <button onClick={copyToClipboard} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-border dark:border-border rounded-lg text-sm font-medium hover:bg-muted dark:hover:bg-sidebar transition-colors">
               {copied ? <><Check size={14} /> Copied!</> : <><Copy size={14} /> Copy</>}
             </button>
-            <button onClick={() => router.push('/super-admin/tenants')} className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-colors">
+            <button onClick={() => router.push('/super-admin/tenants')} className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors">
               Done
             </button>
           </div>
@@ -156,7 +156,7 @@ export default function NewTenantPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-primary hover:bg-primary/90 disabled:bg-indigo-400 text-white font-bold rounded-xl transition-colors"
+          className="w-full py-3 bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground font-bold rounded-xl transition-colors"
         >
           {loading ? 'Creating…' : 'Create Tenant'}
         </button>

@@ -57,11 +57,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Generate full OKLCH palette from base color — injected server-side to prevent flash
   const brandingCSS = generateThemeCSS(baseColor);
 
-  // Use a role-isolated storage key for theme preference so super-admins and
-  // regular users don't share dark/light mode settings. This prevents a tenant
-  // user's dark mode toggle from affecting the super-admin's UI on their next visit.
-  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
-  const themeStorageKey = isSuperAdmin ? 'theme_admin' : 'theme';
+  // Isolate dark/light mode preference per role + tenant so that:
+  //   1. Super-admins don't share dark/light with tenant users
+  //   2. Different tenants on the same browser don't share dark/light
+  //   3. Impersonation uses the impersonated tenant's preference
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN' && !impersonation;
+  const themeStorageKey = isSuperAdmin
+    ? 'theme_admin'
+    : `theme_${effectiveTenantId ?? 'default'}`;
 
   return (
     <html

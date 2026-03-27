@@ -105,9 +105,9 @@ function LoginContent() {
         <div className="relative z-10 flex items-center gap-2.5">
           <div
             className="w-7 h-7 rounded-md flex items-center justify-center"
-            style={{ background: 'var(--primary-color, #6366f1)' }}
+            style={{ background: 'var(--primary)' }}
           >
-            <span className="text-white text-xs font-medium leading-none">H</span>
+            <span className="text-primary-foreground text-xs font-medium leading-none">H</span>
           </div>
           <span className="text-[15px] font-medium text-white/90 tracking-tight">HalePulse</span>
         </div>
@@ -130,9 +130,9 @@ function LoginContent() {
           <div className="md:hidden flex items-center gap-2.5 mb-10">
             <div
               className="w-7 h-7 rounded-md flex items-center justify-center"
-              style={{ background: 'var(--primary-color, #6366f1)' }}
+              style={{ background: 'var(--primary)' }}
             >
-              <span className="text-white text-xs font-medium leading-none">H</span>
+              <span className="text-primary-foreground text-xs font-medium leading-none">H</span>
             </div>
             <span className="text-[15px] font-medium text-foreground tracking-tight">HalePulse</span>
           </div>

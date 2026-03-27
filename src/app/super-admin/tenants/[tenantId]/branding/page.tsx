@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   Save,
   Palette,
@@ -188,7 +188,6 @@ function ThemePreview({
 
 export default function BrandingPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
-  const router = useRouter();
   const [form, setForm] = useState({
     name: '',
     baseColor: '#6366f1',
@@ -246,15 +245,10 @@ export default function BrandingPage() {
         return;
       }
 
-      // Refresh the server layout so it re-reads the updated cookie and
-      // re-generates the SSR CSS for the tenant. Any subsequent navigation
-      // to the tenant's app will have the new branding.
-      // Note: We do NOT call setBaseColor() here because that would apply the
-      // tenant's theme to the super-admin's UI, which is not desired. The super-admin
-      // should see their own theme while editing, and only see a preview of the
-      // tenant's theme in the preview pane. Tenant users will see the new theme
-      // on their next page load (via the updated cookie).
-      router.refresh();
+      // We do NOT refresh the page or update the DynamicThemeProvider here.
+      // The super-admin should keep their own theme while editing tenants.
+      // Tenant users will see the new branding on their next page load
+      // (the cookie was set by the API response).
 
       setSavedMsg('Saved!');
       setTimeout(() => setSavedMsg(''), 2000);

@@ -31,6 +31,7 @@ import { Label } from '@/components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Product = {
@@ -390,6 +391,112 @@ async function fetchProduct(id: number): Promise<ProductDetail> {
   return res.json();
 }
 
+// ── Stock Adjustment Inline Form ─────────────────────────────────────────────
+
+const ADJUSTMENT_REASONS = [
+  'Shelf Count Correction',
+  'Damaged / Spoiled',
+  'Expired',
+  'Theft / Loss',
+  'Returned to Supplier',
+  'Restock',
+  'Other',
+];
+
+function StockAdjustForm({ productId, currentQty, onAdjusted }: {
+  productId: number;
+  currentQty: number;
+  onAdjusted: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [newQty, setNewQty] = useState(currentQty.toString());
+  const [reason, setReason] = useState('Shelf Count Correction');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // Reset when form opens
+  const toggle = () => {
+    if (!open) { setNewQty(currentQty.toString()); setReason('Shelf Count Correction'); setNotes(''); }
+    setOpen(o => !o);
+  };
+
+  const delta = parseInt(newQty || '0') - currentQty;
+
+  const handleSubmit = async () => {
+    const qty = parseInt(newQty);
+    if (isNaN(qty) || qty < 0) { toast.error('Enter a valid quantity'); return; }
+    if (reason === 'Other' && !notes.trim()) { toast.error('Notes are required for "Other" reason'); return; }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/inventory/adjustments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, newQuantity: qty, reason, notes: notes || undefined }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed');
+      }
+      toast.success(`Stock adjusted: ${currentQty} → ${qty}`);
+      setOpen(false);
+      onAdjusted();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border border-border rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={toggle}
+        className="w-full px-4 py-2.5 flex items-center justify-between bg-muted/30 hover:bg-muted/50 transition-colors"
+      >
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Adjust Stock</h3>
+        <ChevronDown size={13} className={`text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="px-4 py-4 flex flex-col gap-3 border-t border-border">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12px] font-medium">New Quantity</Label>
+              <Input type="number" min="0" value={newQty} onChange={e => setNewQty(e.target.value)} />
+              {delta !== 0 && (
+                <p className={`text-[11px] font-medium ${delta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {delta > 0 ? '+' : ''}{delta} from current ({currentQty})
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12px] font-medium">Reason</Label>
+              <select
+                value={reason}
+                onChange={e => setReason(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-3 text-[12.5px]"
+              >
+                {ADJUSTMENT_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+          </div>
+          {reason === 'Other' && (
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12px] font-medium">Notes <span className="text-rose-500">*</span></Label>
+              <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Describe the reason…" />
+            </div>
+          )}
+          <Button onClick={handleSubmit} disabled={saving || delta === 0} className="w-full">
+            <TrendingDown size={13} className="mr-1.5" />
+            {saving ? 'Saving…' : delta === 0 ? 'No Change' : `Apply Adjustment (${delta > 0 ? '+' : ''}${delta})`}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Product Detail Sheet ──────────────────────────────────────────────────────
 function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
   productId: number | null;
@@ -629,8 +736,8 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-start gap-2.5 p-3.5 rounded-xl border border-border bg-muted/20">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Package size={14} className="text-primary" />
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <Package size={14} className="text-muted-foreground" />
                       </div>
                       <div>
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Stock</p>
@@ -639,8 +746,8 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
                       </div>
                     </div>
                     <div className="flex items-start gap-2.5 p-3.5 rounded-xl border border-border bg-muted/20">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <DollarSign size={14} className="text-primary" />
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <DollarSign size={14} className="text-muted-foreground" />
                       </div>
                       <div>
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Price</p>
@@ -651,8 +758,8 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
                       </div>
                     </div>
                     <div className="flex items-start gap-2.5 p-3.5 rounded-xl border border-border bg-muted/20">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Clock size={14} className="text-primary" />
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <Clock size={14} className="text-muted-foreground" />
                       </div>
                       <div>
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Expiry</p>
@@ -662,8 +769,8 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
                       </div>
                     </div>
                     <div className="flex items-start gap-2.5 p-3.5 rounded-xl border border-border bg-muted/20">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Truck size={14} className="text-primary" />
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <Truck size={14} className="text-muted-foreground" />
                       </div>
                       <div>
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Supplier</p>
@@ -672,6 +779,16 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
                       </div>
                     </div>
                   </div>
+
+                  {/* Quick Stock Adjustment */}
+                  <StockAdjustForm
+                    productId={product.id}
+                    currentQty={product.stockQty}
+                    onAdjusted={() => {
+                      queryClient.invalidateQueries({ queryKey: ['product', productId] });
+                      onUpdated();
+                    }}
+                  />
 
                   {/* Adjustment History */}
                   {product.stockAdjustments.length > 0 && (
@@ -722,16 +839,33 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
                   <Button variant="outline" className="flex-1" onClick={startEditing}>
                     <Pencil size={13} className="mr-1.5" /> Edit
                   </Button>
-                  <Button
-                    variant="outline"
-                    className={`flex-1 ${product.isActive ? 'text-rose-600 hover:text-rose-700 hover:border-rose-300' : 'text-emerald-600 hover:text-emerald-700 hover:border-emerald-300'}`}
-                    onClick={handleArchive}
-                  >
-                    {product.isActive
-                      ? <><Archive size={13} className="mr-1.5" /> Archive</>
-                      : <><RotateCcw size={13} className="mr-1.5" /> Restore</>
-                    }
-                  </Button>
+                  {product.isActive ? (
+                    <ConfirmDialog
+                      title="Archive this product?"
+                      description="It will be hidden from the inventory list but can be restored later."
+                      confirmLabel="Archive"
+                      variant="destructive"
+                      onConfirm={handleArchive}
+                    >
+                      {(open) => (
+                        <Button
+                          variant="outline"
+                          className="flex-1 text-rose-600 hover:text-rose-700 hover:border-rose-300"
+                          onClick={open}
+                        >
+                          <Archive size={13} className="mr-1.5" /> Archive
+                        </Button>
+                      )}
+                    </ConfirmDialog>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="flex-1 text-emerald-600 hover:text-emerald-700 hover:border-emerald-300"
+                      onClick={handleArchive}
+                    >
+                      <RotateCcw size={13} className="mr-1.5" /> Restore
+                    </Button>
+                  )}
                 </>
               )}
             </div>
@@ -861,7 +995,7 @@ export default function InventoryView() {
         </DropdownMenu>
         <button
           onClick={() => setShowAddProduct(true)}
-          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] border border-primary bg-primary text-white text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
         >
           <Plus size={14} /> Add Product
         </button>
@@ -953,7 +1087,7 @@ export default function InventoryView() {
                   return (
                     <DropdownMenuItem key={c} closeOnClick={false} onClick={() => toggleCategory(c)} className="gap-2.5">
                       <div className={`w-[15px] h-[15px] rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${selected ? 'bg-primary border-primary' : 'border-border bg-background'}`}>
-                        {selected && <Check size={10} className="text-white" strokeWidth={2.5} />}
+                        {selected && <Check size={10} className="text-primary-foreground" strokeWidth={2.5} />}
                       </div>
                       <span className="flex-1 text-[12.25px]">{c}</span>
                     </DropdownMenuItem>
@@ -1251,8 +1385,12 @@ export default function InventoryView() {
 
           <div className="h-[14px] w-px bg-[#e0e0e0] dark:bg-border mx-4" />
 
-          <button type="button"
-            onClick={async () => {
+          <ConfirmDialog
+            title={`Archive ${selectedIds.size} product(s)?`}
+            description="They will be hidden from the inventory list but can be restored later."
+            confirmLabel="Archive All"
+            variant="destructive"
+            onConfirm={async () => {
               try {
                 await Promise.all(Array.from(selectedIds).map(pid =>
                   fetch(`/api/inventory/products/${pid}/archive`, { method: 'PATCH' })
@@ -1262,9 +1400,14 @@ export default function InventoryView() {
                 invalidateAll();
               } catch { toast.error('Failed to archive products'); }
             }}
-            className="flex items-center gap-1 h-[47px] px-1 text-[14px] font-medium text-red-500 hover:opacity-70 transition-opacity">
-            Delete <X size={16} className="text-red-500" />
-          </button>
+          >
+            {(open) => (
+              <button type="button" onClick={open}
+                className="flex items-center gap-1 h-[47px] px-1 text-[14px] font-medium text-red-500 hover:opacity-70 transition-opacity">
+                Delete <X size={16} className="text-red-500" />
+              </button>
+            )}
+          </ConfirmDialog>
         </div>
       )}
     </div>
