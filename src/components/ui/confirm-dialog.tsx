@@ -54,10 +54,10 @@ export function ConfirmDialog({
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/50" onClick={close} />
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-xs" onClick={close} />
 
           {/* Dialog */}
-          <div className="relative bg-background border border-border rounded-xl shadow-xl p-6 w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative bg-background/80 backdrop-blur-md backdrop-saturate-150 border border-border rounded-xl shadow-xl ring-1 ring-foreground/10 p-6 w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
             <h3 className="text-[15px] font-semibold text-foreground">{title}</h3>
             {description && (
               <p className="text-[13px] text-muted-foreground mt-1.5">{description}</p>

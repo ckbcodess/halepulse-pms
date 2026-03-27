@@ -17,6 +17,9 @@ import {
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
 
 const CATEGORIES = ['Tablet', 'Syrup', 'Cream', 'Injection', 'Supplement', 'Device', 'Capsule', 'Drops', 'Other'];
 const UNITS = ['Piece', 'Pack', 'Bottle', 'Box', 'Strip', 'Vial', 'Tube', 'Sachet'];
@@ -231,15 +234,17 @@ export default function ProductDetailPage() {
             <div className="grid grid-cols-4 gap-3">
               <div className="flex flex-col gap-1">
                 <Label className="text-xs font-semibold text-muted-foreground">Category</Label>
-                <select value={form.category} onChange={e => update('category', e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <Select value={form.category} onValueChange={v => v && update('category', v)}>
+                  <SelectTrigger className="h-9 w-full text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
               <div className="flex flex-col gap-1">
                 <Label className="text-xs font-semibold text-muted-foreground">Unit</Label>
-                <select value={form.unit} onChange={e => update('unit', e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
-                  {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
+                <Select value={form.unit} onValueChange={v => v && update('unit', v)}>
+                  <SelectTrigger className="h-9 w-full text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
               <div className="flex flex-col gap-1">
                 <Label className="text-xs font-semibold text-muted-foreground">SKU</Label>
