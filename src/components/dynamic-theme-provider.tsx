@@ -69,17 +69,18 @@ export function DynamicThemeProvider({
   const [isReady, setIsReady] = useState(false);
   const prevVarsRef = useRef<Record<string, string> | null>(null);
 
-  // On mount, check localStorage for a persisted color
+  // Sync to the server-authoritative color (from admin-saved cookie via layout).
+  // Server ALWAYS wins — this prevents stale localStorage from overriding
+  // branding changes made in the admin panel. We also write back to localStorage
+  // so future loads start fresh and don't carry a stale override.
   useIsomorphicLayoutEffect(() => {
+    setBaseColorState(initialBaseColor);
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored && (combinedRegex.test(stored) || hexRegex.test(stored))) {
-        setBaseColorState(stored);
-      }
+      localStorage.setItem(STORAGE_KEY, initialBaseColor);
     } catch {
       // localStorage unavailable (SSR, privacy mode, etc.)
     }
-  }, []);
+  }, [initialBaseColor]);
 
   // Generate + apply palette whenever baseColor or theme mode changes.
   // Uses useLayoutEffect to paint variables BEFORE the browser renders,

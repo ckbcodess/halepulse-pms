@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useDynamicTheme } from '@/components/dynamic-theme-provider';
 import {
   Save,
   Palette,
@@ -188,6 +189,8 @@ function ThemePreview({
 
 export default function BrandingPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
+  const router = useRouter();
+  const { setBaseColor } = useDynamicTheme();
   const [form, setForm] = useState({
     name: '',
     baseColor: '#6366f1',
@@ -240,9 +243,20 @@ export default function BrandingPage() {
         }),
       });
       if (!res.ok) {
-        setError('Save failed');
+        const body = await res.json().catch(() => ({}));
+        setError(body?.error ? `Save failed: ${body.error}` : `Save failed (${res.status})`);
         return;
       }
+
+      // 1. Immediately update the live DynamicThemeProvider so the running app
+      //    reflects the new palette without a full page reload.
+      setBaseColor(packedColor);
+
+      // 2. Refresh the server layout so it re-reads the updated cookie and
+      //    re-generates the SSR CSS. Any subsequent navigation will carry the
+      //    new branding from the server.
+      router.refresh();
+
       setSavedMsg('Saved!');
       setTimeout(() => setSavedMsg(''), 2000);
     } catch {
