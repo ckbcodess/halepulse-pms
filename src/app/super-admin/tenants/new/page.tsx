@@ -60,13 +60,13 @@ export default function NewTenantPage() {
           <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <Check size={24} className="text-emerald-600 dark:text-emerald-400" />
           </div>
-          <h2 className="text-xl font-bold text-foreground dark:text-white mb-2">Tenant Created!</h2>
-          <p className="text-sm text-muted-foreground dark:text-muted-foreground mb-6">
+          <h2 className="text-xl font-bold text-foreground mb-2">Tenant Created!</h2>
+          <p className="text-sm text-muted-foreground mb-6">
             A default Manager account was created. Share these credentials once — they won't be shown again.
           </p>
           <div className="bg-white dark:bg-sidebar rounded-xl p-4 text-left space-y-2 border border-border dark:border-border font-mono text-sm mb-4">
-            <p className="text-foreground dark:text-muted-foreground">Email: <span className="font-bold">{createdCreds.email}</span></p>
-            <p className="text-foreground dark:text-muted-foreground">Password: <span className="font-bold">{createdCreds.password}</span></p>
+            <p className="text-foreground text-muted-foreground">Email: <span className="font-bold">{createdCreds.email}</span></p>
+            <p className="text-foreground text-muted-foreground">Password: <span className="font-bold">{createdCreds.password}</span></p>
           </div>
           <div className="flex gap-3">
             <button onClick={copyToClipboard} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-border dark:border-border rounded-lg text-sm font-medium hover:bg-muted dark:hover:bg-sidebar transition-colors">
@@ -84,15 +84,15 @@ export default function NewTenantPage() {
   return (
     <div className="max-w-xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground dark:text-white">New Tenant</h1>
-        <p className="text-muted-foreground dark:text-muted-foreground mt-1">Creates the tenant and a default Manager account.</p>
+        <h1 className="text-2xl font-bold text-foreground">New Tenant</h1>
+        <p className="text-muted-foreground mt-1">Creates the tenant and a default Manager account.</p>
       </div>
 
       {error && (
         <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-lg text-sm font-medium">{error}</div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-[#18181b] border border-border dark:border-border rounded-2xl p-6 space-y-5">
+      <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 space-y-5">
         {[
           { name: 'name',     label: 'Company Name', type: 'text',  placeholder: 'Acme Pharmacy'     },
           { name: 'subdomain', label: 'Subdomain',   type: 'text',  placeholder: 'acme-pharmacy'      },
@@ -107,7 +107,7 @@ export default function NewTenantPage() {
               value={form[f.name as keyof typeof form]}
               onChange={handleChange}
               required={f.name !== 'logoUrl'}
-              className="w-full px-4 py-2.5 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all dark:text-muted-foreground"
+              className="w-full px-4 py-2.5 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-muted-foreground"
             />
           </div>
         ))}
@@ -132,7 +132,7 @@ export default function NewTenantPage() {
                   name={f.name}
                   value={form[f.name as keyof typeof form]}
                   onChange={handleChange}
-                  className="flex-1 px-3 py-2 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:text-muted-foreground"
+                  className="flex-1 px-3 py-2 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-muted-foreground"
                 />
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function NewTenantPage() {
               {form.name.charAt(0) || '?'}
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground dark:text-white">{form.name || 'Company Name'}</p>
+              <p className="text-sm font-bold text-foreground">{form.name || 'Company Name'}</p>
               <p className="text-xs font-mono text-muted-foreground">{form.subdomain || 'subdomain'}.halepulse.app</p>
             </div>
           </div>

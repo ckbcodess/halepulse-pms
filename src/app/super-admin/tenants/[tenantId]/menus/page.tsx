@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Save, Eye, EyeOff } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 
 const ROLES = ['MANAGER', 'MCA', 'NES'] as const;
 type Role = typeof ROLES[number];
@@ -55,25 +56,24 @@ export default function MenuEditor() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground dark:text-white">Menu Visibility</h1>
-          <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5">Control which menu items each role can see.</p>
-        </div>
+      <PageHeader
+        title="Menu Visibility"
+        description="Control which menu items each role can see."
+      >
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-lg transition-colors"
+          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors"
         >
           <Save size={14} /> {saving ? 'Saving…' : savedMsg || 'Save Changes'}
         </button>
-      </div>
+      </PageHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {ROLES.map(role => (
-          <div key={role} className="bg-white dark:bg-[#18181b] border border-border dark:border-border rounded-2xl overflow-hidden">
+          <div key={role} className="bg-card border border-border dark:border-border rounded-2xl overflow-hidden">
             <div className="px-5 py-4 border-b border-border dark:border-border">
-              <h3 className="text-sm font-bold text-foreground dark:text-white">{role}</h3>
+              <h3 className="text-sm font-bold text-foreground">{role}</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {(menus[role] ?? []).filter(i => i.visible).length} visible items
               </p>
@@ -85,8 +85,8 @@ export default function MenuEditor() {
                   onClick={() => toggleItem(role, item.key)}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
                     item.visible
-                      ? 'bg-indigo-50 dark:bg-primary/10 text-indigo-700 dark:text-primary/70'
-                      : 'text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-sidebar/50'
+                      ? 'bg-secondary text-foreground'
+                      : 'text-muted-foreground hover:bg-muted/50'
                   }`}
                 >
                   <span className="font-medium">{item.label}</span>

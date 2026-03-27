@@ -98,22 +98,22 @@ export default function BranchesPage() {
   };
 
   const FormFields = ({ onSubmit, onCancel }: { onSubmit: (e: React.FormEvent) => void; onCancel: () => void }) => (
-    <form onSubmit={onSubmit} className="p-6 space-y-4 border-b border-border dark:border-white/5 bg-muted/30 dark:bg-muted/20">
+    <form onSubmit={onSubmit} className="p-6 space-y-4 border-b border-border bg-muted/30">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-muted-foreground dark:text-muted-foreground">Branch Name <span className="text-rose-500">*</span></label>
+          <label className="block text-xs font-semibold text-muted-foreground">Branch Name <span className="text-rose-500">*</span></label>
           <input required value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Main Branch"
-            className="w-full px-3 py-2.5 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm font-medium dark:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+            className="w-full px-3 py-2.5 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm font-medium text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
         </div>
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-muted-foreground dark:text-muted-foreground">Phone</label>
+          <label className="block text-xs font-semibold text-muted-foreground">Phone</label>
           <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+233 XX XXX XXXX"
-            className="w-full px-3 py-2.5 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm font-medium dark:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+            className="w-full px-3 py-2.5 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm font-medium text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
         </div>
         <div className="sm:col-span-2 space-y-1.5">
-          <label className="block text-xs font-semibold text-muted-foreground dark:text-muted-foreground">Address</label>
+          <label className="block text-xs font-semibold text-muted-foreground">Address</label>
           <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="Full branch address"
-            className="w-full px-3 py-2.5 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm font-medium dark:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+            className="w-full px-3 py-2.5 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm font-medium text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
         </div>
       </div>
       {error && <p className="text-xs text-rose-600 dark:text-rose-400">{error}</p>}
@@ -124,7 +124,7 @@ export default function BranchesPage() {
           {saving ? 'Saving…' : 'Save'}
         </button>
         <button type="button" onClick={onCancel}
-          className="px-4 py-2 border border-border dark:border-white/10 rounded-lg text-sm font-semibold text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-white/5 transition-colors">
+          className="px-4 py-2 border border-border dark:border-white/10 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-muted dark:hover:bg-white/5 transition-colors">
           Cancel
         </button>
       </div>
@@ -135,8 +135,8 @@ export default function BranchesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground dark:text-white">Branches</h2>
-          <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1">{branches.length} branch{branches.length !== 1 ? 'es' : ''}</p>
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground">Branches</h2>
+          <p className="text-sm text-muted-foreground mt-1">{branches.length} branch{branches.length !== 1 ? 'es' : ''}</p>
         </div>
         <button
           onClick={() => { setShowCreate(true); setEditingId(null); setForm(emptyForm); setError(''); }}
@@ -146,7 +146,7 @@ export default function BranchesPage() {
         </button>
       </div>
 
-      <div className="bg-white dark:bg-[#18181b] border border-border dark:border-white/5 rounded-2xl overflow-hidden">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
         {showCreate && (
           <FormFields
             onSubmit={handleCreate}
@@ -164,7 +164,7 @@ export default function BranchesPage() {
             <p className="text-sm">No branches yet. Create your first branch.</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-white/5">
+          <div className="divide-y divide-border">
             {branches.map(branch => (
               <div key={branch.id}>
                 {editingId === branch.id ? (
@@ -179,7 +179,7 @@ export default function BranchesPage() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground dark:text-muted-foreground">{branch.name}</p>
+                        <p className="text-sm font-semibold text-foreground text-muted-foreground">{branch.name}</p>
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${branch.isActive ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-muted dark:bg-sidebar text-muted-foreground'}`}>
                           {branch.isActive ? 'Active' : 'Inactive'}
                         </span>

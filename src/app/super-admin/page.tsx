@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import Link from 'next/link';
 import { Building2, Users, Activity, Eye, Settings, Plus, ArrowRight, GitBranch, Circle } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 
 export default async function SuperAdminOverview() {
   const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
@@ -35,18 +36,17 @@ export default async function SuperAdminOverview() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">System Overview</h1>
-          <p className="text-muted-foreground mt-1">Monitor all tenants, users, and system activity.</p>
-        </div>
+      <PageHeader
+        title="System Overview"
+        description="Monitor all tenants, users, and system activity."
+      >
         <Link
           href="/super-admin/tenants/new"
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-lg transition-colors"
+          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
         >
-          <Plus size={16} /> New Tenant
+          <Plus size={14} /> New Tenant
         </Link>
-      </div>
+      </PageHeader>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -73,11 +73,11 @@ export default async function SuperAdminOverview() {
         </div>
         {tenants.length === 0 ? (
           <div className="p-12 text-center">
-            <Building2 size={32} className="text-muted-foreground dark:text-muted-foreground mx-auto mb-3" />
+            <Building2 size={32} className="text-muted-foreground mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">No tenants yet. Create your first tenant to get started.</p>
             <Link
               href="/super-admin/tenants/new"
-              className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 mt-4 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
             >
               <Plus size={16} /> Create Tenant
             </Link>
@@ -138,7 +138,7 @@ export default async function SuperAdminOverview() {
             {recentLogs.map(log => (
               <div key={log.id} className="px-6 py-3 flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                  <span className="text-xs font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded">
                     {log.action}
                   </span>
                   <span className="text-xs text-muted-foreground ml-3">user:{log.userId}</span>

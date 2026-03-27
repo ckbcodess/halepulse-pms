@@ -184,8 +184,8 @@ export default function SupplierProfilePage() {
         ) : (
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Truck size={24} className="text-primary" />
+              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                <Truck size={24} className="text-muted-foreground" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">{supplier.name}</h1>

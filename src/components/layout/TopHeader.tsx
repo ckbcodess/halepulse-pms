@@ -128,8 +128,8 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
               <button className="flex items-center gap-[10.5px] rounded-[12.25px] hover:bg-muted/50 px-[7px] py-2 transition-all" />
             }
           >
-            <div className="w-7 h-7 rounded-[8.75px] bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20">
-              <span className="text-[11px] font-bold text-primary leading-none">
+            <div className="w-7 h-7 rounded-[8.75px] bg-muted flex items-center justify-center flex-shrink-0 border border-border">
+              <span className="text-[11px] font-bold text-muted-foreground leading-none">
                 {initials}
               </span>
             </div>

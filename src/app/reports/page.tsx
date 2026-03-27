@@ -122,8 +122,8 @@ export default async function ReportsPage({
               href={`/reports?tab=${tab}&range=${r.value}`}
               className={`px-[13px] py-[9px] rounded-[8px] text-[12.25px] font-medium transition-colors ${
                 range === r.value
-                  ? 'bg-primary border border-[#484ced] text-white'
-                  : 'bg-white border border-[#e2e8f0] text-[#08090e] hover:bg-muted/50'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card border border-border text-foreground hover:bg-muted/50'
               }`}
             >
               {r.label}
@@ -139,8 +139,8 @@ export default async function ReportsPage({
             href={`/reports?tab=${t.key}&range=${range}`}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex-1 justify-center ${
               tab === t.key
-                ? 'bg-white dark:bg-slate-700 text-foreground dark:text-white shadow-sm'
-                : 'text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-muted-foreground'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <t.icon size={14} />
@@ -159,19 +159,19 @@ export default async function ReportsPage({
               { label: 'Transactions', value: txCount.toString(), sub: `Last ${range} days`, icon: ShoppingBag, color: 'text-emerald-600' },
               { label: 'Avg Sale Value', value: `₵${avgSale.toFixed(2)}`, sub: 'Per transaction', icon: ArrowUpRight, color: 'text-amber-600' },
             ].map((kpi, i) => (
-              <div key={i} className="bg-white dark:bg-[#18181b] border border-border dark:border-white/5 rounded-2xl p-6">
+              <div key={i} className="bg-card border border-border rounded-2xl p-6">
                 <kpi.icon size={18} className={`${kpi.color} mb-3`} />
-                <p className="text-xs font-semibold text-muted-foreground dark:text-muted-foreground uppercase tracking-wider mb-1">{kpi.label}</p>
-                <p className="text-2xl font-bold text-foreground dark:text-white">{kpi.value}</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{kpi.label}</p>
+                <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
                 <p className="text-xs text-muted-foreground mt-1">{kpi.sub}</p>
               </div>
             ))}
           </div>
 
           {/* Daily bar chart */}
-          <div className="bg-white dark:bg-[#18181b] border border-border dark:border-white/5 rounded-2xl p-6">
+          <div className="bg-card border border-border rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base font-semibold text-foreground dark:text-white">Daily Revenue</h3>
+              <h3 className="text-base font-semibold text-foreground">Daily Revenue</h3>
               <span className="text-xs text-muted-foreground">Last {Math.min(dailyData.length, 14)} days</span>
             </div>
             {dailyData.length === 0 ? (
@@ -196,12 +196,12 @@ export default async function ReportsPage({
           </div>
 
           {/* Recent transactions */}
-          <div className="bg-white dark:bg-[#18181b] border border-border dark:border-white/5 rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-border dark:border-white/5 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-foreground dark:text-white">Recent Transactions</h3>
+          <div className="bg-card border border-border rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-base font-semibold text-foreground">Recent Transactions</h3>
               <span className="text-xs text-muted-foreground">{recentSales.length} shown</span>
             </div>
-            <div className="divide-y divide-slate-100 dark:divide-white/5">
+            <div className="divide-y divide-border">
               {recentSales.length === 0 ? (
                 <p className="px-6 py-10 text-center text-sm text-muted-foreground">No transactions yet.</p>
               ) : recentSales.map(sale => (
@@ -211,11 +211,11 @@ export default async function ReportsPage({
                       {(sale.customer?.name ?? 'W')[0]}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground dark:text-muted-foreground">{sale.customer?.name ?? 'Walk-in'}</p>
+                      <p className="text-sm font-medium text-foreground text-muted-foreground">{sale.customer?.name ?? 'Walk-in'}</p>
                       <p className="text-xs text-muted-foreground">{new Date(sale.createdAt).toLocaleString()} · {sale.items.length} items</p>
                     </div>
                   </div>
-                  <span className="font-semibold text-foreground dark:text-white">₵{sale.totalAmount.toFixed(2)}</span>
+                  <span className="font-semibold text-foreground">₵{sale.totalAmount.toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -225,9 +225,9 @@ export default async function ReportsPage({
 
       {/* ── TOP PRODUCTS ───────────────────────────────────────────────────────── */}
       {tab === 'products' && (
-        <div className="bg-white dark:bg-[#18181b] border border-border dark:border-white/5 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-border dark:border-white/5">
-            <h3 className="text-base font-semibold text-foreground dark:text-white">Top Selling Products</h3>
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <h3 className="text-base font-semibold text-foreground">Top Selling Products</h3>
             <p className="text-xs text-muted-foreground mt-0.5">Ranked by units sold in the last {range} days</p>
           </div>
           {topProducts.length === 0 ? (
@@ -236,7 +236,7 @@ export default async function ReportsPage({
               <p className="text-sm">No sales data for this period</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100 dark:divide-white/5">
+            <div className="divide-y divide-border">
               {topProducts.map((tp, i) => {
                 const product = productMap.get(tp.productId);
                 const maxQty = topProducts[0]._sum.quantity ?? 1;
@@ -248,11 +248,11 @@ export default async function ReportsPage({
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1.5">
                           <div>
-                            <p className="text-sm font-semibold text-foreground dark:text-muted-foreground">{product?.name ?? `Product #${tp.productId}`}</p>
+                            <p className="text-sm font-semibold text-foreground text-muted-foreground">{product?.name ?? `Product #${tp.productId}`}</p>
                             <p className="text-xs text-muted-foreground">{product?.category ?? '—'}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm font-bold text-foreground dark:text-white">{tp._sum.quantity ?? 0} units</p>
+                            <p className="text-sm font-bold text-foreground">{tp._sum.quantity ?? 0} units</p>
                             <p className="text-xs text-muted-foreground">₵{(tp._sum.price ?? 0).toFixed(2)} revenue</p>
                           </div>
                         </div>
@@ -287,25 +287,25 @@ export default async function ReportsPage({
             </div>
           </div>
 
-          <div className="bg-card border border-border dark:border-white/5 rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-border dark:border-white/5">
-              <h3 className="text-base font-semibold text-foreground dark:text-white">Low Stock Products</h3>
+          <div className="bg-card border border-border rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="text-base font-semibold text-foreground">Low Stock Products</h3>
             </div>
             {lowStockProducts.length === 0 ? (
               <p className="px-6 py-10 text-center text-sm text-muted-foreground">All products have healthy stock levels.</p>
             ) : (
               <table className="w-full">
-                <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border dark:border-white/5">
+                <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Product</th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Category</th>
                     <th className="px-6 py-3 text-right text-sm font-medium text-muted-foreground">Stock</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                <tbody className="divide-y divide-border">
                   {lowStockProducts.map(p => (
                     <tr key={p.id}>
-                      <td className="px-6 py-3 text-sm font-medium text-foreground dark:text-muted-foreground">{p.name}</td>
+                      <td className="px-6 py-3 text-sm font-medium text-foreground text-muted-foreground">{p.name}</td>
                       <td className="px-6 py-3 text-xs text-muted-foreground">{p.category}</td>
                       <td className="px-6 py-3 text-right">
                         <span className={`text-sm font-bold ${p.stockQty <= 5 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
@@ -323,9 +323,9 @@ export default async function ReportsPage({
 
       {/* ── EXPIRY REPORT ──────────────────────────────────────────────────────── */}
       {tab === 'expiry' && (
-        <div className="bg-card border border-border dark:border-white/5 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-border dark:border-white/5">
-            <h3 className="text-base font-semibold text-foreground dark:text-white">Expiring Within 90 Days</h3>
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <h3 className="text-base font-semibold text-foreground">Expiring Within 90 Days</h3>
             <p className="text-xs text-muted-foreground mt-0.5">{expiringProducts.length} products require attention</p>
           </div>
           {expiringProducts.length === 0 ? (
@@ -335,7 +335,7 @@ export default async function ReportsPage({
             </div>
           ) : (
             <table className="w-full">
-              <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border dark:border-white/5">
+              <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Product</th>
                   <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Category</th>
@@ -343,15 +343,15 @@ export default async function ReportsPage({
                   <th className="px-6 py-3 text-right text-sm font-medium text-muted-foreground">Expires</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+              <tbody className="divide-y divide-border">
                 {expiringProducts.map(p => {
                   const daysLeft = Math.ceil((new Date(p.expiryDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                   const urgent = daysLeft <= 30;
                   return (
                     <tr key={p.id}>
-                      <td className="px-6 py-3 text-sm font-medium text-foreground dark:text-muted-foreground">{p.name}</td>
+                      <td className="px-6 py-3 text-sm font-medium text-foreground text-muted-foreground">{p.name}</td>
                       <td className="px-6 py-3 text-xs text-muted-foreground">{p.category}</td>
-                      <td className="px-6 py-3 text-sm text-foreground dark:text-muted-foreground">{p.stockQty}</td>
+                      <td className="px-6 py-3 text-sm text-foreground text-muted-foreground">{p.stockQty}</td>
                       <td className="px-6 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${urgent ? 'bg-rose-100 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400' : 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'}`}>

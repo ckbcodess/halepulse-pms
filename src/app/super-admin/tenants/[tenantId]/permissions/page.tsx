@@ -80,7 +80,7 @@ export default function PermissionsMatrix() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-border">
             {categories.map(cat => (
               <>
                 <tr key={`cat-${cat}`} className="bg-muted/30">

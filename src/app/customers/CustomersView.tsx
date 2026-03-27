@@ -13,7 +13,7 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Phone, Award, Search, ArrowRight, Plus } from 'lucide-react';
+import { Phone, Award, Search, ArrowRight, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -87,7 +87,7 @@ export default function CustomersView() {
       >
         <Link
           href="/customers/new"
-          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] border border-[#484ced] bg-primary text-white text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
         >
           <Plus size={14} /> Add Customer
         </Link>
@@ -99,7 +99,7 @@ export default function CustomersView() {
         <div className="lg:col-span-2 flex flex-col gap-4">
 
           {/* Search — instant client-side filtering */}
-          <div className="flex items-center gap-[5px] p-[12px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors">
+          <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-[#08090e14] dark:border-border rounded-[8px] bg-white dark:bg-card focus-within:border-primary/40 transition-colors w-full max-w-[342px]">
             <Search size={16} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
             <input
               value={search}
@@ -107,6 +107,11 @@ export default function CustomersView() {
               placeholder="Search customers by name or phone..."
               className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-[#626369] font-normal"
             />
+            {search && (
+              <button onClick={() => setSearch('')} className="text-muted-foreground hover:text-foreground">
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
@@ -139,8 +144,8 @@ export default function CustomersView() {
                     <TableRow key={c.id} className="group">
                       <TableCell className="px-6 py-4">
                         <Link href={`/customers/${c.id}`} className="flex items-center gap-3">
-                          <Avatar className="bg-blue-100 dark:bg-primary/20">
-                            <AvatarFallback className="bg-blue-100 dark:bg-primary/20 text-blue-600 dark:text-blue-400 text-xs font-bold">
+                          <Avatar className="bg-muted">
+                            <AvatarFallback className="bg-muted text-muted-foreground text-xs font-bold">
                               {c.name[0]?.toUpperCase() ?? '?'}
                             </AvatarFallback>
                           </Avatar>

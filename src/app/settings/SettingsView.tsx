@@ -80,25 +80,25 @@ export default function SettingsView({
     placeholder?: string; type?: string; readOnly?: boolean;
   }) => (
     <div className="space-y-1.5">
-      <label className="block text-xs font-semibold text-muted-foreground dark:text-muted-foreground">{label}</label>
+      <label className="block text-xs font-semibold text-muted-foreground">{label}</label>
       <input
         type={type}
         value={value}
         readOnly={readOnly || !canEdit}
         onChange={e => set(field, e.target.value)}
         placeholder={placeholder}
-        className={`w-full px-3 py-2.5 rounded-lg text-sm font-medium border transition-all focus:outline-none dark:text-muted-foreground
+        className={`w-full px-3 py-2.5 rounded-lg text-sm font-medium border transition-all focus:outline-none text-foreground
           ${readOnly || !canEdit
-            ? 'bg-muted dark:bg-sidebar/50 border-border dark:border-border text-muted-foreground cursor-not-allowed'
-            : 'bg-white dark:bg-sidebar border-border dark:border-border focus:ring-2 focus:ring-primary/20 focus:border-primary'
+            ? 'bg-muted border-border text-muted-foreground cursor-not-allowed'
+            : 'bg-background border-input focus:ring-2 focus:ring-primary/20 focus:border-primary'
           }`}
       />
     </div>
   );
 
   const tierColors: Record<string, string> = {
-    basic:    'bg-muted dark:bg-sidebar text-muted-foreground dark:text-muted-foreground',
-    standard: 'bg-indigo-100 dark:bg-primary/15 text-indigo-700 dark:text-primary/80',
+    basic:    'bg-muted dark:bg-sidebar text-muted-foreground',
+    standard: 'bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-400',
     premium:  'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400',
   };
 
@@ -112,7 +112,7 @@ export default function SettingsView({
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] border border-[#484ced] bg-primary text-white text-[12.25px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
+            className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
           >
             {isSaving ? <Loader2 size={14} className="animate-spin" /> :
              saved    ? <Check size={14} />                              :
@@ -134,10 +134,10 @@ export default function SettingsView({
       )}
 
       {/* Business Info */}
-      <div className="bg-white dark:bg-[#18181b] border border-border dark:border-white/5 rounded-2xl divide-y divide-slate-100 dark:divide-white/5">
+      <div className="bg-card border border-border rounded-2xl divide-y divide-border">
         <div className="px-6 py-4 flex items-center gap-2">
           <Building2 size={16} className="text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground dark:text-muted-foreground">Business Information</h3>
+          <h3 className="text-sm font-semibold text-foreground text-muted-foreground">Business Information</h3>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Display Name"  value={form.name}      field="name"      placeholder="Pharmacy name" />
@@ -151,10 +151,10 @@ export default function SettingsView({
       </div>
 
       {/* Contact Info */}
-      <div className="bg-white dark:bg-[#18181b] border border-border dark:border-white/5 rounded-2xl divide-y divide-slate-100 dark:divide-white/5">
+      <div className="bg-card border border-border rounded-2xl divide-y divide-border">
         <div className="px-6 py-4 flex items-center gap-2">
           <Phone size={16} className="text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground dark:text-muted-foreground">Contact Details</h3>
+          <h3 className="text-sm font-semibold text-foreground text-muted-foreground">Contact Details</h3>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Primary Contact Name"  value={form.primaryContact} field="primaryContact" placeholder="Contact person" />
@@ -164,10 +164,10 @@ export default function SettingsView({
       </div>
 
       {/* Read-only system info */}
-      <div className="bg-white dark:bg-[#18181b] border border-border dark:border-white/5 rounded-2xl divide-y divide-slate-100 dark:divide-white/5">
+      <div className="bg-card border border-border rounded-2xl divide-y divide-border">
         <div className="px-6 py-4 flex items-center gap-2">
           <Shield size={16} className="text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground dark:text-muted-foreground">System Information</h3>
+          <h3 className="text-sm font-semibold text-foreground text-muted-foreground">System Information</h3>
           <span className="ml-auto text-[10px] text-muted-foreground font-medium">Read only</span>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">

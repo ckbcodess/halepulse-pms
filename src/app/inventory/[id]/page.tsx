@@ -61,8 +61,8 @@ async function fetchProduct(id: string): Promise<ProductDetail> {
 function InfoCard({ icon: Icon, label, value, sub }: { icon: React.ElementType; label: string; value: string; sub?: string }) {
   return (
     <div className="flex items-start gap-3 p-4 rounded-xl border border-border bg-card">
-      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-        <Icon size={16} className="text-primary" />
+      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+        <Icon size={16} className="text-muted-foreground" />
       </div>
       <div className="min-w-0">
         <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-0.5">{label}</p>
