@@ -32,6 +32,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Product = {
@@ -278,15 +281,17 @@ function AddProductSheet({ open, onClose, onSuccess }: { open: boolean; onClose:
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-[12px] font-medium">Category <span className="text-rose-500">*</span></Label>
-                  <select value={form.category} onChange={e => update('category', e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-[12.5px]">
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <Select value={form.category} onValueChange={v => v && update('category', v)}>
+                    <SelectTrigger className="h-9 w-full text-[12.5px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-[12px] font-medium">Unit <span className="text-rose-500">*</span></Label>
-                  <select value={form.unit} onChange={e => update('unit', e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-[12.5px]">
-                    {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                  </select>
+                  <Select value={form.unit} onValueChange={v => v && update('unit', v)}>
+                    <SelectTrigger className="h-9 w-full text-[12.5px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -472,13 +477,10 @@ function StockAdjustForm({ productId, currentQty, onAdjusted }: {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-[12px] font-medium">Reason</Label>
-              <select
-                value={reason}
-                onChange={e => setReason(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-[12.5px]"
-              >
-                {ADJUSTMENT_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
+              <Select value={reason} onValueChange={v => v && setReason(v)}>
+                <SelectTrigger className="h-9 w-full text-[12.5px]"><SelectValue /></SelectTrigger>
+                <SelectContent>{ADJUSTMENT_REASONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
           </div>
           {reason === 'Other' && (
@@ -670,15 +672,17 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex flex-col gap-1.5">
                         <Label className="text-[12px] font-medium">Category</Label>
-                        <select value={form.category} onChange={e => update('category', e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-[12.5px]">
-                          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
+                        <Select value={form.category} onValueChange={v => v && update('category', v)}>
+                          <SelectTrigger className="h-9 w-full text-[12.5px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                        </Select>
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <Label className="text-[12px] font-medium">Unit</Label>
-                        <select value={form.unit} onChange={e => update('unit', e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-[12.5px]">
-                          {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                        </select>
+                        <Select value={form.unit} onValueChange={v => v && update('unit', v)}>
+                          <SelectTrigger className="h-9 w-full text-[12.5px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                        </Select>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">

@@ -3,6 +3,9 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
 
 export default function CreateUserPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
@@ -124,15 +127,14 @@ export default function CreateUserPage() {
 
         <div className="space-y-1.5">
           <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Role</label>
-          <select
-            value={role}
-            onChange={e => setRole(e.target.value)}
-            className="w-full px-4 py-3 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
-          >
-            <option value="MANAGER">Manager</option>
-            <option value="MCA">MCA</option>
-            <option value="NES">NES</option>
-          </select>
+          <Select value={role} onValueChange={v => v && setRole(v)}>
+            <SelectTrigger className="w-full px-4 py-3 h-auto bg-muted border border-border rounded-lg text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="MANAGER">Manager</SelectItem>
+              <SelectItem value="MCA">MCA</SelectItem>
+              <SelectItem value="NES">NES</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <p className="text-xs text-muted-foreground">A temporary password will be auto-generated and shown once after creation.</p>
