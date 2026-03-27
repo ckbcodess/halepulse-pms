@@ -132,7 +132,7 @@ export default function SPLoginPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 bg-blue-600 hover:bg-primary text-white font-bold mt-4"
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold mt-4"
             >
               {isSubmitting ? (
                 <>Authenticating<span className="animate-pulse">...</span></>

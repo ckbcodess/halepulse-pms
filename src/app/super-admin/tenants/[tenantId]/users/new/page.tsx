@@ -46,9 +46,9 @@ export default function CreateUserPage() {
   if (result) {
     return (
       <div className="max-w-lg mx-auto space-y-6">
-        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-8 text-center">
-          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Check size={24} className="text-primary" />
+        <div className="bg-muted/40 border border-border rounded-2xl p-8 text-center">
+          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <Check size={24} className="text-muted-foreground" />
           </div>
           <h2 className="text-xl font-bold text-foreground mb-2">User Created</h2>
           <p className="text-sm text-muted-foreground mb-6">Share these credentials with the user. The password is shown only once.</p>
@@ -140,7 +140,7 @@ export default function CreateUserPage() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-white font-bold py-3 rounded-lg transition-colors"
+          className="w-full bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-primary-foreground font-bold py-3 rounded-lg transition-colors"
         >
           {saving ? 'Creating...' : 'Create User'}
         </button>

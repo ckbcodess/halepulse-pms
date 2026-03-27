@@ -98,7 +98,7 @@ export default function Sidebar({
             <span className="
               absolute inset-0 rounded-md flex items-center justify-center
               transition-opacity duration-150 group-hover/logo:opacity-0
-            " style={{ background: 'var(--primary-color, #6366f1)' }}>
+            " style={{ background: 'var(--primary)' }}>
               <span className="text-primary-foreground text-xs font-medium leading-none">H</span>
             </span>
             {/* Bare expand icon — fades in on hover, no container */}

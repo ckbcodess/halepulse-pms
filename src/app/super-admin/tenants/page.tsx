@@ -17,7 +17,7 @@ export default async function TenantsPage() {
         </div>
         <Link
           href="/super-admin/tenants/new"
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-semibold rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-lg transition-colors"
         >
           <Plus size={16} /> New Tenant
         </Link>

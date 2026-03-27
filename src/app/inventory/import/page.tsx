@@ -193,7 +193,7 @@ export default function ImportPage() {
             <button onClick={() => { setStep('upload'); setRows([]); }} className="px-5 py-2.5 rounded-xl border border-border dark:border-border text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-sidebar transition-colors">
               Cancel
             </button>
-            <button onClick={handleImport} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors">
+            <button onClick={handleImport} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold transition-colors">
               Import {rows.length} Products
             </button>
           </div>
@@ -243,7 +243,7 @@ export default function ImportPage() {
           )}
 
           <div className="flex gap-3 justify-center">
-            <button onClick={() => router.push('/inventory')} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors">
+            <button onClick={() => router.push('/inventory')} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold transition-colors">
               Go to Inventory
             </button>
             <button onClick={() => { setStep('upload'); setRows([]); setResult(null); }} className="px-5 py-2.5 rounded-xl border border-border dark:border-border text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-sidebar transition-colors">
