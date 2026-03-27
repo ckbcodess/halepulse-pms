@@ -1235,7 +1235,7 @@ export default function InventoryView() {
               const headers = ['ID','Name','SKU','Category','Cost Price','Markup %','Selling Price','Stock','Status'];
               const rows = selected.map(p => [
                 p.id, `"${p.name}"`, p.sku, p.category, p.costPrice, p.markupPercent,
-                (p.costPrice * (1 + p.markupPercent / 100)).toFixed(2), p.stockQty,
+                ((p.costPrice ?? 0) * (1 + p.markupPercent / 100)).toFixed(2), p.stockQty,
                 p.isActive ? 'Active' : 'Archived',
               ]);
               const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
