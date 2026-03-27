@@ -57,6 +57,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Generate full OKLCH palette from base color — injected server-side to prevent flash
   const brandingCSS = generateThemeCSS(baseColor);
 
+  // Use a role-isolated storage key for theme preference so super-admins and
+  // regular users don't share dark/light mode settings. This prevents a tenant
+  // user's dark mode toggle from affecting the super-admin's UI on their next visit.
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
+  const themeStorageKey = isSuperAdmin ? 'theme_admin' : 'theme';
+
   return (
     <html
       lang="en"
@@ -70,7 +76,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <AgentationToolbar />
         <ReactQueryProvider>
           <SessionProvider session={session}>
-            <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange storageKey={themeStorageKey}>
               <DynamicThemeProvider initialBaseColor={baseColor}>
                 <Toaster position="top-right" richColors />
                 <HeartbeatProvider>
