@@ -8,21 +8,38 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ tena
   try { session = await requireRole(['SUPER_ADMIN']); } catch { return NextResponse.json({ error: 'Forbidden' }, { status: 403 }); }
 
   const { tenantId } = await params;
-  const { name, primaryColor, secondaryColor, baseColor, logoUrl } = await req.json();
+
+  let body: { name?: string; primaryColor?: string; secondaryColor?: string; baseColor?: string; logoUrl?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const { name, primaryColor, secondaryColor, baseColor, logoUrl } = body;
 
   // When baseColor is provided, sync it to primaryColor for backward compat
   const effectivePrimary = baseColor || primaryColor;
 
-  const tenant = await prisma.tenant.update({
-    where: { id: tenantId },
-    data:  {
-      name,
-      primaryColor: effectivePrimary,
-      secondaryColor,
-      baseColor: baseColor || null,
-      logoUrl: logoUrl || null,
-    },
-  });
+  let tenant;
+  try {
+    tenant = await prisma.tenant.update({
+      where: { id: tenantId },
+      data:  {
+        name,
+        primaryColor: effectivePrimary,
+        secondaryColor,
+        baseColor: baseColor || null,
+        logoUrl: logoUrl || null,
+      },
+    });
+  } catch (err) {
+    console.error('[branding PUT] Prisma error:', err);
+    return NextResponse.json(
+      { error: 'Database error', details: err instanceof Error ? err.message : String(err) },
+      { status: 500 },
+    );
+  }
 
   await logAction(session.user.id, tenantId, 'BRANDING_UPDATED', {
     baseColor: baseColor || effectivePrimary,

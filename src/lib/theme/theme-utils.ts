@@ -45,6 +45,15 @@ function oklchStr(l: number, c: number, h: number, alpha?: number): string {
   return `oklch(${n(cl)} ${n(cc)} ${n(ch)})`;
 }
 
+/**
+ * Add alpha transparency to an existing oklch() CSS value string.
+ * e.g. "oklch(0.674 0.178 162)" → "oklch(0.674 0.178 162 / 10%)"
+ */
+function withAlpha(oklchValue: string, alpha: number): string {
+  const pct = Math.round(alpha * 100);
+  return oklchValue.replace(/\)$/, ` / ${pct}%)`);
+}
+
 /** Round to 3 decimal places for clean CSS output. */
 function n(v: number): string {
   return Number(v.toFixed(3)).toString();
@@ -200,6 +209,15 @@ function generateFromScales(
     '--sidebar-accent-foreground': neutral[900],
     '--sidebar-border': neutral[200],
     '--sidebar-ring': accentIsNeutral ? accent[950] : accent[500],
+
+    // Interaction & surface tokens (must match brand color)
+    '--hover': 'oklch(0 0 0 / 4%)',
+    '--active-bg': withAlpha(accentIsNeutral ? accent[900] : accent[500], 0.08),
+    '--active-border': accentIsNeutral ? accent[900] : accent[500],
+    '--surface': neutral[50],
+    '--surface-raised': 'oklch(1 0 0)',
+    '--glass-bg': 'oklch(1 0 0 / 70%)',
+    '--glass-border': 'oklch(0 0 0 / 8%)',
   };
 
   const dark: Record<string, string> = {
@@ -211,16 +229,16 @@ function generateFromScales(
     '--popover': neutral[800],
     '--popover-foreground': neutral[50],
 
-    // Primary — neutral: 50/900, bright: 500/950, standard: 500/950
+    // Primary — neutral: 50/900, bright: 500/950, standard: 500/white
     '--primary': accentIsNeutral ? accent[50] : accent[500],
-    '--primary-foreground': accentIsNeutral ? accent[900] : (isBright ? accent[950] : accent[950]),
+    '--primary-foreground': accentIsNeutral ? accent[900] : (isBright ? accent[950] : 'oklch(1 0 0)'),
 
-    // Secondary & Accent
+    // Secondary & Accent — distinct shades for visual hierarchy
     '--secondary': neutral[800],
     '--secondary-foreground': neutral[50],
     '--muted': neutral[800],
     '--muted-foreground': neutral[400],
-    '--accent': neutral[800],
+    '--accent': neutral[700],        // lighter than secondary — creates visible hover state
     '--accent-foreground': neutral[50],
 
     // Destructive
@@ -228,8 +246,8 @@ function generateFromScales(
     '--destructive-foreground': 'oklch(1 0 0)',
 
     // Borders & Input
-    '--border': neutral[900],
-    '--input': neutral[700],
+    '--border': neutral[800],        // was neutral[900] — invisible against card; now visible
+    '--input': neutral[800],         // was neutral[700] — too light/floating; now matches card level
     '--ring': accentIsNeutral ? accent[50] : accent[400],
 
     // Charts
@@ -243,11 +261,20 @@ function generateFromScales(
     '--sidebar': neutral[900],
     '--sidebar-foreground': neutral[400],
     '--sidebar-primary': accentIsNeutral ? accent[50] : accent[500],
-    '--sidebar-primary-foreground': accentIsNeutral ? accent[900] : (isBright ? accent[950] : accent[950]),
-    '--sidebar-accent': neutral[800],
+    '--sidebar-primary-foreground': accentIsNeutral ? accent[900] : (isBright ? accent[950] : 'oklch(1 0 0)'),
+    '--sidebar-accent': neutral[700],
     '--sidebar-accent-foreground': neutral[50],
     '--sidebar-border': neutral[800],
     '--sidebar-ring': accentIsNeutral ? accent[50] : accent[400],
+
+    // Interaction & surface tokens (must match brand color)
+    '--hover': 'oklch(1 0 0 / 5%)',
+    '--active-bg': withAlpha(accentIsNeutral ? accent[50] : accent[400], 0.12),
+    '--active-border': accentIsNeutral ? accent[50] : accent[400],
+    '--surface': neutral[950],
+    '--surface-raised': neutral[900],
+    '--glass-bg': withAlpha(neutral[900], 0.60),
+    '--glass-border': 'oklch(1 0 0 / 10%)',
   };
 
   return { light, dark };
@@ -313,14 +340,23 @@ function generateMathFallback(hex: string, neutralName: NeutralType): ThemePalet
     '--sidebar-accent-foreground': nScale[900],
     '--sidebar-border': nScale[200],
     '--sidebar-ring': oklchStr(0.65, primaryC * 0.5, h),
+
+    // Interaction & surface tokens (must match brand color)
+    '--hover': 'oklch(0 0 0 / 4%)',
+    '--active-bg': oklchStr(primaryL, primaryC, h, 0.08),
+    '--active-border': oklchStr(primaryL, primaryC, h),
+    '--surface': nScale[50],
+    '--surface-raised': 'oklch(1 0 0)',
+    '--glass-bg': 'oklch(1 0 0 / 70%)',
+    '--glass-border': 'oklch(0 0 0 / 8%)',
   };
 
   const dark: Record<string, string> = {
     '--background': nScale[950],
     '--foreground': nScale[50],
-    '--card': nScale[800],
+    '--card': nScale[900],           // was [800] — too light; [900] gives proper depth hierarchy
     '--card-foreground': nScale[50],
-    '--popover': nScale[700],
+    '--popover': nScale[800],        // was [700] — elevated overlays sit above card, not above card[800]
     '--popover-foreground': nScale[50],
     '--primary': oklchStr(darkPrimaryL, primaryC, h),
     '--primary-foreground': 'oklch(1 0 0)',
@@ -328,7 +364,7 @@ function generateMathFallback(hex: string, neutralName: NeutralType): ThemePalet
     '--secondary-foreground': nScale[50],
     '--muted': nScale[800],
     '--muted-foreground': nScale[400],
-    '--accent': nScale[800],
+    '--accent': nScale[700],         // was [800] — lighter than secondary creates visible hover state
     '--accent-foreground': nScale[50],
     '--destructive': COLOR_SCALES.red[500],
     '--destructive-foreground': 'oklch(1 0 0)',
@@ -344,10 +380,19 @@ function generateMathFallback(hex: string, neutralName: NeutralType): ThemePalet
     '--sidebar-foreground': nScale[400],
     '--sidebar-primary': oklchStr(darkPrimaryL, primaryC, h),
     '--sidebar-primary-foreground': 'oklch(1 0 0)',
-    '--sidebar-accent': nScale[800],
+    '--sidebar-accent': nScale[700],
     '--sidebar-accent-foreground': nScale[50],
     '--sidebar-border': nScale[800],
     '--sidebar-ring': oklchStr(0.55, primaryC * 0.4, h),
+
+    // Interaction & surface tokens (must match brand color)
+    '--hover': 'oklch(1 0 0 / 5%)',
+    '--active-bg': oklchStr(darkPrimaryL, primaryC * 0.8, h, 0.12),
+    '--active-border': oklchStr(darkPrimaryL, primaryC, h),
+    '--surface': nScale[950],
+    '--surface-raised': nScale[900],
+    '--glass-bg': withAlpha(nScale[900], 0.60),
+    '--glass-border': 'oklch(1 0 0 / 10%)',
   };
 
   return { light, dark };
