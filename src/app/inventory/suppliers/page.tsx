@@ -178,7 +178,7 @@ export default function SuppliersPage() {
       <PageHeader title="Suppliers" description="Manage your wholesale suppliers and contacts.">
         <button
           onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] border border-primary bg-primary text-white text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
         >
           <Plus size={14} /> Add Supplier
         </button>

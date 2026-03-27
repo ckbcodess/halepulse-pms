@@ -118,7 +118,7 @@ export default function TenantDetailPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Branding', href: `/super-admin/tenants/${tenantId}/branding`, icon: Paintbrush, bg: 'bg-primary/10 text-primary' },
+          { label: 'Branding', href: `/super-admin/tenants/${tenantId}/branding`, icon: Paintbrush, bg: 'bg-muted text-muted-foreground' },
           { label: 'Permissions', href: `/super-admin/tenants/${tenantId}/permissions`, icon: Shield, bg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
           { label: 'Menus', href: `/super-admin/tenants/${tenantId}/menus`, icon: Menu, bg: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300' },
           { label: 'Create User', href: `/super-admin/tenants/${tenantId}/users/new`, icon: UserPlus, bg: 'bg-destructive/10 text-destructive' },
@@ -140,7 +140,7 @@ export default function TenantDetailPage() {
             <Link
               key={role}
               href={`/super-admin/impersonate?tenantId=${tenantId}&role=${role}`}
-              className="px-4 py-2 bg-muted hover:bg-primary/10 text-sm font-semibold text-muted-foreground hover:text-primary rounded-lg transition-colors"
+              className="px-4 py-2 bg-muted hover:bg-accent text-sm font-semibold text-muted-foreground hover:text-accent-foreground rounded-lg transition-colors"
             >
               View as {role}
             </Link>
@@ -154,7 +154,7 @@ export default function TenantDetailPage() {
           <h3 className="text-base font-semibold text-foreground">Users ({users.length})</h3>
           <Link
             href={`/super-admin/tenants/${tenantId}/users/new`}
-            className="flex items-center gap-2 px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg transition-colors"
+            className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
           >
             <UserPlus size={13} /> Add User
           </Link>
@@ -167,7 +167,7 @@ export default function TenantDetailPage() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-border">
             {users.map(user => {
               const online = isOnline(user.lastActiveAt);
               return (

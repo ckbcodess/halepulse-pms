@@ -105,7 +105,7 @@ export default function ImportPage() {
         <button onClick={() => router.push('/inventory')} className="p-2 rounded-xl border border-border dark:border-border hover:bg-muted dark:hover:bg-sidebar transition-colors">
           <ArrowLeft size={18} className="text-muted-foreground" />
         </button>
-        <p className="text-sm text-muted-foreground dark:text-muted-foreground">Upload a CSV file to bulk-add products to your inventory</p>
+        <p className="text-sm text-muted-foreground">Upload a CSV file to bulk-add products to your inventory</p>
       </div>
 
       {/* Upload Step */}
@@ -115,21 +115,21 @@ export default function ImportPage() {
             onClick={() => fileRef.current?.click()}
             className="border-2 border-dashed border-slate-300 dark:border-border rounded-2xl p-12 text-center cursor-pointer hover:border-indigo-400 dark:hover:border-primary hover:bg-indigo-50/50 dark:hover:bg-primary/5 transition-all"
           >
-            <Upload size={40} className="mx-auto text-muted-foreground dark:text-muted-foreground mb-4" />
-            <p className="text-lg font-medium text-foreground dark:text-muted-foreground mb-1">Click to upload CSV</p>
-            <p className="text-sm text-muted-foreground dark:text-muted-foreground">or drag and drop your file here</p>
+            <Upload size={40} className="mx-auto text-muted-foreground mb-4" />
+            <p className="text-lg font-medium text-foreground text-muted-foreground mb-1">Click to upload CSV</p>
+            <p className="text-sm text-muted-foreground">or drag and drop your file here</p>
             <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
           </div>
 
           {/* Expected format */}
           <div className="bg-muted dark:bg-sidebar rounded-xl p-6 border border-border dark:border-border">
-            <h3 className="text-sm font-semibold text-foreground dark:text-muted-foreground mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-foreground text-muted-foreground mb-3 flex items-center gap-2">
               <FileSpreadsheet size={16} /> Expected CSV Format
             </h3>
-            <code className="text-xs text-muted-foreground dark:text-muted-foreground block bg-white dark:bg-sidebar p-3 rounded-lg border border-border dark:border-border overflow-x-auto">
+            <code className="text-xs text-muted-foreground block bg-white dark:bg-sidebar p-3 rounded-lg border border-border dark:border-border overflow-x-auto">
               name,price,costPrice,stockQty,expiryDate,barcode,category
             </code>
-            <p className="text-xs text-muted-foreground dark:text-muted-foreground mt-3">
+            <p className="text-xs text-muted-foreground mt-3">
               Only <strong>name</strong> is required. All other columns are optional. The importer also recognizes
               alternate column names like <code className="bg-muted dark:bg-slate-700 px-1 rounded">ITEM_NAME</code>, <code className="bg-muted dark:bg-slate-700 px-1 rounded">RATE_A</code>, <code className="bg-muted dark:bg-slate-700 px-1 rounded">PRATE</code>, <code className="bg-muted dark:bg-slate-700 px-1 rounded">STOCK</code>.
             </p>
@@ -169,14 +169,14 @@ export default function ImportPage() {
                     <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Category</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-border">
                   {rows.slice(0, 100).map((r, i) => (
                     <tr key={i}>
                       <td className="px-4 py-2 text-xs text-muted-foreground">{i + 1}</td>
-                      <td className="px-4 py-2 font-medium text-foreground dark:text-white">{r.name}</td>
-                      <td className="px-4 py-2 text-right text-muted-foreground dark:text-muted-foreground">{r.price.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-right text-muted-foreground dark:text-muted-foreground">{r.stockQty}</td>
-                      <td className="px-4 py-2 text-muted-foreground dark:text-muted-foreground text-xs">{r.category}</td>
+                      <td className="px-4 py-2 font-medium text-foreground">{r.name}</td>
+                      <td className="px-4 py-2 text-right text-muted-foreground">{r.price.toFixed(2)}</td>
+                      <td className="px-4 py-2 text-right text-muted-foreground">{r.stockQty}</td>
+                      <td className="px-4 py-2 text-muted-foreground text-xs">{r.category}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -190,7 +190,7 @@ export default function ImportPage() {
           </div>
 
           <div className="flex gap-3 justify-end">
-            <button onClick={() => { setStep('upload'); setRows([]); }} className="px-5 py-2.5 rounded-xl border border-border dark:border-border text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-sidebar transition-colors">
+            <button onClick={() => { setStep('upload'); setRows([]); }} className="px-5 py-2.5 rounded-xl border border-border dark:border-border text-sm font-medium text-muted-foreground hover:bg-muted dark:hover:bg-sidebar transition-colors">
               Cancel
             </button>
             <button onClick={handleImport} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold transition-colors">
@@ -204,8 +204,8 @@ export default function ImportPage() {
       {step === 'importing' && (
         <div className="text-center py-20">
           <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-6" />
-          <p className="text-lg font-medium text-foreground dark:text-muted-foreground">Importing {rows.length} products...</p>
-          <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-2">This may take a minute for large files</p>
+          <p className="text-lg font-medium text-foreground text-muted-foreground">Importing {rows.length} products...</p>
+          <p className="text-sm text-muted-foreground mt-2">This may take a minute for large files</p>
         </div>
       )}
 
@@ -246,7 +246,7 @@ export default function ImportPage() {
             <button onClick={() => router.push('/inventory')} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold transition-colors">
               Go to Inventory
             </button>
-            <button onClick={() => { setStep('upload'); setRows([]); setResult(null); }} className="px-5 py-2.5 rounded-xl border border-border dark:border-border text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-sidebar transition-colors">
+            <button onClick={() => { setStep('upload'); setRows([]); setResult(null); }} className="px-5 py-2.5 rounded-xl border border-border dark:border-border text-sm font-medium text-muted-foreground hover:bg-muted dark:hover:bg-sidebar transition-colors">
               Import More
             </button>
           </div>

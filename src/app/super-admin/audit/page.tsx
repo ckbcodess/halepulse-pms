@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { Activity } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 
 export default async function AuditLogPage() {
   const logs = await prisma.auditLog.findMany({
@@ -19,12 +20,10 @@ export default async function AuditLogPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground dark:text-white">Audit Log</h1>
-        <p className="text-muted-foreground dark:text-muted-foreground mt-1">
-          {logs.length} most recent events across all tenants
-        </p>
-      </div>
+      <PageHeader
+        title="Audit Log"
+        description={`${logs.length} most recent events across all tenants`}
+      />
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         <table className="w-full text-left">
@@ -37,19 +36,19 @@ export default async function AuditLogPage() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-border">
             {logs.map(log => (
               <tr key={log.id} className="transition-colors">
                 <td className="px-6 py-3">
-                  <span className="text-xs font-mono font-bold text-primary dark:text-primary/80 bg-indigo-50 dark:bg-primary/10 px-2 py-0.5 rounded">
+                  <span className="text-xs font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded">
                     {log.action}
                   </span>
                 </td>
-                <td className="px-6 py-3 text-xs text-muted-foreground dark:text-muted-foreground font-mono">
+                <td className="px-6 py-3 text-xs text-muted-foreground font-mono">
                   {log.userId.slice(0, 12)}...
                 </td>
-                <td className="px-6 py-3 text-xs text-muted-foreground dark:text-muted-foreground">
-                  {log.tenantId ? (tenantMap[log.tenantId] || log.tenantId.slice(0, 8)) : <span className="text-muted-foreground dark:text-muted-foreground">system</span>}
+                <td className="px-6 py-3 text-xs text-muted-foreground">
+                  {log.tenantId ? (tenantMap[log.tenantId] || log.tenantId.slice(0, 8)) : <span className="text-muted-foreground">system</span>}
                 </td>
                 <td className="px-6 py-3 text-xs text-muted-foreground font-mono">
                   {log.ipAddress || '-'}
@@ -63,7 +62,7 @@ export default async function AuditLogPage() {
         </table>
         {logs.length === 0 && (
           <div className="p-12 text-center">
-            <Activity size={32} className="text-muted-foreground dark:text-muted-foreground mx-auto mb-3" />
+            <Activity size={32} className="text-muted-foreground mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">No audit events recorded yet.</p>
           </div>
         )}

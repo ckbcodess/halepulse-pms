@@ -12,8 +12,8 @@ export default async function TenantsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground dark:text-white">Tenants</h1>
-          <p className="text-muted-foreground dark:text-muted-foreground mt-1">{tenants.length} registered tenants</p>
+          <h1 className="text-2xl font-bold text-foreground">Tenants</h1>
+          <p className="text-muted-foreground mt-1">{tenants.length} registered tenants</p>
         </div>
         <Link
           href="/super-admin/tenants/new"
@@ -34,7 +34,7 @@ export default async function TenantsPage() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-border">
             {tenants.map(tenant => (
               <tr key={tenant.id} className="transition-colors">
                 <td className="px-6 py-4">
@@ -46,17 +46,17 @@ export default async function TenantsPage() {
                       {tenant.name.charAt(0)}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground dark:text-white">{tenant.name}</p>
+                      <p className="text-sm font-semibold text-foreground">{tenant.name}</p>
                       <p className="text-xs text-muted-foreground">{tenant.id.slice(0, 8)}…</p>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <code className="text-xs bg-muted dark:bg-sidebar px-2 py-1 rounded text-foreground dark:text-muted-foreground">
+                  <code className="text-xs bg-muted dark:bg-sidebar px-2 py-1 rounded text-foreground text-muted-foreground">
                     {tenant.subdomain}
                   </code>
                 </td>
-                <td className="px-6 py-4 text-sm text-foreground dark:text-muted-foreground">{tenant._count.users}</td>
+                <td className="px-6 py-4 text-sm text-foreground text-muted-foreground">{tenant._count.users}</td>
                 <td className="px-6 py-4">
                   <span className={`text-xs font-bold px-2 py-1 rounded ${
                     tenant.isActive
