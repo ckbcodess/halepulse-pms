@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/inventory/StatusBadge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -191,7 +192,7 @@ export default function SupplierProfilePage() {
                 <h1 className="text-xl font-bold text-foreground">{supplier.name}</h1>
                 {supplier.contactName && <p className="text-sm text-muted-foreground">{supplier.contactName}</p>}
               </div>
-              {!supplier.isActive && <Badge variant="outline" className="border-rose-300 text-rose-600">Archived</Badge>}
+              {!supplier.isActive && <StatusBadge status="ARCHIVED" />}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
               {supplier.phone && (

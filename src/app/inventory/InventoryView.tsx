@@ -23,6 +23,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/inventory/StatusBadge';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetDescription,
 } from '@/components/ui/sheet';
@@ -1225,22 +1226,16 @@ export default function InventoryView() {
                     <td className="px-4 h-[42px]">
                       <div className="flex items-center justify-center gap-3">
                         {isOut ? (
-                          <span className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-[#fff1f1] text-[12px] font-medium text-[#5d0000]/70 capitalize">
-                            Out of Stock
-                          </span>
+                          <StatusBadge status="OUT_OF_STOCK" />
                         ) : isExpired ? (
-                          <span className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-[#fff1f1] text-[12px] font-medium text-[#5d0000]/70 capitalize">
-                            Expired
-                          </span>
+                          <StatusBadge status="EXPIRED" />
                         ) : (
                           <>
                             <span className="text-[14px] font-medium text-[#08090e] dark:text-foreground">
                               {p.stockQty.toString().padStart(2, '0')}
                             </span>
                             {isLow && (
-                              <span className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-[#fff6dc] text-[9.8px] font-medium text-[#933100]/70 capitalize">
-                                Low Stock
-                              </span>
+                              <StatusBadge status="LOW_STOCK" />
                             )}
                           </>
                         )}
