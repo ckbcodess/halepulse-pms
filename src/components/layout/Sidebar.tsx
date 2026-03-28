@@ -165,7 +165,8 @@ export default function Sidebar({
             const isActive =
               pathname === item.path ||
               (item.key === 'dashboard' && pathname.startsWith('/dashboard')) ||
-              (item.key !== 'dashboard' && pathname.startsWith(item.path));
+              (item.key === 'inventory' && pathname.startsWith(item.path) && !pathname.startsWith('/inventory/audit-log')) ||
+              (item.key !== 'dashboard' && item.key !== 'inventory' && pathname.startsWith(item.path));
 
             if (collapsed) {
               return (
