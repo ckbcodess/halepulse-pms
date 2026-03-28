@@ -33,23 +33,65 @@ export async function getProducts(search?: string) {
 }
 
 export async function updateProduct(id: number, data: { price: number; stockQty: number }) {
-  const { tenantId } = await getTenantContext();
+  const { tenantId, userId } = await getTenantContext();
   const parsed = updateProductSchema.parse({ id, ...data });
 
-  return prisma.product.update({
+  const current = await prisma.product.findFirst({
+    where: { id: parsed.id, tenantId },
+    select: { price: true, stockQty: true, name: true },
+  });
+
+  const updated = await prisma.product.update({
     where: { id: parsed.id, tenantId },
     data: { price: parsed.price, stockQty: parsed.stockQty },
   });
+
+  if (current) {
+    await prisma.inventoryAuditLog.create({
+      data: {
+        actionType: current.price !== parsed.price ? 'PRICE_UPDATED' : 'PRODUCT_UPDATED',
+        productId: parsed.id,
+        performedBy: parseInt(userId, 10),
+        oldValue: { price: current.price, stockQty: current.stockQty },
+        newValue: { price: parsed.price, stockQty: parsed.stockQty },
+        notes: `Quick edit on ${current.name}`,
+        tenantId,
+      },
+    }).catch(() => {});
+  }
+
+  return updated;
 }
 
 export async function addStock(id: number, quantity: number) {
-  const { tenantId } = await getTenantContext();
+  const { tenantId, userId } = await getTenantContext();
   const parsed = addStockSchema.parse({ id, quantity });
 
-  return prisma.product.update({
+  const current = await prisma.product.findFirst({
+    where: { id: parsed.id, tenantId },
+    select: { stockQty: true, name: true },
+  });
+
+  const updated = await prisma.product.update({
     where: { id: parsed.id, tenantId },
     data:  { stockQty: { increment: parsed.quantity } },
   });
+
+  if (current) {
+    await prisma.inventoryAuditLog.create({
+      data: {
+        actionType: 'STOCK_ADJUSTED',
+        productId: parsed.id,
+        performedBy: parseInt(userId, 10),
+        oldValue: { stockQty: current.stockQty },
+        newValue: { stockQty: current.stockQty + parsed.quantity },
+        notes: `Quick stock add: +${parsed.quantity} on ${current.name}`,
+        tenantId,
+      },
+    }).catch(() => {});
+  }
+
+  return updated;
 }
 
 // ── Customers ─────────────────────────────────────────────────────────────────
@@ -73,7 +115,7 @@ export async function getCustomers(search?: string) {
 }
 
 export async function createCustomer(name: string, phone: string) {
-  const { tenantId } = await getTenantContext();
+  const { tenantId, userId } = await getTenantContext();
   const { name: trimmedName, phone: trimmedPhone } = createCustomerSchema.parse({ name, phone });
 
   // Check for duplicate phone within tenant
@@ -82,9 +124,20 @@ export async function createCustomer(name: string, phone: string) {
   });
   if (existing) throw new Error('A customer with this phone number already exists');
 
-  return prisma.customer.create({
+  const customer = await prisma.customer.create({
     data: { name: trimmedName, phone: trimmedPhone, tenantId },
   });
+
+  await prisma.inventoryAuditLog.create({
+    data: {
+      actionType: 'CUSTOMER_CREATED',
+      performedBy: parseInt(userId, 10),
+      newValue: { name: trimmedName, phone: trimmedPhone, customerId: customer.id },
+      tenantId,
+    },
+  }).catch(() => {});
+
+  return customer;
 }
 
 // ── Sales ─────────────────────────────────────────────────────────────────────
@@ -221,6 +274,30 @@ export async function processSale(
       }
     }
 
+    // ── Audit log for completed sale ──────────────────────────────────
+    await tx.inventoryAuditLog.create({
+      data: {
+        actionType: 'SALE_COMPLETED',
+        performedBy: sellerId,
+        newValue: {
+          saleId: sale.id,
+          totalAmount: finalTotal,
+          discount: cappedDiscount,
+          paymentType: resolvedPaymentType,
+          itemCount: items.length + resolvedMiscItems.length,
+          customerId: customerId ?? null,
+          items: items.map(i => ({
+            productId: i.id,
+            name: productMap.get(i.id)?.name,
+            quantity: i.quantity,
+            price: productMap.get(i.id)?.price,
+          })),
+          ...(resolvedMiscItems.length > 0 ? { miscItems: resolvedMiscItems } : {}),
+        },
+        tenantId,
+      },
+    });
+
     return sale;
   });
 }
@@ -238,7 +315,7 @@ export interface ImportRow {
 }
 
 export async function bulkImportProducts(rows: ImportRow[]) {
-  const { tenantId, role } = await getTenantContext();
+  const { tenantId, role, userId } = await getTenantContext();
 
   if (role !== 'MANAGER' && role !== 'SUPER_ADMIN') {
     throw new Error('Only managers can import products');
@@ -290,6 +367,16 @@ export async function bulkImportProducts(rows: ImportRow[]) {
       }
     }
   }
+
+  await prisma.inventoryAuditLog.create({
+    data: {
+      actionType: 'BULK_IMPORT',
+      performedBy: parseInt(userId, 10),
+      newValue: { totalRows: rows.length, created, skipped, errorCount: errors.length },
+      notes: `Bulk import: ${created} created, ${skipped} skipped, ${errors.length} errors`,
+      tenantId,
+    },
+  }).catch(() => {});
 
   return { created, skipped, errors: errors.slice(0, 20), total: rows.length };
 }

@@ -33,6 +33,7 @@ model User {
   createdProducts    Product[]    @relation("ProductCreator")
   stockAdjustments   StockAdjustment[] @relation("StockAdjuster")
   inventoryAuditLogs InventoryAuditLog[] @relation("AuditPerformer")
+  revertedAuditLogs  InventoryAuditLog[] @relation("AuditReverter")
 }
 
 model Product {
@@ -108,7 +109,7 @@ model StockAdjustment {
 }
 
 model InventoryAuditLog {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   actionType   String                                // e.g. PRODUCT_CREATED, PRICE_UPDATED, etc.
   productId    Int?
   supplierId   Int?
@@ -117,15 +118,21 @@ model InventoryAuditLog {
   newValue     Json?                                 // snapshot after change
   notes        String?
   tenantId     String?
-  performedAt  DateTime @default(now())
+  performedAt  DateTime  @default(now())
+  revertedAt   DateTime?                             // null = not reverted
+  revertedBy   Int?                                  // userId who reverted
+  revertNote   String?                               // optional reason for revert
 
   product      Product?  @relation("AuditProduct", fields: [productId], references: [id])
   supplier     Supplier? @relation("AuditSupplier", fields: [supplierId], references: [id])
   performer    User      @relation("AuditPerformer", fields: [performedBy], references: [id])
+  reverter     User?     @relation("AuditReverter", fields: [revertedBy], references: [id])
   tenant       Tenant?   @relation(fields: [tenantId], references: [id])
 
   @@index([productId])
   @@index([performedAt(sort: Desc)])
+  @@index([tenantId, performedAt(sort: Desc)])
+  @@index([actionType])
 }
 
 model Category {

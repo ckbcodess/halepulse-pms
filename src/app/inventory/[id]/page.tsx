@@ -10,6 +10,7 @@ import {
 import PageHeader from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/inventory/StatusBadge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -260,14 +261,8 @@ export default function ProductDetailPage() {
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-bold text-foreground">{product.name}</h1>
-              {!product.isActive && <Badge variant="outline" className="border-rose-300 text-rose-600">Archived</Badge>}
-              <Badge variant="outline" className={
-                stockStatus === 'OUT' ? 'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-700 dark:bg-rose-950/30 dark:text-rose-400'
-                  : stockStatus === 'LOW' ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
-                  : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
-              }>
-                {stockStatus === 'OUT' ? 'Out of Stock' : stockStatus === 'LOW' ? 'Low Stock' : 'In Stock'}
-              </Badge>
+              {!product.isActive && <StatusBadge status="ARCHIVED" />}
+              <StatusBadge status={stockStatus === 'OUT' ? 'OUT_OF_STOCK' : stockStatus === 'LOW' ? 'LOW_STOCK' : 'IN_STOCK'} />
             </div>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               {product.brand && <span>{product.brand}</span>}

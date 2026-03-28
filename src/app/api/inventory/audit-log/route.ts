@@ -5,13 +5,14 @@ import prisma from '@/lib/prisma';
 // ── GET /api/inventory/audit-log ──────────────────────────────────────────────
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await checkRole('MANAGER');
+    const { tenantId } = await checkRole('MANAGER', 'MCA', 'NES');
     const params = request.nextUrl.searchParams;
 
     const page       = Math.max(1, parseInt(params.get('page') ?? '1', 10));
     const limit      = Math.min(100, Math.max(1, parseInt(params.get('limit') ?? '20', 10)));
     const actionType = params.get('actionType')?.trim() ?? '';
     const productId  = params.get('productId')?.trim() ?? '';
+    const search     = params.get('search')?.trim() ?? '';
     const dateFrom   = params.get('dateFrom')?.trim() ?? '';
     const dateTo     = params.get('dateTo')?.trim() ?? '';
 
@@ -22,6 +23,16 @@ export async function GET(request: NextRequest) {
       where.performedAt = {};
       if (dateFrom) where.performedAt.gte = new Date(dateFrom);
       if (dateTo)   where.performedAt.lte = new Date(dateTo);
+    }
+
+    // Text search across product name and performer username
+    if (search) {
+      where.OR = [
+        { product:   { name:     { contains: search, mode: 'insensitive' } } },
+        { supplier:  { name:     { contains: search, mode: 'insensitive' } } },
+        { performer: { username: { contains: search, mode: 'insensitive' } } },
+        { notes:     { contains: search, mode: 'insensitive' } },
+      ];
     }
 
     const [total, logs] = await Promise.all([
@@ -43,6 +54,7 @@ export async function GET(request: NextRequest) {
       items: logs.map(l => ({
         ...l,
         performedAt: l.performedAt.toISOString(),
+        revertedAt: l.revertedAt?.toISOString() ?? null,
       })),
       total,
       page,

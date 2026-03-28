@@ -4,17 +4,19 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingCart, Package, Users,
   Settings, FileText, UserCog, X, PanelLeftClose, PanelLeftOpen,
+  ClipboardList,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const ICON_MAP: Record<string, React.ElementType> = {
-  dashboard:  LayoutDashboard,
-  pos:        ShoppingCart,
-  inventory:  Package,
-  customers:  Users,
-  reports:    FileText,
-  settings:   Settings,
-  users:      UserCog,
+  dashboard:    LayoutDashboard,
+  pos:          ShoppingCart,
+  inventory:    Package,
+  customers:    Users,
+  reports:      FileText,
+  'audit-log':  ClipboardList,
+  settings:     Settings,
+  users:        UserCog,
 };
 
 interface MenuItem {
@@ -163,7 +165,8 @@ export default function Sidebar({
             const isActive =
               pathname === item.path ||
               (item.key === 'dashboard' && pathname.startsWith('/dashboard')) ||
-              (item.key !== 'dashboard' && pathname.startsWith(item.path));
+              (item.key === 'inventory' && pathname.startsWith(item.path) && !pathname.startsWith('/inventory/audit-log')) ||
+              (item.key !== 'dashboard' && item.key !== 'inventory' && pathname.startsWith(item.path));
 
             if (collapsed) {
               return (
