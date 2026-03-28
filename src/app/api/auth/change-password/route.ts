@@ -62,6 +62,19 @@ export async function POST(request: Request) {
       },
     });
 
+    // Audit log for password change (never log actual passwords)
+    if (session.user.tenantId) {
+      await prisma.inventoryAuditLog.create({
+        data: {
+          actionType: 'PASSWORD_CHANGED',
+          performedBy: parseInt(session.user.id, 10),
+          newValue: { userId: user.id, timestamp: new Date().toISOString() },
+          notes: 'Password changed by user',
+          tenantId: session.user.tenantId,
+        },
+      }).catch(() => {});
+    }
+
     return NextResponse.json({ success: true, message: 'Password changed successfully.' });
   } catch (error) {
     console.error('Change password error:', error);

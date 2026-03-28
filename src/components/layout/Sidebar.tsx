@@ -4,17 +4,19 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingCart, Package, Users,
   Settings, FileText, UserCog, X, PanelLeftClose, PanelLeftOpen,
+  ClipboardList,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const ICON_MAP: Record<string, React.ElementType> = {
-  dashboard:  LayoutDashboard,
-  pos:        ShoppingCart,
-  inventory:  Package,
-  customers:  Users,
-  reports:    FileText,
-  settings:   Settings,
-  users:      UserCog,
+  dashboard:    LayoutDashboard,
+  pos:          ShoppingCart,
+  inventory:    Package,
+  customers:    Users,
+  reports:      FileText,
+  'audit-log':  ClipboardList,
+  settings:     Settings,
+  users:        UserCog,
 };
 
 interface MenuItem {

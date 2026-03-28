@@ -16,6 +16,12 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const parsed = updateSettingsSchema.parse(body);
 
+    // Fetch current values for audit
+    const current = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { name: true, legalName: true, address: true, primaryPhone: true, primaryEmail: true, primaryContact: true, licenceNumber: true, taxVatNumber: true },
+    });
+
     const updated = await prisma.tenant.update({
       where: { id: tenantId },
       data: {
@@ -29,6 +35,19 @@ export async function PUT(request: Request) {
         ...(parsed.taxVatNumber   !== undefined ? { taxVatNumber: parsed.taxVatNumber || null }     : {}),
       },
     });
+
+    // Audit log for settings change
+    const { userId } = await getTenantContext();
+    await prisma.inventoryAuditLog.create({
+      data: {
+        actionType: 'SETTINGS_UPDATED',
+        performedBy: parseInt(userId, 10),
+        oldValue: current as any,
+        newValue: parsed as any,
+        notes: 'Tenant settings updated',
+        tenantId,
+      },
+    }).catch(() => {});
 
     return NextResponse.json({ tenant: updated });
   } catch (err: any) {
