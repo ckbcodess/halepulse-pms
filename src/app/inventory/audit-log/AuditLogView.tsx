@@ -72,12 +72,17 @@ export default function AuditLogView() {
 
   const hasFilters = !!actionType || !!dateFrom || !!dateTo || !!search;
 
-  // Query
-  const { data, isLoading, isPlaceholderData } = useQuery({
+  // Query — staleTime:0 ensures data is always fresh on focus/mount
+  const { data, isLoading, isPlaceholderData, isFetching, refetch } = useQuery({
     queryKey: ['audit-log', page, debouncedSearch, actionType, dateFrom, dateTo],
     queryFn: () => fetchAuditLogs(page, PAGE_SIZE, actionType, debouncedSearch, dateFrom, dateTo),
     placeholderData: keepPreviousData,
+    staleTime: 0,
   });
+
+  const handleRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   const entries = data?.items ?? [];
   const totalPages = data?.totalPages ?? 1;
@@ -157,6 +162,8 @@ export default function AuditLogView() {
           onDateToChange={handleDateToChange}
           onClear={handleClearFilters}
           hasFilters={hasFilters}
+          onRefresh={handleRefresh}
+          isRefreshing={isFetching}
         />
       </div>
 

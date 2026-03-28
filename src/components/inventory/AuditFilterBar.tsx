@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, X, SlidersHorizontal } from 'lucide-react';
+import { Search, X, SlidersHorizontal, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,6 +45,8 @@ interface AuditFilterBarProps {
   onDateToChange: (value: string) => void;
   onClear: () => void;
   hasFilters: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
 }
 
 export function AuditFilterBar({
@@ -58,6 +60,8 @@ export function AuditFilterBar({
   onDateToChange,
   onClear,
   hasFilters,
+  onRefresh,
+  isRefreshing,
 }: AuditFilterBarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2.5 px-1">
@@ -130,6 +134,18 @@ export function AuditFilterBar({
           Clear
         </Button>
       )}
+
+      {/* Refresh */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onRefresh}
+        disabled={isRefreshing}
+        aria-label="Refresh audit log"
+        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground ml-auto"
+      >
+        <RefreshCw className={cn('size-3.5', isRefreshing && 'animate-spin')} />
+      </Button>
     </div>
   );
 }
