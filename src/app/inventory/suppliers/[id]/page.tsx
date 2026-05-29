@@ -144,9 +144,9 @@ export default function SupplierProfilePage() {
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <button onClick={() => router.push('/inventory/suppliers')} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <Button variant="ghost" size="sm" onClick={() => router.push('/inventory/suppliers')} className="text-muted-foreground hover:text-foreground">
           <ArrowLeft size={16} /> Back to Suppliers
-        </button>
+        </Button>
         <div className="flex items-center gap-2">
           {editing ? (
             <>

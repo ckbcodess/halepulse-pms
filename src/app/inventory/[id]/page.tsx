@@ -191,9 +191,9 @@ export default function ProductDetailPage() {
     <div className="flex flex-col gap-6">
       {/* Back + Actions */}
       <div className="flex items-center justify-between">
-        <button onClick={() => router.push('/inventory')} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <Button variant="ghost" size="sm" onClick={() => router.push('/inventory')} className="text-muted-foreground hover:text-foreground">
           <ArrowLeft size={16} /> Back to Inventory
-        </button>
+        </Button>
         <div className="flex items-center gap-2">
           {editing ? (
             <>
