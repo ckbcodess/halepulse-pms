@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Copy, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/layout/PageHeader';
 
 export default function NewTenantPage() {
@@ -71,12 +72,12 @@ export default function NewTenantPage() {
             <p className="text-muted-foreground">Password: <span className="font-bold text-foreground">{createdCreds.password}</span></p>
           </div>
           <div className="flex gap-3">
-            <button onClick={copyToClipboard} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-border dark:border-border rounded-lg text-sm font-medium hover:bg-muted dark:hover:bg-sidebar transition-colors">
+            <Button variant="outline" onClick={copyToClipboard} className="flex-1">
               {copied ? <><Check size={14} /> Copied!</> : <><Copy size={14} /> Copy</>}
-            </button>
-            <button onClick={() => router.push('/super-admin/tenants')} className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors">
+            </Button>
+            <Button onClick={() => router.push('/super-admin/tenants')} className="flex-1">
               Done
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -152,13 +153,9 @@ export default function NewTenantPage() {
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground font-bold rounded-xl transition-colors"
-        >
+        <Button type="submit" disabled={loading} size="lg" className="w-full">
           {loading ? 'Creating…' : 'Create Tenant'}
-        </button>
+        </Button>
       </form>
     </div>
   );

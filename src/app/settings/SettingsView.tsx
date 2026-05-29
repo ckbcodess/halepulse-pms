@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { Building2, Phone, Shield, Check, Loader2, Lock } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 function Field({
@@ -15,18 +18,14 @@ function Field({
   const isReadOnly = readOnly || !canEdit;
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-semibold text-muted-foreground">{label}</label>
-      <input
+      <Label>{label}</Label>
+      <Input
         type={type}
         value={value}
-        readOnly={isReadOnly}
+        disabled={isReadOnly}
         onChange={e => onChange(field, e.target.value)}
         placeholder={placeholder}
-        className={`w-full px-3 py-2.5 rounded-lg text-sm font-medium border transition-all focus:outline-none text-foreground
-          ${isReadOnly
-            ? 'bg-muted border-border text-muted-foreground cursor-not-allowed'
-            : 'bg-background border-input focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:border-ring'
-          }`}
+        className="h-10"
       />
     </div>
   );
@@ -107,16 +106,12 @@ export default function SettingsView({
         description={`${tenant.subdomain}.halepulse.app`}
       >
         {canEdit && (
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
-          >
+          <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 size={14} className="animate-spin" /> :
              saved    ? <Check size={14} />                              :
                         null}
             {isSaving ? 'Saving…' : saved ? 'Saved!' : 'Save Changes'}
-          </button>
+          </Button>
         )}
       </PageHeader>
 

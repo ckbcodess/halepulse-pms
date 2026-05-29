@@ -4,6 +4,10 @@ import { useRouter } from 'next/navigation';
 import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, ArrowLeft, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { bulkImportProducts, type ImportRow } from '@/app/actions';
+import { Button } from '@/components/ui/button';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
 
 type Step = 'upload' | 'preview' | 'importing' | 'done';
 
@@ -102,9 +106,9 @@ export default function ImportPage() {
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => router.push('/inventory')} className="p-2 rounded-xl border border-border dark:border-border hover:bg-muted dark:hover:bg-sidebar transition-colors">
-          <ArrowLeft size={18} className="text-muted-foreground" />
-        </button>
+        <Button variant="outline" size="icon" onClick={() => router.push('/inventory')}>
+          <ArrowLeft size={18} />
+        </Button>
         <p className="text-sm text-muted-foreground">Upload a CSV file to bulk-add products to your inventory</p>
       </div>
 
@@ -151,36 +155,36 @@ export default function ImportPage() {
                 <p className="text-xs text-muted-foreground">{rows.length} products ready to import</p>
               </div>
             </div>
-            <button onClick={() => { setStep('upload'); setRows([]); }} className="text-xs text-primary hover:underline">
+            <Button variant="link" size="sm" onClick={() => { setStep('upload'); setRows([]); }}>
               Change file
-            </button>
+            </Button>
           </div>
 
           {/* Preview table */}
           <div className="border border-border dark:border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-muted/50 border-b border-border">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">#</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
-                    <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground">Price</th>
-                    <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground">Stock</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Category</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
+              <Table>
+                <TableHeader className="sticky top-0">
+                  <TableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                    <TableHead className="text-right">Stock</TableHead>
+                    <TableHead>Category</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {rows.slice(0, 100).map((r, i) => (
-                    <tr key={i}>
-                      <td className="px-4 py-2 text-xs text-muted-foreground">{i + 1}</td>
-                      <td className="px-4 py-2 font-medium text-foreground">{r.name}</td>
-                      <td className="px-4 py-2 text-right text-muted-foreground">{r.price.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-right text-muted-foreground">{r.stockQty}</td>
-                      <td className="px-4 py-2 text-muted-foreground text-xs">{r.category}</td>
-                    </tr>
+                    <TableRow key={i}>
+                      <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+                      <TableCell className="font-medium text-foreground">{r.name}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{r.price.toFixed(2)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{r.stockQty}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{r.category}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
             {rows.length > 100 && (
               <div className="bg-muted dark:bg-sidebar px-4 py-2 text-xs text-muted-foreground text-center border-t border-border dark:border-border">
@@ -190,12 +194,12 @@ export default function ImportPage() {
           </div>
 
           <div className="flex gap-3 justify-end">
-            <button onClick={() => { setStep('upload'); setRows([]); }} className="px-5 py-2.5 rounded-xl border border-border dark:border-border text-sm font-medium text-muted-foreground hover:bg-muted dark:hover:bg-sidebar transition-colors">
+            <Button variant="outline" onClick={() => { setStep('upload'); setRows([]); }}>
               Cancel
-            </button>
-            <button onClick={handleImport} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold transition-colors">
+            </Button>
+            <Button onClick={handleImport}>
               Import {rows.length} Products
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -243,12 +247,12 @@ export default function ImportPage() {
           )}
 
           <div className="flex gap-3 justify-center">
-            <button onClick={() => router.push('/inventory')} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold transition-colors">
+            <Button onClick={() => router.push('/inventory')}>
               Go to Inventory
-            </button>
-            <button onClick={() => { setStep('upload'); setRows([]); setResult(null); }} className="px-5 py-2.5 rounded-xl border border-border dark:border-border text-sm font-medium text-muted-foreground hover:bg-muted dark:hover:bg-sidebar transition-colors">
+            </Button>
+            <Button variant="outline" onClick={() => { setStep('upload'); setRows([]); setResult(null); }}>
               Import More
-            </button>
+            </Button>
           </div>
         </div>
       )}

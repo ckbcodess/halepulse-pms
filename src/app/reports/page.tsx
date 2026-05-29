@@ -6,6 +6,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import PageHeader from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
+import { ReportsTabs } from './ReportsTabs';
 
 export default async function ReportsPage({
   searchParams,
@@ -97,13 +103,6 @@ export default async function ReportsPage({
   const dailyData = Array.from(salesByDay.entries()).slice(-days);
   const maxDay = Math.max(...dailyData.map(d => d[1]), 1);
 
-  const tabs = [
-    { key: 'sales', label: 'Sales Summary', icon: TrendingUp },
-    { key: 'products', label: 'Top Products', icon: BarChart2 },
-    { key: 'inventory', label: 'Inventory', icon: Package },
-    { key: 'expiry', label: 'Expiry', icon: Calendar },
-  ];
-
   const ranges = [
     { value: '7', label: '7 days' },
     { value: '30', label: '30 days' },
@@ -117,37 +116,19 @@ export default async function ReportsPage({
         description="Analytics and insights across your pharmacy."
       >
         {ranges.map(r => (
-            <Link
-              key={r.value}
-              href={`/reports?tab=${tab}&range=${r.value}`}
-              className={`px-[13px] py-[9px] rounded-[8px] text-[12.25px] font-medium transition-colors ${
-                range === r.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-card border border-border text-foreground hover:bg-muted/50'
-              }`}
-            >
-              {r.label}
-            </Link>
-          ))}
+          <Button
+            key={r.value}
+            variant={range === r.value ? 'default' : 'outline'}
+            size="sm"
+            render={<Link href={`/reports?tab=${tab}&range=${r.value}`} />}
+          >
+            {r.label}
+          </Button>
+        ))}
       </PageHeader>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-muted dark:bg-sidebar/50 rounded-xl border border-border/50 dark:border-border w-full overflow-x-auto no-scrollbar">
-        {tabs.map(t => (
-          <Link
-            key={t.key}
-            href={`/reports?tab=${t.key}&range=${range}`}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex-1 justify-center ${
-              tab === t.key
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <t.icon size={14} />
-            {t.label}
-          </Link>
-        ))}
-      </div>
+      <ReportsTabs tab={tab} range={range} />
 
       {/* ── SALES SUMMARY ──────────────────────────────────────────────────────── */}
       {tab === 'sales' && (
@@ -294,28 +275,28 @@ export default async function ReportsPage({
             {lowStockProducts.length === 0 ? (
               <p className="px-6 py-10 text-center text-sm text-muted-foreground">All products have healthy stock levels.</p>
             ) : (
-              <table className="w-full">
-                <thead className="bg-muted/50 border-b border-border">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Product</th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Category</th>
-                    <th className="px-6 py-3 text-right text-sm font-medium text-muted-foreground">Stock</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead className="text-right">Stock</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {lowStockProducts.map(p => (
-                    <tr key={p.id}>
-                      <td className="px-6 py-3 text-sm font-medium text-foreground">{p.name}</td>
-                      <td className="px-6 py-3 text-xs text-muted-foreground">{p.category}</td>
-                      <td className="px-6 py-3 text-right">
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium text-foreground">{p.name}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{p.category}</TableCell>
+                      <TableCell className="text-right">
                         <span className={`text-sm font-bold ${p.stockQty <= 5 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
                           {p.stockQty}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </div>
         </div>
@@ -334,37 +315,35 @@ export default async function ReportsPage({
               <p className="text-sm">No products expiring in the next 90 days</p>
             </div>
           ) : (
-            <table className="w-full">
-              <thead className="bg-muted/50 border-b border-border">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Product</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Category</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Stock</th>
-                  <th className="px-6 py-3 text-right text-sm font-medium text-muted-foreground">Expires</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead className="text-right">Expires</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {expiringProducts.map(p => {
                   const daysLeft = Math.ceil((new Date(p.expiryDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                   const urgent = daysLeft <= 30;
                   return (
-                    <tr key={p.id}>
-                      <td className="px-6 py-3 text-sm font-medium text-foreground">{p.name}</td>
-                      <td className="px-6 py-3 text-xs text-muted-foreground">{p.category}</td>
-                      <td className="px-6 py-3 text-sm text-foreground">{p.stockQty}</td>
-                      <td className="px-6 py-3 text-right">
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium text-foreground">{p.name}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{p.category}</TableCell>
+                      <TableCell className="text-foreground">{p.stockQty}</TableCell>
+                      <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${urgent ? 'bg-rose-100 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400' : 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'}`}>
-                            {daysLeft}d left
-                          </span>
+                          <Badge variant={urgent ? 'destructive' : 'warning'}>{daysLeft}d left</Badge>
                           <span className="text-xs text-muted-foreground">{new Date(p.expiryDate!).toLocaleDateString()}</span>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </div>
       )}

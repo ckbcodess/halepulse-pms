@@ -32,7 +32,10 @@ import { Label } from '@/components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import {
+  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter, DialogClose,
+} from '@/components/ui/dialog';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
@@ -845,23 +848,25 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
                     <Pencil size={13} className="mr-1.5" /> Edit
                   </Button>
                   {product.isActive ? (
-                    <ConfirmDialog
-                      title="Archive this product?"
-                      description="It will be hidden from the inventory list but can be restored later."
-                      confirmLabel="Archive"
-                      variant="destructive"
-                      onConfirm={handleArchive}
-                    >
-                      {(open) => (
-                        <Button
-                          variant="outline"
-                          className="flex-1 text-rose-600 hover:text-rose-700 hover:border-rose-300"
-                          onClick={open}
-                        >
-                          <Archive size={13} className="mr-1.5" /> Archive
-                        </Button>
-                      )}
-                    </ConfirmDialog>
+                    <Dialog>
+                      <DialogTrigger render={<Button variant="destructive" className="flex-1" />}>
+                        <Archive size={13} className="mr-1.5" /> Archive
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Archive this product?</DialogTitle>
+                          <DialogDescription>
+                            It will be hidden from the inventory list but can be restored later.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+                          <DialogClose render={<Button variant="destructive" onClick={handleArchive} />}>
+                            Archive
+                          </DialogClose>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   ) : (
                     <Button
                       variant="outline"
@@ -1384,29 +1389,41 @@ export default function InventoryView() {
 
           <div className="h-[14px] w-px bg-[#e0e0e0] dark:bg-border mx-4" />
 
-          <ConfirmDialog
-            title={`Archive ${selectedIds.size} product(s)?`}
-            description="They will be hidden from the inventory list but can be restored later."
-            confirmLabel="Archive All"
-            variant="destructive"
-            onConfirm={async () => {
-              try {
-                await Promise.all(Array.from(selectedIds).map(pid =>
-                  fetch(`/api/inventory/products/${pid}/archive`, { method: 'PATCH' })
-                ));
-                toast.success(`${selectedIds.size} product(s) archived`);
-                clearSelection();
-                invalidateAll();
-              } catch { toast.error('Failed to archive products'); }
-            }}
-          >
-            {(open) => (
-              <button type="button" onClick={open}
-                className="flex items-center gap-1 h-[47px] px-1 text-[14px] font-medium text-red-500 hover:opacity-70 transition-opacity">
-                Delete <X size={16} className="text-red-500" />
-              </button>
-            )}
-          </ConfirmDialog>
+          <Dialog>
+            <DialogTrigger render={<Button variant="destructive" size="sm" />}>
+              Delete <X size={16} className="ml-1" />
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Archive {selectedIds.size} product(s)?</DialogTitle>
+                <DialogDescription>
+                  They will be hidden from the inventory list but can be restored later.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+                <DialogClose
+                  render={
+                    <Button
+                      variant="destructive"
+                      onClick={async () => {
+                        try {
+                          await Promise.all(Array.from(selectedIds).map(pid =>
+                            fetch(`/api/inventory/products/${pid}/archive`, { method: 'PATCH' })
+                          ));
+                          toast.success(`${selectedIds.size} product(s) archived`);
+                          clearSelection();
+                          invalidateAll();
+                        } catch { toast.error('Failed to archive products'); }
+                      }}
+                    />
+                  }
+                >
+                  Archive All
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
     </div>
