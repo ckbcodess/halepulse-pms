@@ -1035,13 +1035,13 @@ export default function InventoryView() {
       {/* Search + Sort + Filter Toolbar */}
       <div className="flex items-center gap-6 animate-in slide-in-from-bottom-3 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '100ms' }}>
         {/* Search */}
-        <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-[#08090e14] dark:border-border rounded-[8px] bg-white dark:bg-card focus-within:border-primary/40 transition-colors w-[342px]">
+        <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors w-[342px]">
           <Search size={16} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
           <input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search inventory..."
-            className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-[#626369] font-normal"
+            className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-muted-foreground font-normal"
           />
           {searchInput && (
             <button onClick={() => setSearchInput('')} className="text-muted-foreground hover:text-foreground">

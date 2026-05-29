@@ -211,7 +211,7 @@ export default async function ReportsPage({
                       {(sale.customer?.name ?? 'W')[0]}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground text-muted-foreground">{sale.customer?.name ?? 'Walk-in'}</p>
+                      <p className="text-sm font-medium text-foreground">{sale.customer?.name ?? 'Walk-in'}</p>
                       <p className="text-xs text-muted-foreground">{new Date(sale.createdAt).toLocaleString()} · {sale.items.length} items</p>
                     </div>
                   </div>
@@ -248,7 +248,7 @@ export default async function ReportsPage({
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1.5">
                           <div>
-                            <p className="text-sm font-semibold text-foreground text-muted-foreground">{product?.name ?? `Product #${tp.productId}`}</p>
+                            <p className="text-sm font-semibold text-foreground">{product?.name ?? `Product #${tp.productId}`}</p>
                             <p className="text-xs text-muted-foreground">{product?.category ?? '—'}</p>
                           </div>
                           <div className="text-right">
@@ -295,7 +295,7 @@ export default async function ReportsPage({
               <p className="px-6 py-10 text-center text-sm text-muted-foreground">All products have healthy stock levels.</p>
             ) : (
               <table className="w-full">
-                <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
+                <thead className="bg-muted/50 border-b border-border">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Product</th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Category</th>
@@ -305,7 +305,7 @@ export default async function ReportsPage({
                 <tbody className="divide-y divide-border">
                   {lowStockProducts.map(p => (
                     <tr key={p.id}>
-                      <td className="px-6 py-3 text-sm font-medium text-foreground text-muted-foreground">{p.name}</td>
+                      <td className="px-6 py-3 text-sm font-medium text-foreground">{p.name}</td>
                       <td className="px-6 py-3 text-xs text-muted-foreground">{p.category}</td>
                       <td className="px-6 py-3 text-right">
                         <span className={`text-sm font-bold ${p.stockQty <= 5 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
@@ -335,7 +335,7 @@ export default async function ReportsPage({
             </div>
           ) : (
             <table className="w-full">
-              <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Product</th>
                   <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Category</th>
@@ -349,9 +349,9 @@ export default async function ReportsPage({
                   const urgent = daysLeft <= 30;
                   return (
                     <tr key={p.id}>
-                      <td className="px-6 py-3 text-sm font-medium text-foreground text-muted-foreground">{p.name}</td>
+                      <td className="px-6 py-3 text-sm font-medium text-foreground">{p.name}</td>
                       <td className="px-6 py-3 text-xs text-muted-foreground">{p.category}</td>
-                      <td className="px-6 py-3 text-sm text-foreground text-muted-foreground">{p.stockQty}</td>
+                      <td className="px-6 py-3 text-sm text-foreground">{p.stockQty}</td>
                       <td className="px-6 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${urgent ? 'bg-rose-100 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400' : 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'}`}>

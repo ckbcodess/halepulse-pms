@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 export default function CreateUserPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
@@ -69,7 +70,7 @@ export default function CreateUserPage() {
 
           <button
             onClick={copyCredentials}
-            className="flex items-center gap-2 mx-auto px-4 py-2 bg-sidebar dark:bg-white dark:text-foreground text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2 mx-auto px-4 py-2 bg-foreground text-background text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity"
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? 'Copied!' : 'Copy Credentials'}
@@ -107,7 +108,7 @@ export default function CreateUserPage() {
       </div>
 
       {error && (
-        <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 p-4 rounded-xl text-sm font-semibold">
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-xl text-sm font-semibold">
           {error}
         </div>
       )}
@@ -115,12 +116,12 @@ export default function CreateUserPage() {
       <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 space-y-5">
         <div className="space-y-1.5">
           <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Email</label>
-          <input
+          <Input
             type="email"
             required
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="w-full px-4 py-3 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
+            className="h-11"
             placeholder="user@example.com"
           />
         </div>
@@ -128,7 +129,7 @@ export default function CreateUserPage() {
         <div className="space-y-1.5">
           <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Role</label>
           <Select value={role} onValueChange={v => v && setRole(v)}>
-            <SelectTrigger className="w-full px-4 py-3 h-auto bg-muted border border-border rounded-lg text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full h-11"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="MANAGER">Manager</SelectItem>
               <SelectItem value="MCA">MCA</SelectItem>

@@ -88,23 +88,23 @@ export default async function CustomerDetailPage({
 
       {/* Customer info card */}
       <div className="bg-card border border-border rounded-2xl p-6">
-        <h3 className="text-sm font-semibold text-foreground text-muted-foreground mb-4 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <User size={14} /> Customer Details
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
           <div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Phone</p>
-            <p className="text-sm font-medium text-foreground text-muted-foreground">{customer.phone ?? '—'}</p>
+            <p className="text-sm font-medium text-foreground">{customer.phone ?? '—'}</p>
           </div>
           <div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Member Since</p>
-            <p className="text-sm font-medium text-foreground text-muted-foreground">
+            <p className="text-sm font-medium text-foreground">
               {new Date(customer.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
           <div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Last Visit</p>
-            <p className="text-sm font-medium text-foreground text-muted-foreground">
+            <p className="text-sm font-medium text-foreground">
               {lastVisit ? new Date(lastVisit).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No visits'}
             </p>
           </div>
@@ -130,7 +130,7 @@ export default async function CustomerDetailPage({
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="text-sm font-semibold text-foreground text-muted-foreground">
+                      <span className="text-sm font-semibold text-foreground">
                         ₵{sale.totalAmount.toFixed(2)}
                       </span>
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">

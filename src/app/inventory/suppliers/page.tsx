@@ -192,7 +192,7 @@ export default function SuppliersPage() {
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             placeholder="Search suppliers..."
-            className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-[#626369] font-normal"
+            className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-muted-foreground font-normal"
           />
           {searchInput && (
             <button onClick={() => setSearchInput('')} className="text-muted-foreground hover:text-foreground">

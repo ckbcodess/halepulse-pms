@@ -99,13 +99,13 @@ export default function CustomersView() {
         <div className="lg:col-span-2 flex flex-col gap-4">
 
           {/* Search — instant client-side filtering */}
-          <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-[#08090e14] dark:border-border rounded-[8px] bg-white dark:bg-card focus-within:border-primary/40 transition-colors w-full max-w-[342px]">
+          <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors w-full max-w-[342px]">
             <Search size={16} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search customers by name or phone..."
-              className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-[#626369] font-normal"
+              className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-muted-foreground font-normal"
             />
             {search && (
               <button onClick={() => setSearch('')} className="text-muted-foreground hover:text-foreground">
