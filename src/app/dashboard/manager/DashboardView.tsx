@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import PageHeader from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/button';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -145,22 +146,16 @@ export default function DashboardView({
 
       {/* ── Filter bar ── */}
       <div className="flex gap-3">
-        <button
-          type="button"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card text-sm text-card-foreground hover:bg-muted transition-colors"
-        >
+        <Button type="button" variant="outline">
           <Calendar className="size-4" />
           Last 30 days
           <ChevronDown className="size-3 text-muted-foreground" />
-        </button>
-        <button
-          type="button"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card text-sm text-card-foreground hover:bg-muted transition-colors"
-        >
+        </Button>
+        <Button type="button" variant="outline">
           <CircleAlert className="size-4" />
           Compare: Previous period
           <ChevronDown className="size-3 text-muted-foreground" />
-        </button>
+        </Button>
       </div>
 
       {/* ── KPI Stats ── */}
@@ -283,12 +278,9 @@ export default function DashboardView({
         <Card className="py-0 gap-0 overflow-hidden">
           <div className="flex items-center justify-between px-6 py-5 border-b border-border">
             <h3 className="font-medium text-card-foreground">Recent Transactions</h3>
-            <Link
-              href="/reports"
-              className="text-sm font-medium text-primary hover:underline border border-border rounded-lg px-3 py-1"
-            >
+            <Button variant="outline" size="sm" render={<Link href="/reports" />}>
               View report
-            </Link>
+            </Button>
           </div>
           <div className="divide-y divide-border">
             {recentSales.length === 0 ? (
@@ -325,12 +317,9 @@ export default function DashboardView({
         <Card className="py-0 gap-0 overflow-hidden">
           <div className="flex items-center justify-between px-6 py-5 border-b border-border">
             <h3 className="font-medium text-card-foreground">Inventory Alerts</h3>
-            <Link
-              href="/inventory"
-              className="text-sm font-medium text-primary hover:underline border border-border rounded-lg px-3 py-1"
-            >
+            <Button variant="outline" size="sm" render={<Link href="/inventory" />}>
               View report
-            </Link>
+            </Button>
           </div>
           <div className="p-6 flex flex-col gap-5">
             {alerts.lowStockCount > 0 && (

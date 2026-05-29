@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Building2, LogOut, Shield, Activity, Plus,
   Users, Paintbrush, ShieldCheck, Menu, GitBranch, X,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const MAIN_NAV = [
   { label: 'Overview',      href: '/super-admin',              icon: LayoutDashboard },
@@ -109,13 +110,14 @@ export default function SuperAdminSidebar({
       </nav>
 
       <div className="p-3 border-t border-sidebar-border">
-        <button
+        <Button
+          variant="ghost"
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+          className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
         >
           <LogOut size={16} />
           Sign Out
-        </button>
+        </Button>
       </div>
     </aside>
   );

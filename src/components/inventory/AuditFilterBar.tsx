@@ -75,12 +75,14 @@ export function AuditFilterBar({
           className="pl-8 h-8 text-[13px] bg-background/60 backdrop-blur-sm border-border/50"
         />
         {search && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon-xs"
             onClick={() => onSearchChange('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            className="absolute right-1 top-1/2 -translate-y-1/2"
           >
             <X className="size-3.5" />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -99,26 +101,18 @@ export function AuditFilterBar({
 
       {/* Date range */}
       <div className="flex items-center gap-1.5">
-        <input
+        <Input
           type="date"
           value={dateFrom}
           onChange={e => onDateFromChange(e.target.value)}
-          className={cn(
-            'h-8 rounded-md border border-border/50 bg-background/60 backdrop-blur-sm px-2 text-[13px] text-foreground',
-            'focus:outline-none focus:ring-2 focus:ring-primary/30',
-            !dateFrom && 'text-muted-foreground',
-          )}
+          className={cn('h-8 w-[150px] text-[13px] bg-background/60 backdrop-blur-sm border-border/50', !dateFrom && 'text-muted-foreground')}
         />
         <span className="text-[12px] text-muted-foreground">to</span>
-        <input
+        <Input
           type="date"
           value={dateTo}
           onChange={e => onDateToChange(e.target.value)}
-          className={cn(
-            'h-8 rounded-md border border-border/50 bg-background/60 backdrop-blur-sm px-2 text-[13px] text-foreground',
-            'focus:outline-none focus:ring-2 focus:ring-primary/30',
-            !dateTo && 'text-muted-foreground',
-          )}
+          className={cn('h-8 w-[150px] text-[13px] bg-background/60 backdrop-blur-sm border-border/50', !dateTo && 'text-muted-foreground')}
         />
       </div>
 

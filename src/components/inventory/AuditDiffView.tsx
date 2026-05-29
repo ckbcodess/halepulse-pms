@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // ── Field display config ─────────────────────────────────────────────────────
 const FIELD_LABELS: Record<string, string> = {
@@ -131,13 +132,15 @@ export function AuditDiffView({ oldValue, newValue }: AuditDiffViewProps) {
       )}
 
       {unknownKeys.length > 0 && (
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setShowRaw(!showRaw)}
-          className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors mt-2"
+          className="mt-2 text-muted-foreground hover:text-foreground"
         >
           {showRaw ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
           {showRaw ? 'Hide' : 'Show'} raw data ({unknownKeys.length} field{unknownKeys.length !== 1 ? 's' : ''})
-        </button>
+        </Button>
       )}
 
       {showRaw && (

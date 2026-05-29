@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 interface TopHeaderProps {
   user: {
@@ -57,14 +58,15 @@ const ROLE_LABEL: Record<string, string> = {
 function ThemeToggleButton() {
   const { setTheme, theme } = useTheme();
   return (
-    <button
+    <Button
+      variant="ghost"
+      size="icon-sm"
       onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-      className="w-7 h-7 flex items-center justify-center rounded-[7px] hover:bg-muted/50 text-muted-foreground transition-all"
       aria-label="Toggle theme"
     >
       <Sun className="h-3.5 w-3.5 dark:hidden block" />
       <Moon className="h-3.5 w-3.5 hidden dark:block" />
-    </button>
+    </Button>
   );
 }
 
@@ -90,13 +92,15 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
 
       {/* Left: hamburger (mobile) + icon + page title */}
       <div className="flex items-center gap-2">
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={onMenuToggle}
-          className="p-1.5 -ml-1 rounded-md surface-interactive lg:hidden text-muted-foreground"
+          className="-ml-1 lg:hidden"
           aria-label="Toggle menu"
         >
           <Menu size={18} />
-        </button>
+        </Button>
 
         <div className="flex items-center gap-2">
           <PageIcon size={20} className="text-foreground/60 flex-shrink-0" />
@@ -110,10 +114,10 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
       <div className="flex items-center gap-2 py-1">
 
         {/* Notification */}
-        <button className="relative w-[31.5px] h-[31.5px] flex items-center justify-center rounded-[12.25px] hover:bg-muted/50 text-muted-foreground transition-all">
+        <Button variant="ghost" size="icon" className="relative">
           <Bell size={16} strokeWidth={2} />
           <span className="absolute top-[6px] right-[6px] w-[7px] h-[7px] bg-destructive rounded-full" />
-        </button>
+        </Button>
 
         {/* Theme toggle */}
         <ThemeToggleButton />

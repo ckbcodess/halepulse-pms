@@ -7,6 +7,7 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   dashboard:    LayoutDashboard,
@@ -132,24 +133,28 @@ export default function Sidebar({
             </div>
 
             {/* Collapse button — far right, desktop only */}
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={onToggleCollapse}
-              className="p-1.5 rounded-lg border border-transparent hover:border-border hover:bg-muted/50 hidden lg:flex text-muted-foreground transition-all"
+              className="hidden lg:flex"
               aria-label="Collapse sidebar"
             >
               <PanelLeftClose size={16} strokeWidth={2} />
-            </button>
+            </Button>
           </>
         )}
 
         {/* Mobile close */}
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={onClose}
-          className="p-1.5 rounded-md surface-interactive lg:hidden text-muted-foreground"
+          className="lg:hidden"
           aria-label="Close menu"
         >
           <X size={16} />
-        </button>
+        </Button>
       </div>
 
       {/* ── Navigation ── */}

@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Menu as MenuIcon } from 'lucide-react';
 import SuperAdminSidebar from './SuperAdminSidebar';
+import { Button } from '@/components/ui/button';
 
 export default function SuperAdminShell({
   email,
@@ -35,13 +36,15 @@ export default function SuperAdminShell({
 
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
         <header className="h-14 bg-card border-b border-border flex items-center gap-3 px-4 sm:px-6 flex-shrink-0">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setOpen(true)}
-            className="lg:hidden -ml-2 p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+            className="lg:hidden -ml-2"
             aria-label="Open menu"
           >
             <MenuIcon size={18} />
-          </button>
+          </Button>
           <p className="text-xs font-mono font-bold text-muted-foreground uppercase tracking-widest">
             Super Admin Console
           </p>

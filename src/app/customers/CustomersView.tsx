@@ -16,9 +16,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Phone, Award, Search, ArrowRight, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/layout/PageHeader';
-import { Input } from '@/components/ui/input';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -85,12 +84,9 @@ export default function CustomersView() {
         title="Customers"
         description="Track customer purchases and award loyalty points."
       >
-        <Link
-          href="/customers/new"
-          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
-        >
+        <Button render={<Link href="/customers/new" />}>
           <Plus size={14} /> Add Customer
-        </Link>
+        </Button>
       </PageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -108,9 +104,9 @@ export default function CustomersView() {
               className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-muted-foreground font-normal"
             />
             {search && (
-              <button onClick={() => setSearch('')} className="text-muted-foreground hover:text-foreground">
+              <Button variant="ghost" size="icon-xs" onClick={() => setSearch('')}>
                 <X size={14} />
-              </button>
+              </Button>
             )}
           </div>
 
