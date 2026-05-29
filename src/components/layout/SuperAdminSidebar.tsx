@@ -53,13 +53,15 @@ export default function SuperAdminSidebar({
           <Shield size={20} className="text-sidebar-primary" />
           <span className="text-sm font-bold text-sidebar-foreground">HalePulse Admin</span>
         </div>
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={onClose}
-          className="lg:hidden p-1 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+          className="lg:hidden text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
           aria-label="Close menu"
         >
           <X size={18} />
-        </button>
+        </Button>
       </div>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">

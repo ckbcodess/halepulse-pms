@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetTitle, SheetHeader, SheetFooter } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 type ActiveDialog = 'checkout' | 'discount' | 'misc' | 'held' | null;
 type PaymentMethod = 'Cash' | 'MoMo' | 'Split';
@@ -281,17 +282,19 @@ export default function POSPage() {
                 const isOutOfStock = product.stockQty <= 0;
 
                 return (
-                  <button
+                  <Button
                     key={product.id}
+                    variant="outline"
                     onClick={() => handleAddToCart(product)}
                     disabled={isExpired || isOutOfStock}
-                    className={`group p-5 border rounded-xl text-left flex flex-col justify-between h-32 active:scale-[0.98] transition-all relative ${
+                    className={cn(
+                      'group h-32 p-5 rounded-xl flex flex-col items-stretch justify-between text-left whitespace-normal relative',
                       isExpired
-                        ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50 opacity-60 cursor-not-allowed'
+                        ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50 opacity-60'
                         : isOutOfStock
-                          ? 'bg-muted/30 border-border opacity-50 cursor-not-allowed'
-                          : 'bg-white dark:bg-[var(--surface)] border-border hover:border-primary/50 hover:bg-muted/30'
-                    }`}
+                          ? 'bg-muted/30 border-border opacity-50'
+                          : 'hover:border-primary/50 hover:bg-muted/30'
+                    )}
                   >
                     {isExpired && (
                       <span className="absolute top-2 right-2 text-[9px] px-1.5 py-0.5 rounded bg-rose-600 text-white font-bold uppercase tracking-wider flex items-center gap-1">
@@ -320,7 +323,7 @@ export default function POSPage() {
                         {isOutOfStock ? 'Out of Stock' : `Stock: ${product.stockQty}`}
                       </span>
                     </div>
-                  </button>
+                  </Button>
                 );
               })
             )}
@@ -355,9 +358,9 @@ export default function POSPage() {
                         <p className="text-[10px] text-muted-foreground uppercase font-mono tracking-widest mt-0.5">{selectedCustomer.loyaltyPoints} PTS</p>
                       </div>
                     </div>
-                    <button onClick={() => setSelectedCustomer(null)} className="text-muted-foreground hover:text-rose-500 p-1.5 rounded-lg transition-colors">
+                    <Button variant="ghost" size="icon-sm" onClick={() => setSelectedCustomer(null)} className="text-muted-foreground hover:text-destructive">
                       <X size={14} />
-                    </button>
+                    </Button>
                   </div>
                   {/* Customer Reminder Alert */}
                   {selectedCustomer?.reminderNote && (
@@ -417,30 +420,28 @@ export default function POSPage() {
                   {customers.length > 0 && (
                     <div className="absolute top-full left-0 right-0 z-10 bg-background border border-border rounded-xl shadow-2xl mt-2 overflow-hidden">
                       {customers.map((c) => (
-                        <button
+                        <Button
                           key={c.id}
+                          variant="ghost"
                           onClick={() => {
                             setSelectedCustomer(c);
                             setCustomers([]);
                             setCustomerSearch('');
                           }}
-                          className="w-full p-3 text-left hover:bg-muted border-b border-border last:border-0 transition-colors flex justify-between items-center group"
+                          className="w-full h-auto p-3 justify-between rounded-none border-b border-border last:border-0 group"
                         >
-                          <div>
+                          <div className="text-left">
                             <p className="text-sm font-semibold text-foreground">{c.name}</p>
                             <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{c.phone}</p>
                           </div>
                           <Plus size={14} className="text-primary opacity-50 group-hover:opacity-100 transition-opacity" />
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   )}
-                  <button
-                    onClick={() => setShowNewCustomer(true)}
-                    className="mt-2 w-full text-xs text-primary hover:text-primary/80 font-semibold py-1.5 transition-colors flex items-center justify-center gap-1"
-                  >
+                  <Button variant="link" size="sm" onClick={() => setShowNewCustomer(true)} className="mt-2 w-full">
                     <Plus size={12} /> New Customer
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -467,19 +468,19 @@ export default function POSPage() {
                     </div>
 
                     <div className="flex justify-between items-center mt-1">
-                      <div className="flex items-center gap-1 bg-muted dark:bg-sidebar border border-border dark:border-border rounded-lg p-1">
-                        <button onClick={() => updateQuantity(item.id, -1)} className="p-1 text-muted-foreground hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-zinc-800 rounded-md transition-colors active:scale-95">
+                      <div className="flex items-center gap-1 bg-muted dark:bg-sidebar border border-border rounded-lg p-1">
+                        <Button variant="ghost" size="icon-xs" onClick={() => updateQuantity(item.id, -1)}>
                           <Minus size={14} strokeWidth={2.5} />
-                        </button>
+                        </Button>
                         <span className="text-xs font-bold text-foreground dark:text-muted-foreground w-6 text-center select-none">{item.quantity}</span>
-                        <button onClick={() => handleIncrement(item.id)} className="p-1 text-muted-foreground hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-zinc-800 rounded-md transition-colors active:scale-95">
+                        <Button variant="ghost" size="icon-xs" onClick={() => handleIncrement(item.id)}>
                           <Plus size={14} strokeWidth={2.5} />
-                        </button>
+                        </Button>
                       </div>
 
-                      <button onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-rose-600 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors p-2 rounded-lg">
+                      <Button variant="ghost" size="icon-sm" onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive">
                         <Trash2 size={16} />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -536,13 +537,14 @@ export default function POSPage() {
               <span className="text-foreground">TOTAL</span>
               <span className="text-primary">₵{discountedTotal.toFixed(2)}</span>
             </div>
-            <button
+            <Button
               onClick={() => setActiveDialog('checkout')}
               disabled={items.length === 0}
-              className="w-full bg-foreground text-background hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground font-bold tracking-wide py-4 rounded-xl transition-all active:scale-[0.98] flex justify-center items-center gap-2"
+              size="lg"
+              className="w-full h-auto py-4 rounded-xl bg-foreground text-background hover:bg-foreground/90 font-bold tracking-wide"
             >
               CHARGE ₵{discountedTotal.toFixed(2)}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -560,22 +562,19 @@ export default function POSPage() {
             {/* Payment Method Tabs */}
             <div className="flex gap-1 p-1 bg-muted rounded-lg">
               {(['Cash', 'MoMo', 'Split'] as PaymentMethod[]).map(method => (
-                <button
+                <Button
                   key={method}
+                  variant={paymentMethod === method ? 'secondary' : 'ghost'}
                   onClick={() => {
                     setPaymentMethod(method);
                     if (method === 'MoMo') { setCashTendered(discountedTotal.toString()); }
                     else { setCashTendered(''); }
                     setMomoAmount('');
                   }}
-                  className={`flex-1 py-2.5 text-sm font-bold rounded-md transition-all ${
-                    paymentMethod === method
-                      ? 'bg-background text-primary shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  className="flex-1"
                 >
                   {method}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -812,10 +811,10 @@ export default function POSPage() {
             <SheetTitle className="font-bold text-foreground flex items-center gap-2 text-sm uppercase tracking-widest">
               <Printer size={16} /> Receipt
             </SheetTitle>
-            <button onClick={() => setReceiptData(null)} className="text-muted-foreground hover:text-rose-500 transition-colors">
+            <Button variant="ghost" size="icon-sm" onClick={() => setReceiptData(null)} className="text-muted-foreground hover:text-destructive">
               <X size={20} />
               <span className="sr-only">Close</span>
-            </button>
+            </Button>
           </div>
 
           {receiptData && (
