@@ -8,85 +8,90 @@ datasource db {
 }
 
 model User {
-  id                 Int          @id @default(autoincrement())
-  username           String       @unique
+  id                 Int                 @id @default(autoincrement())
+  username           String              @unique
   password           String
   role               String
   contact            String?
-  createdAt          DateTime     @default(now())
-  email              String?      @unique
+  createdAt          DateTime            @default(now())
+  email              String?             @unique
   passwordHash       String?
   saasRole           Role?
   tenantId           String?
   branchId           String?
-  isActive           Boolean      @default(true)
+  isActive           Boolean             @default(true)
   lastActiveAt       DateTime?
   dynamicRoleId      String?
   businessUsername   String?
-  mustChangePassword Boolean      @default(false)
-  failedLoginCount   Int          @default(0)
+  mustChangePassword Boolean             @default(false)
+  failedLoginCount   Int                 @default(0)
   lockedUntil        DateTime?
   lastPasswordChange DateTime?
-  branch             Branch?      @relation(fields: [branchId], references: [id])
-  dynamicRole        DynamicRole? @relation(fields: [dynamicRoleId], references: [id])
-  tenant             Tenant?      @relation(fields: [tenantId], references: [id])
-  createdProducts    Product[]    @relation("ProductCreator")
-  stockAdjustments   StockAdjustment[] @relation("StockAdjuster")
+  branch             Branch?             @relation(fields: [branchId], references: [id])
+  dynamicRole        DynamicRole?        @relation(fields: [dynamicRoleId], references: [id])
+  tenant             Tenant?             @relation(fields: [tenantId], references: [id])
+  createdProducts    Product[]           @relation("ProductCreator")
+  stockAdjustments   StockAdjustment[]   @relation("StockAdjuster")
   inventoryAuditLogs InventoryAuditLog[] @relation("AuditPerformer")
   revertedAuditLogs  InventoryAuditLog[] @relation("AuditReverter")
+
+  @@index([tenantId])
 }
 
 model Product {
-  id                  Int        @id @default(autoincrement())
-  name                String
-  brand               String?
-  category            String
-  unit                String     @default("Piece")
-  sku                 String?
-  price               Float                              // selling_price (derived from cost × markup)
-  costPrice           Float?                             // wholesale cost price
-  markupPercent       Float      @default(0)             // markup percentage
-  stockQty            Int        @default(0)
-  lowStockThreshold   Int        @default(10)
-  expiryDate          DateTime?                          // nearest_expiry_date across batches
-  description         String?
-  isActive            Boolean    @default(true)          // soft-delete
-  supplierId          Int?
-  createdBy           Int?
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
-  tenantId            String?
+  id                Int       @id @default(autoincrement())
+  name              String
+  brand             String?
+  category          String
+  unit              String    @default("Piece")
+  sku               String?
+  price             Float // selling_price (derived from cost × markup)
+  costPrice         Float? // wholesale cost price
+  markupPercent     Float     @default(0) // markup percentage
+  stockQty          Int       @default(0)
+  lowStockThreshold Int       @default(10)
+  expiryDate        DateTime? // nearest_expiry_date across batches
+  description       String?
+  isActive          Boolean   @default(true) // soft-delete
+  supplierId        Int?
+  createdBy         Int?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  tenantId          String?
 
-  tenant              Tenant?             @relation(fields: [tenantId], references: [id])
-  supplier            Supplier?           @relation(fields: [supplierId], references: [id])
-  creator             User?               @relation("ProductCreator", fields: [createdBy], references: [id])
-  saleItems           SaleItem[]
-  stockAdjustments    StockAdjustment[]
-  inventoryAuditLogs  InventoryAuditLog[] @relation("AuditProduct")
+  tenant             Tenant?             @relation(fields: [tenantId], references: [id])
+  supplier           Supplier?           @relation(fields: [supplierId], references: [id])
+  creator            User?               @relation("ProductCreator", fields: [createdBy], references: [id])
+  saleItems          SaleItem[]
+  stockAdjustments   StockAdjustment[]
+  inventoryAuditLogs InventoryAuditLog[] @relation("AuditProduct")
 
   @@unique([tenantId, sku])
   @@index([name])
   @@index([isActive])
   @@index([supplierId])
+  // Hot path: inventory list query filters by tenantId + isActive
+  @@index([tenantId, isActive])
 }
 
 model Supplier {
-  id           Int        @id @default(autoincrement())
-  name         String
-  contactName  String?
-  phone        String?
-  email        String?
-  address      String?
-  notes        String?
-  isActive     Boolean    @default(true)
-  tenantId     String?
-  createdAt    DateTime   @default(now())
+  id          Int      @id @default(autoincrement())
+  name        String
+  contactName String?
+  phone       String?
+  email       String?
+  address     String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  tenantId    String?
+  createdAt   DateTime @default(now())
 
-  tenant       Tenant?             @relation(fields: [tenantId], references: [id])
-  products     Product[]
+  tenant             Tenant?             @relation(fields: [tenantId], references: [id])
+  products           Product[]
   inventoryAuditLogs InventoryAuditLog[] @relation("AuditSupplier")
 
   @@index([name])
+  @@index([tenantId, isActive])
 }
 
 model StockAdjustment {
@@ -95,39 +100,40 @@ model StockAdjustment {
   adjustedBy  Int
   oldQuantity Int
   newQuantity Int
-  delta       Int                                    // new - old
-  reason      String                                 // enum value
+  delta       Int // new - old
+  reason      String // enum value
   notes       String?
   tenantId    String?
   adjustedAt  DateTime @default(now())
 
-  product     Product  @relation(fields: [productId], references: [id])
-  adjuster    User     @relation("StockAdjuster", fields: [adjustedBy], references: [id])
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  product  Product @relation(fields: [productId], references: [id])
+  adjuster User    @relation("StockAdjuster", fields: [adjustedBy], references: [id])
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
 
   @@index([productId])
+  @@index([tenantId, adjustedAt(sort: Desc)])
 }
 
 model InventoryAuditLog {
-  id           Int       @id @default(autoincrement())
-  actionType   String                                // e.g. PRODUCT_CREATED, PRICE_UPDATED, etc.
-  productId    Int?
-  supplierId   Int?
-  performedBy  Int
-  oldValue     Json?                                 // snapshot before change
-  newValue     Json?                                 // snapshot after change
-  notes        String?
-  tenantId     String?
-  performedAt  DateTime  @default(now())
-  revertedAt   DateTime?                             // null = not reverted
-  revertedBy   Int?                                  // userId who reverted
-  revertNote   String?                               // optional reason for revert
+  id          Int       @id @default(autoincrement())
+  actionType  String // e.g. PRODUCT_CREATED, PRICE_UPDATED, etc.
+  productId   Int?
+  supplierId  Int?
+  performedBy Int
+  oldValue    Json? // snapshot before change
+  newValue    Json? // snapshot after change
+  notes       String?
+  tenantId    String?
+  performedAt DateTime  @default(now())
+  revertedAt  DateTime? // null = not reverted
+  revertedBy  Int? // userId who reverted
+  revertNote  String? // optional reason for revert
 
-  product      Product?  @relation("AuditProduct", fields: [productId], references: [id])
-  supplier     Supplier? @relation("AuditSupplier", fields: [supplierId], references: [id])
-  performer    User      @relation("AuditPerformer", fields: [performedBy], references: [id])
-  reverter     User?     @relation("AuditReverter", fields: [revertedBy], references: [id])
-  tenant       Tenant?   @relation(fields: [tenantId], references: [id])
+  product   Product?  @relation("AuditProduct", fields: [productId], references: [id])
+  supplier  Supplier? @relation("AuditSupplier", fields: [supplierId], references: [id])
+  performer User      @relation("AuditPerformer", fields: [performedBy], references: [id])
+  reverter  User?     @relation("AuditReverter", fields: [revertedBy], references: [id])
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id])
 
   @@index([productId])
   @@index([performedAt(sort: Desc)])
@@ -138,8 +144,10 @@ model InventoryAuditLog {
 model Category {
   id            Int     @id @default(autoincrement())
   name          String  @unique
-  markupPercent Float   @default(30)    // default markup % for this category
+  markupPercent Float   @default(30) // default markup % for this category
   tenantId      String?
+
+  @@index([tenantId])
 }
 
 model Customer {
@@ -170,6 +178,10 @@ model Sale {
   customer    Customer?  @relation(fields: [customerId], references: [id])
   tenant      Tenant?    @relation(fields: [tenantId], references: [id])
   items       SaleItem[]
+
+  // Dashboards & reports query sales by tenant within a date range
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([customerId])
 }
 
 model SaleItem {
@@ -180,6 +192,9 @@ model SaleItem {
   price     Float
   product   Product @relation(fields: [productId], references: [id])
   sale      Sale    @relation(fields: [saleId], references: [id])
+
+  @@index([saleId])
+  @@index([productId])
 }
 
 model Tenant {
@@ -269,6 +284,8 @@ model AuditLog {
   createdAt DateTime @default(now())
   ipAddress String?
   tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt(sort: Desc)])
 }
 
 model DynamicRole {
@@ -344,6 +361,9 @@ model LoginAttempt {
   userAgent String?
   createdAt DateTime @default(now())
   tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+
+  // Hot path: IP rate-limit counts failures by ipAddress within a time window
+  @@index([ipAddress, createdAt])
 }
 
 enum Role {

@@ -179,13 +179,24 @@ export async function processSale(
 
   // ── Idempotency check: if this clientToken already processed, return early ──
   if (clientToken) {
-    const existing = await prisma.sale.findUnique({ where: { clientToken } });
+    const existing = await prisma.sale.findFirst({ where: { clientToken, tenantId } });
     if (existing) return existing;
   }
 
   return prisma.$transaction(async (tx) => {
     let serverTotal = 0;
     let productMap = new Map<number, any>();
+
+    // ── Verify the customer (if supplied) belongs to this tenant ──────────
+    // BOLA protection: prevents attaching a sale / awarding loyalty points to
+    // another tenant's customer by passing a foreign customerId.
+    if (customerId) {
+      const customer = await tx.customer.findFirst({
+        where: { id: customerId, tenantId },
+        select: { id: true },
+      });
+      if (!customer) throw new Error('Customer not found');
+    }
 
     if (hasRegularItems) {
       // ── Batch-fetch all products in ONE query (kills N+1) ─────────
