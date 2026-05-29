@@ -8,14 +8,14 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, description, children }: PageHeaderProps) {
   return (
-    <div className="flex items-end justify-between gap-6 mb-8">
+    <div className="flex flex-col items-start gap-4 mb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
       {/* Left: title + subtitle */}
-      <div className="flex flex-col gap-3 shrink-0">
-        <h1 className="text-[32px] font-medium text-foreground tracking-[-0.05px] leading-none">
+      <div className="flex min-w-0 flex-col gap-3">
+        <h1 className="text-2xl sm:text-[32px] font-medium text-foreground tracking-[-0.05px] leading-tight sm:leading-none">
           {title}
         </h1>
         {description && (
-          <p className="text-[16px] font-medium text-muted-foreground leading-[20px]">
+          <p className="text-[15px] sm:text-[16px] font-medium text-muted-foreground leading-[20px]">
             {description}
           </p>
         )}
@@ -23,7 +23,7 @@ export default function PageHeader({ title, description, children }: PageHeaderP
 
       {/* Right: actions */}
       {children && (
-        <div className="flex items-center gap-[7px] shrink-0">
+        <div className="flex shrink-0 flex-wrap items-center gap-[7px]">
           {children}
         </div>
       )}

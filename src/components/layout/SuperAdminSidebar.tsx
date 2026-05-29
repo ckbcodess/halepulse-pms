@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, Building2, LogOut, Shield, Activity, Plus,
-  Users, Paintbrush, ShieldCheck, Menu, GitBranch,
+  Users, Paintbrush, ShieldCheck, Menu, GitBranch, X,
 } from 'lucide-react';
 
 const MAIN_NAV = [
@@ -31,17 +31,34 @@ function extractTenantId(pathname: string): string | null {
   return id;
 }
 
-export default function SuperAdminSidebar() {
+export default function SuperAdminSidebar({
+  isOpen = false,
+  onClose,
+}: {
+  isOpen?: boolean;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
   const activeTenantId = extractTenantId(pathname);
 
   return (
-    <aside className="w-56 bg-sidebar flex flex-col border-r border-sidebar-border">
-      <div className="px-4 py-5 border-b border-sidebar-border">
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 w-64 bg-sidebar flex flex-col border-r border-sidebar-border transition-transform duration-300 ease-in-out lg:static lg:z-auto lg:w-56 lg:translate-x-0 ${
+        isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+      }`}
+    >
+      <div className="px-4 py-5 border-b border-sidebar-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Shield size={20} className="text-sidebar-primary" />
           <span className="text-sm font-bold text-sidebar-foreground">HalePulse Admin</span>
         </div>
+        <button
+          onClick={onClose}
+          className="lg:hidden p-1 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+          aria-label="Close menu"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">

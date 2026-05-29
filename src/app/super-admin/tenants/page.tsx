@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import Link from 'next/link';
 import { Plus, Settings, Eye } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 
 export default async function TenantsPage() {
   const tenants = await prisma.tenant.findMany({
@@ -10,22 +11,19 @@ export default async function TenantsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Tenants</h1>
-          <p className="text-muted-foreground mt-1">{tenants.length} registered tenants</p>
-        </div>
+      <PageHeader title="Tenants" description={`${tenants.length} registered tenants`}>
         <Link
           href="/super-admin/tenants/new"
           className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-lg transition-colors"
         >
           <Plus size={16} /> New Tenant
         </Link>
-      </div>
+      </PageHeader>
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
+        <div className="overflow-x-auto">
+        <table className="w-full text-left min-w-[680px]">
+          <thead className="bg-muted/50 border-b border-border">
             <tr>
               {['Tenant', 'Subdomain', 'Users', 'Status', 'Created', 'Actions'].map(h => (
                 <th key={h} className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">
@@ -52,11 +50,11 @@ export default async function TenantsPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <code className="text-xs bg-muted dark:bg-sidebar px-2 py-1 rounded text-foreground text-muted-foreground">
+                  <code className="text-xs bg-muted px-2 py-1 rounded text-foreground">
                     {tenant.subdomain}
                   </code>
                 </td>
-                <td className="px-6 py-4 text-sm text-foreground text-muted-foreground">{tenant._count.users}</td>
+                <td className="px-6 py-4 text-sm text-foreground">{tenant._count.users}</td>
                 <td className="px-6 py-4">
                   <span className={`text-xs font-bold px-2 py-1 rounded ${
                     tenant.isActive
@@ -81,6 +79,7 @@ export default async function TenantsPage() {
             ))}
           </tbody>
         </table>
+        </div>
         {tenants.length === 0 && (
           <div className="p-12 text-center text-muted-foreground text-sm">No tenants yet. Create your first one.</div>
         )}

@@ -105,7 +105,7 @@ export default function TenantDetailPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {stats.map((s, i) => (
           <div key={i} className="bg-card border border-border rounded-xl p-4">
             <s.icon size={16} className={`${s.color} mb-2`} />
@@ -116,7 +116,7 @@ export default function TenantDetailPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Branding', href: `/super-admin/tenants/${tenantId}/branding`, icon: Paintbrush, bg: 'bg-muted text-muted-foreground' },
           { label: 'Permissions', href: `/super-admin/tenants/${tenantId}/permissions`, icon: Shield, bg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
@@ -135,7 +135,7 @@ export default function TenantDetailPage() {
       <div className="bg-card border border-border rounded-xl p-5">
         <h3 className="text-sm font-bold text-foreground mb-3">View Dashboard As</h3>
         <p className="text-xs text-muted-foreground mb-4">Preview what each role sees in this tenant&apos;s dashboard.</p>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           {(['MANAGER', 'MCA', 'NES'] as const).map(role => (
             <Link
               key={role}
@@ -159,8 +159,9 @@ export default function TenantDetailPage() {
             <UserPlus size={13} /> Add User
           </Link>
         </div>
-        <table className="w-full text-left">
-          <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
+        <div className="overflow-x-auto">
+        <table className="w-full text-left min-w-[640px]">
+          <thead className="bg-muted/50 border-b border-border">
             <tr>
               {['User', 'Role', 'Branch', 'Status', 'Activity', 'Actions'].map(h => (
                 <th key={h} className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">{h}</th>
@@ -214,6 +215,7 @@ export default function TenantDetailPage() {
             })}
           </tbody>
         </table>
+        </div>
         {users.length === 0 && (
           <div className="p-12 text-center text-muted-foreground text-sm">No users in this tenant yet.</div>
         )}

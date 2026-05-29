@@ -26,8 +26,9 @@ export default async function AuditLogPage() {
       />
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
+        <div className="overflow-x-auto">
+        <table className="w-full text-left min-w-[720px]">
+          <thead className="bg-muted/50 border-b border-border">
             <tr>
               {['Action', 'User', 'Tenant', 'IP', 'Time'].map(h => (
                 <th key={h} className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">
@@ -60,6 +61,7 @@ export default async function AuditLogPage() {
             ))}
           </tbody>
         </table>
+        </div>
         {logs.length === 0 && (
           <div className="p-12 text-center">
             <Activity size={32} className="text-muted-foreground mx-auto mb-3" />

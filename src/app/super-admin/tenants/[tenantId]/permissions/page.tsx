@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Save } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
 
 const ROLES = ['MANAGER', 'MCA', 'NES'] as const;
 type Role = typeof ROLES[number];
@@ -56,11 +57,7 @@ export default function PermissionsMatrix() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Permission Matrix</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Toggle which roles have each permission.</p>
-        </div>
+      <PageHeader title="Permission Matrix" description="Toggle which roles have each permission.">
         <button
           onClick={handleSave}
           disabled={saving}
@@ -68,11 +65,12 @@ export default function PermissionsMatrix() {
         >
           <Save size={14} /> {saving ? 'Saving…' : savedMsg || 'Save Changes'}
         </button>
-      </div>
+      </PageHeader>
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
+        <div className="overflow-x-auto">
+        <table className="w-full text-left min-w-[560px]">
+          <thead className="bg-muted/50 border-b border-border">
             <tr>
               <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Permission</th>
               {ROLES.map(r => (
@@ -82,8 +80,8 @@ export default function PermissionsMatrix() {
           </thead>
           <tbody className="divide-y divide-border">
             {categories.map(cat => (
-              <>
-                <tr key={`cat-${cat}`} className="bg-muted/30">
+              <Fragment key={`cat-${cat}`}>
+                <tr className="bg-muted/30">
                   <td colSpan={4} className="px-6 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{cat}</td>
                 </tr>
                 {permissions.filter(p => p.category === cat).map(perm => (
@@ -98,16 +96,17 @@ export default function PermissionsMatrix() {
                           type="checkbox"
                           checked={rolePerms[role].has(perm.key)}
                           onChange={() => toggle(role, perm.key)}
-                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                          className="w-4 h-4 rounded border-border accent-primary cursor-pointer"
                         />
                       </td>
                     ))}
                   </tr>
                 ))}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
