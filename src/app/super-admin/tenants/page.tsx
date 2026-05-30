@@ -17,7 +17,7 @@ export default async function TenantsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Tenants" description={`${tenants.length} registered tenants`}>
-        <Button render={<Link href="/super-admin/tenants/new" />}>
+        <Button nativeButton={false} render={<Link href="/super-admin/tenants/new" />}>
           <Plus size={16} /> New Tenant
         </Button>
       </PageHeader>
@@ -63,10 +63,10 @@ export default async function TenantsPage() {
                 <TableCell className="text-muted-foreground">{new Date(tenant.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon-sm" render={<Link href={`/super-admin/tenants/${tenant.id}/branding`} />}>
+                    <Button variant="ghost" size="icon-sm" nativeButton={false} render={<Link href={`/super-admin/tenants/${tenant.id}/branding`} />}>
                       <Eye size={14} />
                     </Button>
-                    <Button variant="ghost" size="icon-sm" render={<Link href={`/super-admin/tenants/${tenant.id}/permissions`} />}>
+                    <Button variant="ghost" size="icon-sm" nativeButton={false} render={<Link href={`/super-admin/tenants/${tenant.id}/permissions`} />}>
                       <Settings size={14} />
                     </Button>
                   </div>

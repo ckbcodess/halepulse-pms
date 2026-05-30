@@ -278,7 +278,7 @@ export default function DashboardView({
         <Card className="py-0 gap-0 overflow-hidden">
           <div className="flex items-center justify-between px-6 py-5 border-b border-border">
             <h3 className="font-medium text-card-foreground">Recent Transactions</h3>
-            <Button variant="outline" size="sm" render={<Link href="/reports" />}>
+            <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/reports" />}>
               View report
             </Button>
           </div>
@@ -317,7 +317,7 @@ export default function DashboardView({
         <Card className="py-0 gap-0 overflow-hidden">
           <div className="flex items-center justify-between px-6 py-5 border-b border-border">
             <h3 className="font-medium text-card-foreground">Inventory Alerts</h3>
-            <Button variant="outline" size="sm" render={<Link href="/inventory" />}>
+            <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/inventory" />}>
               View report
             </Button>
           </div>

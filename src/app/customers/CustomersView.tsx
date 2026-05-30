@@ -84,7 +84,7 @@ export default function CustomersView() {
         title="Customers"
         description="Track customer purchases and award loyalty points."
       >
-        <Button render={<Link href="/customers/new" />}>
+        <Button nativeButton={false} render={<Link href="/customers/new" />}>
           <Plus size={14} /> Add Customer
         </Button>
       </PageHeader>

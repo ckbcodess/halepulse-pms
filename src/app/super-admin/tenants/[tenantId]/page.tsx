@@ -145,6 +145,7 @@ export default function TenantDetailPage() {
             <Button
               key={role}
               variant="secondary"
+              nativeButton={false}
               render={<Link href={`/super-admin/impersonate?tenantId=${tenantId}&role=${role}`} />}
             >
               View as {role}
@@ -157,7 +158,7 @@ export default function TenantDetailPage() {
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <h3 className="text-base font-semibold text-foreground">Users ({users.length})</h3>
-          <Button size="sm" render={<Link href={`/super-admin/tenants/${tenantId}/users/new`} />}>
+          <Button size="sm" nativeButton={false} render={<Link href={`/super-admin/tenants/${tenantId}/users/new`} />}>
             <UserPlus size={13} /> Add User
           </Button>
         </div>

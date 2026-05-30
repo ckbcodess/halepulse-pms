@@ -120,6 +120,7 @@ export default async function ReportsPage({
             key={r.value}
             variant={range === r.value ? 'default' : 'outline'}
             size="sm"
+            nativeButton={false}
             render={<Link href={`/reports?tab=${tab}&range=${r.value}`} />}
           >
             {r.label}

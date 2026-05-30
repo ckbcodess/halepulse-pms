@@ -76,7 +76,7 @@ export default function CreateUserPage() {
         </div>
 
         <div className="flex gap-3">
-          <Button variant="outline" className="flex-1" render={<Link href={`/super-admin/tenants/${tenantId}`} />}>
+          <Button variant="outline" className="flex-1" nativeButton={false} render={<Link href={`/super-admin/tenants/${tenantId}`} />}>
             Back to Tenant
           </Button>
           <Button className="flex-1" onClick={() => { setResult(null); setEmail(''); }}>
@@ -90,7 +90,7 @@ export default function CreateUserPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" render={<Link href={`/super-admin/tenants/${tenantId}`} />}>
+        <Button variant="ghost" size="icon" nativeButton={false} render={<Link href={`/super-admin/tenants/${tenantId}`} />}>
           <ArrowLeft size={20} />
         </Button>
         <div>
