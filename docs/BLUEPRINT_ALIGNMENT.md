@@ -88,12 +88,24 @@ All work lands on `blueprint-alignment` (branched off `audit-log`).
   - [x] §4.4 access matrix enforced: operational reads locked to home branch;
     branch selection validated against the tenant; switching gated to L≤1.
 
-### Phase 2 — Inventory & batches (GRN)
-- `stock_items` (per batch, per branch), `goods_received_notes`, immutable
-  `stock_movements`, `stock_take_sessions`.
-- GRN auto-pricing flow (`selling = cost × (1 + markup/100)`, override logged).
-- FIFO selection, inter-branch transfers, expiry/low-stock alerts wired to the
-  notification center.
+### Phase 2 — Inventory & batches (GRN)  ← current
+Done incrementally so the live POS/inventory never breaks. `Product.stockQty`
+stays the working source of truth until the cut-over sub-phases land.
+
+- [x] 2A. Data model + backfill. Added `StockItem`, `GoodsReceivedNote`,
+  immutable `StockMovement`, `StockTakeSession` (+ back-relations, `SaleItem.stockItemId`).
+  Schema pushed; `migrate-stock-items.ts` seeded opening batches + import movements
+  from current product stock (snapshot saved). Additive — no read/write path
+  changed yet.
+- [ ] 2B. GRN flow — `goods_received_notes` + auto-pricing
+  (`selling = cost × (1 + markup/100)`, override logged); dual-write `stock_items`
+  + `stock_movements` and keep `Product.stockQty`/price in sync.
+- [ ] 2C. POS FIFO — sell from oldest batch, write `stock_movements`, set
+  `SaleItem.stockItemId`; keep `Product.stockQty` synced.
+- [ ] 2D. Stock-take sessions (count → discrepancies → adjust).
+- [ ] 2E. Inter-branch transfers (request → dispatch → receive).
+- [ ] 2F. Wire reads (inventory views, dashboards, alerts) to batch data;
+  expiry/low-stock from `stock_items`.
 
 ### Phase 3 — POS upgrade
 - `sale_payments` (split tender), sale items referencing the batch sold (FIFO
@@ -142,3 +154,7 @@ All work lands on `blueprint-alignment` (branched off `audit-log`).
   app shell (`/api/branches`); §4.4 access matrix enforced (operational users
   locked to home branch, switching gated to tenant-wide actors). Typecheck clean;
   routes compile. Next: Phase 2 — inventory batches + GRN.
+- _2026-06-01_ — **Phase 2A landed.** Batch-inventory tables added (StockItem,
+  GoodsReceivedNote, immutable StockMovement, StockTakeSession) + backfill of
+  opening batches from current stock. Additive/non-breaking — app still uses
+  Product.stockQty. Typecheck clean, dev server serves 200.

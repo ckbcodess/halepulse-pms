@@ -34,6 +34,10 @@ model User {
   stockAdjustments   StockAdjustment[]   @relation("StockAdjuster")
   inventoryAuditLogs InventoryAuditLog[] @relation("AuditPerformer")
   revertedAuditLogs  InventoryAuditLog[] @relation("AuditReverter")
+  grnReceived        GoodsReceivedNote[] @relation("GrnReceiver")
+  stockMovements     StockMovement[]     @relation("MovementPerformer")
+  stockTakesInitiated StockTakeSession[] @relation("StockTakeInitiator")
+  stockTakesCompleted StockTakeSession[] @relation("StockTakeCompleter")
 
   @@index([tenantId])
 }
@@ -63,6 +67,7 @@ model Product {
   supplier           Supplier?           @relation(fields: [supplierId], references: [id])
   creator            User?               @relation("ProductCreator", fields: [createdBy], references: [id])
   saleItems          SaleItem[]
+  stockItems         StockItem[]
   stockAdjustments   StockAdjustment[]
   inventoryAuditLogs InventoryAuditLog[] @relation("AuditProduct")
 
@@ -89,6 +94,7 @@ model Supplier {
   tenant             Tenant?             @relation(fields: [tenantId], references: [id])
   products           Product[]
   inventoryAuditLogs InventoryAuditLog[] @relation("AuditSupplier")
+  goodsReceivedNotes GoodsReceivedNote[]
 
   @@index([name])
   @@index([tenantId, isActive])
@@ -192,16 +198,19 @@ model Sale {
 }
 
 model SaleItem {
-  id        Int     @id @default(autoincrement())
-  saleId    Int
-  productId Int
-  quantity  Int
-  price     Float
-  product   Product @relation(fields: [productId], references: [id])
-  sale      Sale    @relation(fields: [saleId], references: [id])
+  id          Int        @id @default(autoincrement())
+  saleId      Int
+  productId   Int
+  stockItemId Int? // specific batch sold (FIFO) — nullable for pre-Phase-2 sales
+  quantity    Int
+  price       Float
+  product     Product    @relation(fields: [productId], references: [id])
+  sale        Sale       @relation(fields: [saleId], references: [id])
+  stockItem   StockItem? @relation(fields: [stockItemId], references: [id])
 
   @@index([saleId])
   @@index([productId])
+  @@index([stockItemId])
 }
 
 model Tenant {
@@ -242,6 +251,10 @@ model Tenant {
   sales                  Sale[]
   featureFlags           TenantFeatureFlag[]
   users                  User[]
+  stockItems             StockItem[]
+  goodsReceivedNotes     GoodsReceivedNote[]
+  stockMovements         StockMovement[]
+  stockTakeSessions      StockTakeSession[]
 }
 
 model Branch {
@@ -253,10 +266,14 @@ model Branch {
   isActive       Boolean  @default(true)
   isHeadquarters Boolean  @default(false) // tenant HQ — default branch for tenant-wide actors
   createdAt      DateTime @default(now())
-  tenant         Tenant   @relation(fields: [tenantId], references: [id])
-  users          User[]
-  sales          Sale[]
-  stockAdjustments StockAdjustment[]
+  tenant            Tenant              @relation(fields: [tenantId], references: [id])
+  users             User[]
+  sales             Sale[]
+  stockAdjustments  StockAdjustment[]
+  stockItems        StockItem[]
+  goodsReceivedNotes GoodsReceivedNote[]
+  stockMovements    StockMovement[]
+  stockTakeSessions StockTakeSession[]
 
   @@index([tenantId, isActive])
 }
@@ -377,6 +394,107 @@ model LoginAttempt {
 
   // Hot path: IP rate-limit counts failures by ipAddress within a time window
   @@index([ipAddress, createdAt])
+}
+
+// ─── Phase 2: Batch-level inventory (blueprint §6.2, §7.3) ───────────────────
+// stock lives per batch, per branch. Product remains the tenant-wide catalog.
+
+model StockItem {
+  id              Int       @id @default(autoincrement())
+  tenantId        String
+  branchId        String
+  productId       Int
+  batchNumber     String?
+  expiryDate      DateTime?
+  quantity        Int       @default(0)
+  costPrice       Float // unit cost at receiving (wholesale)
+  markupPercent   Float     @default(0)
+  sellingPrice    Float // auto-calculated: cost × (1 + markup/100)
+  priceOverridden Boolean   @default(false)
+  grnId           Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant    Tenant             @relation(fields: [tenantId], references: [id])
+  branch    Branch             @relation(fields: [branchId], references: [id])
+  product   Product            @relation(fields: [productId], references: [id])
+  grn       GoodsReceivedNote? @relation(fields: [grnId], references: [id])
+  movements StockMovement[]
+  saleItems SaleItem[]
+
+  // FIFO selection: oldest received batch with stock, per product+branch
+  @@index([tenantId, branchId, productId])
+  @@index([productId])
+  @@index([branchId, quantity])
+  @@index([expiryDate])
+}
+
+model GoodsReceivedNote {
+  id            Int      @id @default(autoincrement())
+  tenantId      String
+  branchId      String
+  supplierId    Int?
+  grnNumber     String?
+  invoiceNumber String?
+  notes         String?
+  receivedBy    Int
+  createdAt     DateTime @default(now())
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id])
+  branch     Branch      @relation(fields: [branchId], references: [id])
+  supplier   Supplier?   @relation(fields: [supplierId], references: [id])
+  receiver   User        @relation("GrnReceiver", fields: [receivedBy], references: [id])
+  stockItems StockItem[]
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([branchId, createdAt(sort: Desc)])
+}
+
+// Immutable, append-only ledger — no updatedAt, no soft delete.
+model StockMovement {
+  id             Int      @id @default(autoincrement())
+  tenantId       String
+  branchId       String
+  stockItemId    Int
+  movementType   String // grn | adjustment | sale | return | transfer_in | transfer_out | write_off | stock_take | import
+  quantityChange Int // positive = in, negative = out
+  quantityBefore Int
+  quantityAfter  Int
+  referenceId    Int? // loose ref to GRN, sale, adjustment, or stock_take_session
+  reason         String?
+  performedBy    Int
+  createdAt      DateTime @default(now())
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  branch    Branch    @relation(fields: [branchId], references: [id])
+  stockItem StockItem @relation(fields: [stockItemId], references: [id])
+  performer User      @relation("MovementPerformer", fields: [performedBy], references: [id])
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([stockItemId])
+  @@index([branchId, createdAt(sort: Desc)])
+  @@index([movementType])
+}
+
+model StockTakeSession {
+  id                 Int       @id @default(autoincrement())
+  tenantId           String
+  branchId           String
+  status             String // in_progress | completed | cancelled
+  itemsChecked       Int       @default(0)
+  discrepanciesFound Int       @default(0)
+  initiatedBy        Int
+  completedBy        Int?
+  startedAt          DateTime  @default(now())
+  completedAt        DateTime?
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  branch    Branch @relation(fields: [branchId], references: [id])
+  initiator User   @relation("StockTakeInitiator", fields: [initiatedBy], references: [id])
+  completer User?  @relation("StockTakeCompleter", fields: [completedBy], references: [id])
+
+  @@index([tenantId, startedAt(sort: Desc)])
+  @@index([branchId, status])
 }
 
 enum Role {
