@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRole } from '@/lib/auth/checkRole';
+import { resolveBranchId } from '@/lib/auth/branchContext';
 import prisma from '@/lib/prisma';
 import { stockAdjustmentSchema } from '@/lib/validation/schemas';
 import { ZodError } from 'zod';
@@ -48,7 +49,9 @@ export async function GET(request: NextRequest) {
 // ── POST /api/inventory/adjustments ───────────────────────────────────────────
 export async function POST(request: Request) {
   try {
-    const { tenantId, userId } = await checkRole('MANAGER', 'NES');
+    const ctx = await checkRole('MANAGER', 'NES');
+    const { tenantId, userId } = ctx;
+    const branchId = await resolveBranchId(ctx);
     const body = await request.json();
     const parsed = stockAdjustmentSchema.parse(body);
 
@@ -70,6 +73,7 @@ export async function POST(request: Request) {
           reason:      parsed.reason,
           notes:       parsed.notes,
           tenantId,
+          branchId,
         },
       }),
       prisma.product.update({

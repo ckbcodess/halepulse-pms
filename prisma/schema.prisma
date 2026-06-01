@@ -104,14 +104,17 @@ model StockAdjustment {
   reason      String // enum value
   notes       String?
   tenantId    String?
+  branchId    String?  // branch where the adjustment was made
   adjustedAt  DateTime @default(now())
 
   product  Product @relation(fields: [productId], references: [id])
   adjuster User    @relation("StockAdjuster", fields: [adjustedBy], references: [id])
   tenant   Tenant? @relation(fields: [tenantId], references: [id])
+  branch   Branch? @relation(fields: [branchId], references: [id])
 
   @@index([productId])
   @@index([tenantId, adjustedAt(sort: Desc)])
+  @@index([branchId, adjustedAt(sort: Desc)])
 }
 
 model InventoryAuditLog {
@@ -173,14 +176,18 @@ model Sale {
   sellerId    Int
   createdAt   DateTime   @default(now())
   tenantId    String?
+  branchId    String?    // branch where the sale occurred
   clientToken String?    @unique
   miscItems   String?
   customer    Customer?  @relation(fields: [customerId], references: [id])
   tenant      Tenant?    @relation(fields: [tenantId], references: [id])
+  branch      Branch?    @relation(fields: [branchId], references: [id])
   items       SaleItem[]
 
   // Dashboards & reports query sales by tenant within a date range
   @@index([tenantId, createdAt(sort: Desc)])
+  // Branch-scoped sales lists and EOD reconciliation
+  @@index([branchId, createdAt(sort: Desc)])
   @@index([customerId])
 }
 
@@ -238,14 +245,20 @@ model Tenant {
 }
 
 model Branch {
-  id       String  @id @default(cuid())
-  name     String
-  tenantId String
-  address  String?
-  phone    String?
-  isActive Boolean @default(true)
-  tenant   Tenant  @relation(fields: [tenantId], references: [id])
-  users    User[]
+  id             String   @id @default(cuid())
+  name           String
+  tenantId       String
+  address        String?
+  phone          String?
+  isActive       Boolean  @default(true)
+  isHeadquarters Boolean  @default(false) // tenant HQ — default branch for tenant-wide actors
+  createdAt      DateTime @default(now())
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  users          User[]
+  sales          Sale[]
+  stockAdjustments StockAdjustment[]
+
+  @@index([tenantId, isActive])
 }
 
 model Permission {

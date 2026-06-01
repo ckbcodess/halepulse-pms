@@ -64,14 +64,25 @@ All work lands on `blueprint-alignment` (branched off `audit-log`).
   - [ ] _Deferred to 1B:_ make `requireRole`/`checkRole` level-aware and surface
     `branchId`/`roleLevel`/`dynamicRoleSlug` in `getTenantContext` (belongs with
     branch scoping). `checkPermission` already resolves dynamic-role grants.
-- [ ] 1B. Branch scoping
-  - Surface `branchId` in `getTenantContext` / session-derived context.
-  - Add `branchId` to branch-scoped tables (Product/stock, Sale, StockAdjustment,
-    Customer) — additive, nullable first, backfilled to each tenant's HQ branch.
-  - Scope all list/detail/mutation queries by branch where the blueprint requires
-    it; aggregate across branches for tenant_admin/super_admin.
-  - Branch switcher in the app shell for roles with multi-branch visibility.
-  - Honour the §4.4 multi-branch access matrix (defaults blocked; overrides by
+- [~] 1B. Branch scoping (foundation landed; read-side + switcher remain)
+  - [x] `Branch.isHeadquarters` + `createdAt`; `branchId` added to `Sale` and
+    `StockAdjustment` (nullable, indexed). Schema pushed to DB.
+    _Note:_ `Product` stays tenant-wide (catalog); per-branch stock arrives with
+    `stock_items` in Phase 2. `Customer`/patients are tenant-wide per blueprint.
+  - [x] Backfill run + verified (`scripts/migrate-branch-scoping.ts`): every
+    tenant has exactly one HQ branch ("Phamacy 2" got a new HQ; "Awoshie Branch"
+    promoted for Haletop); existing sales/adjustments assigned to HQ; branch-less
+    operational users (L≥2) assigned to HQ. Snapshot in `scripts/backups/`.
+  - [x] `getTenantContext` now returns `branchId` + `roleLevel` +
+    `dynamicRoleSlug`; `resolveBranchId()` helper added.
+  - [x] `checkRole` is now hierarchy/slug-aware (accepts legacy + canonical slugs,
+    level-0 bypass).
+  - [x] Write paths set `branchId`: POS sale (`actions.ts`), stock adjustment,
+    batch restock.
+  - [ ] Read-side: scope sales/adjustment lists, dashboards, EOD by branch for
+    operational users; aggregate across branches for tenant_admin/super_admin.
+  - [ ] Branch switcher in the app shell for multi-branch roles.
+  - [ ] Honour the §4.4 multi-branch access matrix (defaults blocked; overrides by
     tenant_admin).
 
 ### Phase 2 — Inventory & batches (GRN)
@@ -119,3 +130,7 @@ All work lands on `blueprint-alignment` (branched off `audit-log`).
   DB migrated (both tenants, 5 users remapped) and verified; seed aligned.
   Permission counts match the §5.2 matrix (tenant_admin 33 / branch_manager 25 /
   pharmacist 16 / cashier 3). Next: Phase 1B branch scoping.
+- _2026-06-01_ — **Phase 1B foundation landed.** Schema (Branch HQ flag, branchId
+  on Sale/StockAdjustment) pushed; backfill run + verified; tenant context exposes
+  branch/level; checkRole hierarchy-aware; write paths set branchId. Typecheck
+  clean, dev server serves 200. Remaining: read-side branch scoping + switcher.

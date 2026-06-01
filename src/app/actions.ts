@@ -1,6 +1,7 @@
 'use server';
 import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/auth/getTenantContext';
+import { resolveBranchId } from '@/lib/auth/branchContext';
 import {
   updateProductSchema, addStockSchema,
   createCustomerSchema,
@@ -150,7 +151,9 @@ export async function processSale(
   paymentType?: string,                              // 'Cash' | 'MoMo' | 'Split'
   miscItems?:   { name: string; price: number; quantity: number }[],
 ) {
-  const { tenantId, userId } = await getTenantContext();
+  const ctx = await getTenantContext();
+  const { tenantId, userId } = ctx;
+  const branchId = await resolveBranchId(ctx);
 
   // Basic shape validation
   const hasRegularItems = items.length > 0;
@@ -240,6 +243,7 @@ export async function processSale(
         status:      'Completed',
         sellerId,
         tenantId,
+        branchId,
         ...(clientToken ? { clientToken } : {}),
         ...(customerId  ? { customerId }  : {}),
         ...(resolvedMiscItems.length > 0 ? { miscItems: JSON.stringify(resolvedMiscItems) } : {}),

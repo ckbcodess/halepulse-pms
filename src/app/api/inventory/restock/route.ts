@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { checkRole } from '@/lib/auth/checkRole';
+import { resolveBranchId } from '@/lib/auth/branchContext';
 import prisma from '@/lib/prisma';
 
 // ── POST /api/inventory/restock — batch restock from CSV ──────────────────────
 export async function POST(request: Request) {
   try {
-    const { tenantId, userId } = await checkRole('MANAGER');
+    const ctx = await checkRole('MANAGER');
+    const { tenantId, userId } = ctx;
+    const branchId = await resolveBranchId(ctx);
     const body: {
       items: {
         productId: number;
@@ -95,6 +98,7 @@ export async function POST(request: Request) {
             reason: 'Batch Restock',
             notes: body.invoiceNumber ? `Invoice: ${body.invoiceNumber}` : null,
             tenantId,
+            branchId,
           },
         })
       );

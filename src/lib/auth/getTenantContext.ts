@@ -1,11 +1,18 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from './authOptions';
 import { getImpersonation } from './getImpersonation';
+import { ROLE_LEVEL, type RoleSlug } from './roleHierarchy';
 
 export interface TenantContext {
-  tenantId: string;
-  userId:   string;
-  role:     string;
+  tenantId:        string;
+  userId:          string;
+  role:            string;
+  /** Acting user's home branch. Null for tenant-wide actors (tenant_admin) and during impersonation. */
+  branchId:        string | null;
+  /** Canonical hierarchy level: 0 = super_admin … 4 = cashier. */
+  roleLevel:       number;
+  /** Canonical role slug (super_admin, tenant_admin, …) when known. */
+  dynamicRoleSlug: string | null;
 }
 
 /**
@@ -32,6 +39,20 @@ export async function getTenantContext(): Promise<TenantContext> {
   const role     = impersonation?.role     ?? session.user.role;
   const userId   = session.user.id;
 
+  // Branch: while impersonating, act tenant-wide (null). Otherwise the user's home branch.
+  const branchId = impersonation ? null : (session.user.branchId ?? null);
+
+  // Role level / slug — derive from the impersonated role when impersonating.
+  let roleLevel       = session.user.roleLevel;
+  let dynamicRoleSlug = session.user.dynamicRoleSlug ?? null;
+  if (impersonation) {
+    const impersonatedLevel = ROLE_LEVEL[impersonation.role as RoleSlug];
+    if (impersonatedLevel !== undefined) {
+      roleLevel       = impersonatedLevel;
+      dynamicRoleSlug = impersonation.role;
+    }
+  }
+
   // Non-SA users MUST have a tenantId — if missing, something is broken
   if (!tenantId && role !== 'SUPER_ADMIN') {
     throw new Error('No tenant context');
@@ -42,5 +63,5 @@ export async function getTenantContext(): Promise<TenantContext> {
     throw new Error('No tenant context — use impersonation to view tenant data');
   }
 
-  return { tenantId, userId, role };
+  return { tenantId, userId, role, branchId, roleLevel, dynamicRoleSlug };
 }
