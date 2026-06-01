@@ -2,6 +2,7 @@
 import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/auth/getTenantContext';
 import { resolveBranchId } from '@/lib/auth/branchContext';
+import { deductStockFifo } from '@/lib/inventory/fifo';
 import {
   updateProductSchema, addStockSchema,
   createCustomerSchema,
@@ -257,6 +258,7 @@ export async function processSale(
           },
         } : {}),
       },
+      include: { items: true },
     });
 
     // ── Loyalty points ────────────────────────────────────────────────────
@@ -271,6 +273,8 @@ export async function processSale(
     }
 
     // ── Atomic stock decrement with race condition prevention ────────────
+    // Product.stockQty remains the authoritative quantity (validated here);
+    // batch stock_items are deducted FIFO in parallel to build the ledger.
     if (hasRegularItems) {
       for (const item of items) {
         const affected = await tx.product.updateMany({
@@ -285,6 +289,22 @@ export async function processSale(
           throw new Error(
             `Stock conflict for ${productMap.get(item.id)?.name}: insufficient stock. Please refresh and retry.`,
           );
+        }
+
+        // FIFO batch deduction + immutable movement ledger (best-effort).
+        const { firstStockItemId } = await deductStockFifo(tx, {
+          tenantId,
+          branchId,
+          productId: item.id,
+          quantity: item.quantity,
+          performedById: sellerId,
+          referenceId: sale.id,
+        });
+        if (firstStockItemId !== null) {
+          const saleItem = sale.items.find(si => si.productId === item.id);
+          if (saleItem) {
+            await tx.saleItem.update({ where: { id: saleItem.id }, data: { stockItemId: firstStockItemId } });
+          }
         }
       }
     }

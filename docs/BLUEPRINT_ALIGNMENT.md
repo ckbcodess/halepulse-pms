@@ -102,8 +102,11 @@ stays the working source of truth until the cut-over sub-phases land.
   the legacy `StockAdjustment`/audit logs and the `Product.stockQty`/price
   dual-write. Auto-pricing via `lib/inventory/pricing.ts`. Verified end-to-end
   (rollback test).
-- [ ] 2C. POS FIFO — sell from oldest batch, write `stock_movements`, set
-  `SaleItem.stockItemId`; keep `Product.stockQty` synced.
+- [x] 2C. POS FIFO. Sales now deduct batch stock_items oldest-first
+  (`lib/inventory/fifo.ts`), write `sale` StockMovements per batch, and stamp
+  `SaleItem.stockItemId` with the batch used. `Product.stockQty` stays the
+  validated authority (race-safe guard) and is decremented as before; FIFO is
+  best-effort so a lagging ledger never blocks a sale. Verified (rollback test).
 - [ ] 2D. Stock-take sessions (count → discrepancies → adjust).
 - [ ] 2E. Inter-branch transfers (request → dispatch → receive).
 - [ ] 2F. Wire reads (inventory views, dashboards, alerts) to batch data;
