@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRole } from '@/lib/auth/checkRole';
 import { resolveBranchId } from '@/lib/auth/branchContext';
+import { branchWhere } from '@/lib/auth/branchScope';
 import prisma from '@/lib/prisma';
 import { stockAdjustmentSchema } from '@/lib/validation/schemas';
 import { ZodError } from 'zod';
@@ -8,15 +9,17 @@ import { ZodError } from 'zod';
 // ── GET /api/inventory/adjustments ────────────────────────────────────────────
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await checkRole('MANAGER');
+    const ctx = await checkRole('MANAGER');
+    const { tenantId } = ctx;
+    const bf = await branchWhere(ctx);
     const params = request.nextUrl.searchParams;
     const page  = Math.max(1, parseInt(params.get('page') ?? '1', 10));
     const limit = Math.min(100, Math.max(1, parseInt(params.get('limit') ?? '20', 10)));
 
     const [total, adjustments] = await Promise.all([
-      prisma.stockAdjustment.count({ where: { tenantId } }),
+      prisma.stockAdjustment.count({ where: { tenantId, ...bf } }),
       prisma.stockAdjustment.findMany({
-        where: { tenantId },
+        where: { tenantId, ...bf },
         orderBy: { adjustedAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,

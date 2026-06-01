@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/auth/getTenantContext';
+import { branchWhere } from '@/lib/auth/branchScope';
 import {
   TrendingUp, Package, Calendar, AlertCircle,
   ShoppingBag, ArrowUpRight, Download, BarChart2, FileText
@@ -18,7 +19,9 @@ export default async function ReportsPage({
 }: {
   searchParams: Promise<{ tab?: string; range?: string }>;
 }) {
-  const { tenantId } = await getTenantContext();
+  const ctx = await getTenantContext();
+  const { tenantId } = ctx;
+  const branchFilter = await branchWhere(ctx);
 
   const params = await searchParams;
   const tab = params.tab || 'sales';
@@ -30,14 +33,15 @@ export default async function ReportsPage({
   rangeStart.setDate(rangeStart.getDate() - days);
   rangeStart.setHours(0, 0, 0, 0);
 
-  const tenantFilter = { tenantId };
+  const tenantFilter = { tenantId };              // products are tenant-wide
+  const saleFilter = { tenantId, ...branchFilter }; // sales are branch-scoped
 
   // ── Sales data ───────────────────────────────────────────────────────────────
   const [salesSummary, totalRevenue, recentSales, topProducts, lowStockProducts, expiringProducts] =
     await Promise.all([
       // Daily sales for the range (grouped manually)
       prisma.sale.findMany({
-        where: { ...tenantFilter, createdAt: { gte: rangeStart } },
+        where: { ...saleFilter, createdAt: { gte: rangeStart } },
         orderBy: { createdAt: 'asc' },
         include: { customer: true, items: { include: { product: true } } },
       }),
@@ -45,11 +49,11 @@ export default async function ReportsPage({
       prisma.sale.aggregate({
         _sum: { totalAmount: true },
         _count: true,
-        where: { ...tenantFilter, createdAt: { gte: rangeStart } },
+        where: { ...saleFilter, createdAt: { gte: rangeStart } },
       }),
       // Last 10 sales
       prisma.sale.findMany({
-        where: tenantFilter,
+        where: saleFilter,
         take: 10,
         orderBy: { createdAt: 'desc' },
         include: { customer: true, items: true },
@@ -61,7 +65,7 @@ export default async function ReportsPage({
         orderBy: { _sum: { quantity: 'desc' } },
         take: 10,
         where: {
-          sale: { ...tenantFilter, createdAt: { gte: rangeStart } },
+          sale: { ...saleFilter, createdAt: { gte: rangeStart } },
         },
       }),
       // Low stock

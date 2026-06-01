@@ -16,6 +16,7 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import BranchSwitcher from './BranchSwitcher';
 
 interface TopHeaderProps {
   user: {
@@ -108,6 +109,10 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
             {pageTitle}
           </h1>
         </div>
+
+        {/* Branch context / switcher */}
+        <div className="w-px h-[17.5px] bg-border flex-shrink-0 hidden sm:block" />
+        <BranchSwitcher />
       </div>
 
       {/* Right side — matches Figma Control Panel (node 156:67) */}

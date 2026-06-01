@@ -47,7 +47,7 @@ All work lands on `blueprint-alignment` (branched off `audit-log`).
 
 ## Phases
 
-### Phase 1 — Foundation: roles + branch scoping  ← current
+### Phase 1 — Foundation: roles + branch scoping  ✅ complete
 **Goal:** the 5-tier hierarchy and true branch scoping that everything else builds on.
 
 - [x] 1A. Role hierarchy ✅
@@ -79,11 +79,14 @@ All work lands on `blueprint-alignment` (branched off `audit-log`).
     level-0 bypass).
   - [x] Write paths set `branchId`: POS sale (`actions.ts`), stock adjustment,
     batch restock.
-  - [ ] Read-side: scope sales/adjustment lists, dashboards, EOD by branch for
-    operational users; aggregate across branches for tenant_admin/super_admin.
-  - [ ] Branch switcher in the app shell for multi-branch roles.
-  - [ ] Honour the §4.4 multi-branch access matrix (defaults blocked; overrides by
-    tenant_admin).
+  - [x] Read-side scoping via `branchScope.ts` (`branchWhere`/`getReadBranchId`):
+    manager/mca/nes dashboards, reports, and the adjustments list now scope sales
+    by branch. Operational users (L≥2) are locked to their branch (fail-closed);
+    tenant-wide actors see all branches or a chosen one.
+  - [x] Branch switcher in the app shell (`BranchSwitcher` in `TopHeader`) backed
+    by `GET/POST /api/branches`; operational users see a static branch label.
+  - [x] §4.4 access matrix enforced: operational reads locked to home branch;
+    branch selection validated against the tenant; switching gated to L≤1.
 
 ### Phase 2 — Inventory & batches (GRN)
 - `stock_items` (per batch, per branch), `goods_received_notes`, immutable
@@ -134,3 +137,8 @@ All work lands on `blueprint-alignment` (branched off `audit-log`).
   on Sale/StockAdjustment) pushed; backfill run + verified; tenant context exposes
   branch/level; checkRole hierarchy-aware; write paths set branchId. Typecheck
   clean, dev server serves 200. Remaining: read-side branch scoping + switcher.
+- _2026-06-01_ — **Phase 1 complete.** Read-side branch scoping added
+  (`branchScope.ts`) across dashboards/reports/adjustments; branch switcher in the
+  app shell (`/api/branches`); §4.4 access matrix enforced (operational users
+  locked to home branch, switching gated to tenant-wide actors). Typecheck clean;
+  routes compile. Next: Phase 2 — inventory batches + GRN.
