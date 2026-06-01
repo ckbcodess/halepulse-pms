@@ -97,9 +97,11 @@ stays the working source of truth until the cut-over sub-phases land.
   Schema pushed; `migrate-stock-items.ts` seeded opening batches + import movements
   from current product stock (snapshot saved). Additive — no read/write path
   changed yet.
-- [ ] 2B. GRN flow — `goods_received_notes` + auto-pricing
-  (`selling = cost × (1 + markup/100)`, override logged); dual-write `stock_items`
-  + `stock_movements` and keep `Product.stockQty`/price in sync.
+- [x] 2B. GRN flow. Restock path now writes (atomically) a `GoodsReceivedNote`,
+  a batch `StockItem` per line, an immutable `StockMovement` (type `grn`), plus
+  the legacy `StockAdjustment`/audit logs and the `Product.stockQty`/price
+  dual-write. Auto-pricing via `lib/inventory/pricing.ts`. Verified end-to-end
+  (rollback test).
 - [ ] 2C. POS FIFO — sell from oldest batch, write `stock_movements`, set
   `SaleItem.stockItemId`; keep `Product.stockQty` synced.
 - [ ] 2D. Stock-take sessions (count → discrepancies → adjust).

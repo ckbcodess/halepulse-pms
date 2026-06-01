@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { checkRole } from '@/lib/auth/checkRole';
 import { resolveBranchId } from '@/lib/auth/branchContext';
+import { computeSellingPrice } from '@/lib/inventory/pricing';
 import prisma from '@/lib/prisma';
 
 // ── POST /api/inventory/restock — batch restock from CSV ──────────────────────
@@ -58,37 +59,71 @@ export async function POST(request: Request) {
     });
     const productMap = new Map(products.map((p) => [p.id, p]));
 
-    // Build all operations in a single transaction
-    const operations: any[] = [];
     const results: { name: string; oldQty: number; newQty: number; delta: number }[] = [];
 
-    for (const item of body.items) {
-      const product = productMap.get(item.productId);
-      if (!product) continue;
+    // Everything is atomic: GRN header + per-item batch (StockItem), immutable
+    // StockMovement, the legacy StockAdjustment + audit logs, and the
+    // Product.stockQty/price dual-write that existing reads still rely on.
+    await prisma.$transaction(async (tx) => {
+      const grn = await tx.goodsReceivedNote.create({
+        data: {
+          tenantId,
+          branchId,
+          supplierId: body.supplierId ?? null,
+          invoiceNumber: body.invoiceNumber ?? null,
+          notes: body.notes ?? null,
+          receivedBy: userIdNum,
+        },
+      });
 
-      const newQty = product.stockQty + item.quantityReceived;
-      let sellingPrice = Math.round(item.costPrice * (1 + item.markupPercent / 100) * 100) / 100;
-      if (body.roundToNearest) {
-        sellingPrice = Math.round(sellingPrice / body.roundToNearest) * body.roundToNearest;
-      }
+      for (const item of body.items) {
+        const product = productMap.get(item.productId);
+        if (!product) continue;
 
-      // Update product: stock + pricing (or stock only for new_batch_only)
-      const updateData: Record<string, any> = { stockQty: newQty };
-      if (pricingMode === 'update_all') {
-        updateData.costPrice = item.costPrice;
-        updateData.markupPercent = item.markupPercent;
-        updateData.price = sellingPrice;
-      }
-      operations.push(
-        prisma.product.update({
-          where: { id: item.productId },
-          data: updateData,
-        })
-      );
+        const newQty = product.stockQty + item.quantityReceived;
+        const sellingPrice = computeSellingPrice(item.costPrice, item.markupPercent, body.roundToNearest);
 
-      // Stock adjustment record
-      operations.push(
-        prisma.stockAdjustment.create({
+        // New batch (StockItem) for this receipt
+        const stockItem = await tx.stockItem.create({
+          data: {
+            tenantId,
+            branchId,
+            productId: item.productId,
+            grnId: grn.id,
+            quantity: item.quantityReceived,
+            costPrice: item.costPrice,
+            markupPercent: item.markupPercent,
+            sellingPrice,
+            priceOverridden: false,
+          },
+        });
+
+        // Immutable ledger entry for the receipt
+        await tx.stockMovement.create({
+          data: {
+            tenantId,
+            branchId,
+            stockItemId: stockItem.id,
+            movementType: 'grn',
+            quantityChange: item.quantityReceived,
+            quantityBefore: 0,
+            quantityAfter: item.quantityReceived,
+            referenceId: grn.id,
+            performedBy: userIdNum,
+          },
+        });
+
+        // Product dual-write: stock + pricing (or stock only for new_batch_only)
+        const updateData: Record<string, any> = { stockQty: newQty };
+        if (pricingMode === 'update_all') {
+          updateData.costPrice = item.costPrice;
+          updateData.markupPercent = item.markupPercent;
+          updateData.price = sellingPrice;
+        }
+        await tx.product.update({ where: { id: item.productId }, data: updateData });
+
+        // Legacy stock adjustment record (keeps the adjustments view populated)
+        await tx.stockAdjustment.create({
           data: {
             productId: item.productId,
             adjustedBy: userIdNum,
@@ -100,12 +135,10 @@ export async function POST(request: Request) {
             tenantId,
             branchId,
           },
-        })
-      );
+        });
 
-      // Audit log — stock received
-      operations.push(
-        prisma.inventoryAuditLog.create({
+        // Audit log — stock received
+        await tx.inventoryAuditLog.create({
           data: {
             actionType: 'STOCK_RECEIVED',
             productId: item.productId,
@@ -116,13 +149,11 @@ export async function POST(request: Request) {
             notes: body.notes || null,
             tenantId,
           },
-        })
-      );
+        });
 
-      // Audit log — price updated (if price changed and pricing was updated)
-      if (pricingMode === 'update_all' && (item.costPrice !== product.costPrice || item.markupPercent !== product.markupPercent)) {
-        operations.push(
-          prisma.inventoryAuditLog.create({
+        // Audit log — price updated (if pricing changed)
+        if (pricingMode === 'update_all' && (item.costPrice !== product.costPrice || item.markupPercent !== product.markupPercent)) {
+          await tx.inventoryAuditLog.create({
             data: {
               actionType: 'PRICE_UPDATED',
               productId: item.productId,
@@ -131,15 +162,12 @@ export async function POST(request: Request) {
               newValue: { costPrice: item.costPrice, markupPercent: item.markupPercent, price: sellingPrice },
               tenantId,
             },
-          })
-        );
+          });
+        }
+
+        results.push({ name: product.name, oldQty: product.stockQty, newQty, delta: item.quantityReceived });
       }
-
-      results.push({ name: product.name, oldQty: product.stockQty, newQty, delta: item.quantityReceived });
-    }
-
-    // Execute everything atomically
-    await prisma.$transaction(operations);
+    }, { timeout: 120000, maxWait: 10000 });
 
     return NextResponse.json({
       success: true,
