@@ -107,7 +107,11 @@ stays the working source of truth until the cut-over sub-phases land.
   `SaleItem.stockItemId` with the batch used. `Product.stockQty` stays the
   validated authority (race-safe guard) and is decremented as before; FIFO is
   best-effort so a lagging ledger never blocks a sale. Verified (rollback test).
-- [ ] 2D. Stock-take sessions (count → discrepancies → adjust).
+- [x] 2D. Stock-take sessions. `StockTakeSession` start → count sheet (batch qty
+  per product at branch) → complete reconciles discrepancies via `applyStockDelta`
+  (`lib/inventory/stock.ts`), writing `stock_take` movements + legacy
+  adjustment/audit + Product.stockQty sync. API under `/api/inventory/stock-take`,
+  UI at `/inventory/stock-take` (+ sidebar item). Verified (rollback test).
 - [ ] 2E. Inter-branch transfers (request → dispatch → receive).
 - [ ] 2F. Wire reads (inventory views, dashboards, alerts) to batch data;
   expiry/low-stock from `stock_items`.
