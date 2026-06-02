@@ -128,10 +128,15 @@ stays the working source of truth until the cut-over sub-phases land.
   read and the low-stock/expiry alerts with per-branch batch sums) — `stockQty`
   remains the working aggregate for now and is kept in sync by every path.
 
-### Phase 3 — POS upgrade
-- `sale_payments` (split tender), sale items referencing the batch sold (FIFO
-  deduction → `stock_movements`), manager-only void workflow (cashier "request
-  correction"), EOD reconciliation + cash register variance.
+### Phase 3 — POS upgrade  ← current
+- [x] 3A. Schema + backfill. `SalePayment` (immutable split tender), `Sale`
+  void fields (`voidReason`/`voidedBy`/`voidedAt`), `EodReport` (one per
+  branch/day). Pushed; `migrate-sale-payments.ts` backfilled one payment per
+  existing sale from legacy `paymentType`.
+- [ ] 3B. Split payments on sale write (dual-write SalePayment, keep paymentType).
+- [ ] 3C. Manager-only void workflow (restore stock + reverse, cashier "request
+  correction").
+- [ ] 3D. EOD reconciliation + cash variance (locked after submit).
 
 ### Phase 4 — Clinical: patients + prescriptions + refills
 - Upgrade `Customer → Patient` (DOB, gender, allergies, chronic conditions),

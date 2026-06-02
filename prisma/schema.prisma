@@ -185,10 +185,14 @@ model Sale {
   branchId    String?    // branch where the sale occurred
   clientToken String?    @unique
   miscItems   String?
-  customer    Customer?  @relation(fields: [customerId], references: [id])
-  tenant      Tenant?    @relation(fields: [tenantId], references: [id])
-  branch      Branch?    @relation(fields: [branchId], references: [id])
+  voidReason  String? // mandatory when status = voided
+  voidedBy    Int? // manager (branch_manager+) who voided
+  voidedAt    DateTime?
+  customer    Customer?     @relation(fields: [customerId], references: [id])
+  tenant      Tenant?       @relation(fields: [tenantId], references: [id])
+  branch      Branch?       @relation(fields: [branchId], references: [id])
   items       SaleItem[]
+  payments    SalePayment[]
 
   // Dashboards & reports query sales by tenant within a date range
   @@index([tenantId, createdAt(sort: Desc)])
@@ -255,6 +259,8 @@ model Tenant {
   goodsReceivedNotes     GoodsReceivedNote[]
   stockMovements         StockMovement[]
   stockTakeSessions      StockTakeSession[]
+  salePayments           SalePayment[]
+  eodReports             EodReport[]
 }
 
 model Branch {
@@ -274,6 +280,8 @@ model Branch {
   goodsReceivedNotes GoodsReceivedNote[]
   stockMovements    StockMovement[]
   stockTakeSessions StockTakeSession[]
+  salePayments      SalePayment[]
+  eodReports        EodReport[]
 
   @@index([tenantId, isActive])
 }
@@ -394,6 +402,52 @@ model LoginAttempt {
 
   // Hot path: IP rate-limit counts failures by ipAddress within a time window
   @@index([ipAddress, createdAt])
+}
+
+// ─── Phase 3: POS — split payments + EOD (blueprint §6.3, §7.4) ──────────────
+
+// Immutable, append-only — one row per tender on a sale (supports split payment).
+model SalePayment {
+  id            Int      @id @default(autoincrement())
+  saleId        Int
+  tenantId      String
+  branchId      String?
+  paymentMethod String // cash | mobile_money | card | credit
+  amount        Float
+  reference     String? // MoMo txn id, card auth code, etc.
+  createdAt     DateTime @default(now())
+
+  sale   Sale    @relation(fields: [saleId], references: [id])
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  branch Branch? @relation(fields: [branchId], references: [id])
+
+  @@index([saleId])
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([branchId, createdAt(sort: Desc)])
+}
+
+// End-of-day reconciliation — one per branch per trading day; immutable once written.
+model EodReport {
+  id           Int      @id @default(autoincrement())
+  tenantId     String
+  branchId     String
+  businessDate DateTime // trading day (date component)
+  totalSales   Float
+  totalReturns Float    @default(0)
+  netRevenue   Float
+  byMethod     Json // { cash, mobile_money, card, credit }
+  expectedCash Float
+  countedCash  Float
+  cashVariance Float
+  notes        String?
+  submittedBy  Int
+  submittedAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@unique([branchId, businessDate])
+  @@index([tenantId, businessDate(sort: Desc)])
 }
 
 // ─── Phase 2: Batch-level inventory (blueprint §6.2, §7.3) ───────────────────
