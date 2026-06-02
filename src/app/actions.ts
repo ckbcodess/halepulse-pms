@@ -116,7 +116,15 @@ export async function getCustomers(search?: string) {
   });
 }
 
-export async function createCustomer(name: string, phone: string) {
+export interface PatientDetails {
+  dateOfBirth?: string;
+  gender?: string;
+  address?: string;
+  knownAllergies?: string;
+  chronicConditions?: string;
+}
+
+export async function createCustomer(name: string, phone: string, details?: PatientDetails) {
   const { tenantId, userId } = await getTenantContext();
   const { name: trimmedName, phone: trimmedPhone } = createCustomerSchema.parse({ name, phone });
 
@@ -127,7 +135,16 @@ export async function createCustomer(name: string, phone: string) {
   if (existing) throw new Error('A customer with this phone number already exists');
 
   const customer = await prisma.customer.create({
-    data: { name: trimmedName, phone: trimmedPhone, tenantId },
+    data: {
+      name: trimmedName,
+      phone: trimmedPhone,
+      tenantId,
+      dateOfBirth:       details?.dateOfBirth ? new Date(details.dateOfBirth) : null,
+      gender:            details?.gender || null,
+      address:           details?.address || null,
+      knownAllergies:    details?.knownAllergies || null,
+      chronicConditions: details?.chronicConditions || null,
+    },
   });
 
   await prisma.inventoryAuditLog.create({
@@ -135,6 +152,38 @@ export async function createCustomer(name: string, phone: string) {
       actionType: 'CUSTOMER_CREATED',
       performedBy: parseInt(userId, 10),
       newValue: { name: trimmedName, phone: trimmedPhone, customerId: customer.id },
+      tenantId,
+    },
+  }).catch(() => {});
+
+  return customer;
+}
+
+// Update a patient's clinical details (allergies, conditions, etc.).
+export async function updateCustomer(id: number, details: PatientDetails & { name?: string; phone?: string }) {
+  const { tenantId, userId } = await getTenantContext();
+
+  const existing = await prisma.customer.findFirst({ where: { id, tenantId } });
+  if (!existing) throw new Error('Patient not found');
+
+  const customer = await prisma.customer.update({
+    where: { id },
+    data: {
+      ...(details.name !== undefined ? { name: details.name } : {}),
+      ...(details.phone !== undefined ? { phone: details.phone || null } : {}),
+      dateOfBirth:       details.dateOfBirth ? new Date(details.dateOfBirth) : (details.dateOfBirth === '' ? null : undefined),
+      gender:            details.gender ?? undefined,
+      address:           details.address ?? undefined,
+      knownAllergies:    details.knownAllergies ?? undefined,
+      chronicConditions: details.chronicConditions ?? undefined,
+    },
+  });
+
+  await prisma.inventoryAuditLog.create({
+    data: {
+      actionType: 'CUSTOMER_UPDATED',
+      performedBy: parseInt(userId, 10),
+      newValue: { customerId: id },
       tenantId,
     },
   }).catch(() => {});

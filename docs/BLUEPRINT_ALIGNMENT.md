@@ -156,8 +156,10 @@ throughout).
   address, knownAllergies, chronicConditions); `Product` gains
   `requiresPrescription`/`isControlled`; `Sale.prescriptionId`; new `Prescription`
   + `PrescriptionItem` + `RefillReminder` models. Pushed (additive, no backfill).
-- [ ] 4B. Patient profile — capture clinical fields; detail shows drug purchase
-  history + allergies/conditions.
+- [x] 4B. Patient profile. New-customer form captures DOB/gender/address/
+  allergies/conditions (`createCustomer` extended; `updateCustomer` action added).
+  Customer detail now shows a clinical card (age, allergies highlighted, chronic
+  conditions), upcoming refills, prescriptions, and the existing purchase history.
 - [ ] 4C. Prescriptions module — issue → verify → dispense, controlled logging.
 - [ ] 4D. Refill reminder engine — set reminders, "refills due" list, dismiss/
   snooze/fulfil.

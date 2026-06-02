@@ -15,6 +15,11 @@ export default function NewCustomerPage() {
   const router = useRouter();
   const [name, setName]     = useState('');
   const [phone, setPhone]   = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState('');
+  const [address, setAddress] = useState('');
+  const [knownAllergies, setKnownAllergies] = useState('');
+  const [chronicConditions, setChronicConditions] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess]      = useState(false);
 
@@ -22,7 +27,7 @@ export default function NewCustomerPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await createCustomer(name, phone);
+      await createCustomer(name, phone, { dateOfBirth, gender, address, knownAllergies, chronicConditions });
       setSuccess(true);
       toast.success('Customer added successfully');
       setTimeout(() => router.push('/customers'), 1200);
@@ -82,6 +87,39 @@ export default function NewCustomerPage() {
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+233 XX XXX XXXX"
             />
+          </div>
+
+          {/* Patient details (optional) */}
+          <div className="pt-2 border-t border-border">
+            <p className="text-xs font-semibold text-muted-foreground mb-3">Patient details (optional)</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="dob" className="text-xs font-semibold text-muted-foreground">Date of Birth</Label>
+                <Input id="dob" type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="gender" className="text-xs font-semibold text-muted-foreground">Gender</Label>
+                <select id="gender" value={gender} onChange={(e) => setGender(e.target.value)}
+                  className="h-9 px-3 rounded-lg border border-border bg-background text-sm">
+                  <option value="">—</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5 mt-4">
+              <Label htmlFor="address" className="text-xs font-semibold text-muted-foreground">Address</Label>
+              <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Home address" />
+            </div>
+            <div className="flex flex-col gap-1.5 mt-4">
+              <Label htmlFor="allergies" className="text-xs font-semibold text-muted-foreground">Known Allergies</Label>
+              <Input id="allergies" value={knownAllergies} onChange={(e) => setKnownAllergies(e.target.value)} placeholder="e.g. Penicillin" />
+            </div>
+            <div className="flex flex-col gap-1.5 mt-4">
+              <Label htmlFor="conditions" className="text-xs font-semibold text-muted-foreground">Chronic Conditions</Label>
+              <Input id="conditions" value={chronicConditions} onChange={(e) => setChronicConditions(e.target.value)} placeholder="e.g. Hypertension, Diabetes" />
+            </div>
           </div>
 
           <Button
