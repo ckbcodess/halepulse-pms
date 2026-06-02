@@ -177,8 +177,9 @@ Extends the existing `/reports` tabs (branch-scoped, range selector).
 - [x] 5A. Payment-method breakdown (from `SalePayment`, incl. share bar) +
   purchase-frequency analytics (products by transaction count). New "Payments"
   and "Frequency" tabs.
-- [ ] 5B. Monthly statistical summary (month-over-month revenue, top products,
-  top customers, revenue by method, stock value).
+- [x] 5B. Monthly statistical summary ("Monthly" tab): revenue this vs last month
+  (abs + %), top 10 products, top 10 customers by visits, revenue by method,
+  current stock value (cost + selling). AI narrative lands in Phase 6.
 - [ ] 5C. Exports (CSV) for the report tabs.
 
 ### Phase 6 — AI layer
