@@ -112,7 +112,13 @@ stays the working source of truth until the cut-over sub-phases land.
   (`lib/inventory/stock.ts`), writing `stock_take` movements + legacy
   adjustment/audit + Product.stockQty sync. API under `/api/inventory/stock-take`,
   UI at `/inventory/stock-take` (+ sidebar item). Verified (rollback test).
-- [ ] 2E. Inter-branch transfers (request → dispatch → receive).
+- [x] 2E. Inter-branch transfers (direct). `POST /api/inventory/transfers`
+  deducts the source branch and adds the destination via paired
+  `transfer_out`/`transfer_in` movements (`applyStockDelta`); Product.stockQty
+  (tenant-global) nets to zero. UI at `/inventory/transfers` + sidebar; branch
+  picker via `/api/branches?all=1`. Verified (rollback test).
+  _Note:_ the blueprint's request→approve→dispatch→receive workflow is deferred;
+  this is a single-step transfer for now.
 - [ ] 2F. Wire reads (inventory views, dashboards, alerts) to batch data;
   expiry/low-stock from `stock_items`.
 

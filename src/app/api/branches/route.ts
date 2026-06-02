@@ -4,9 +4,21 @@ import { canSwitchBranch, getReadBranchId, SELECTED_BRANCH_COOKIE } from '@/lib/
 import prisma from '@/lib/prisma';
 
 // ── GET /api/branches — branches visible to the current user + selection state ──
-export async function GET() {
+// `?all=1` returns every active branch in the tenant (names only) for pickers
+// such as transfer destinations, regardless of switch capability.
+export async function GET(request: Request) {
   try {
     const ctx = await getTenantContext();
+
+    if (new URL(request.url).searchParams.get('all')) {
+      const all = await prisma.branch.findMany({
+        where: { tenantId: ctx.tenantId, isActive: true },
+        orderBy: [{ isHeadquarters: 'desc' }, { name: 'asc' }],
+        select: { id: true, name: true, isHeadquarters: true },
+      });
+      return NextResponse.json({ branches: all, homeBranchId: ctx.branchId });
+    }
+
     const switchable = canSwitchBranch(ctx);
 
     const branches = await prisma.branch.findMany({
