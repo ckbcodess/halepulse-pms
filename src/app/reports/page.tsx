@@ -204,6 +204,16 @@ export default async function ReportsPage({
             {r.label}
           </Button>
         ))}
+        {['sales', 'frequency', 'inventory'].includes(tab) && (
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<a href={`/api/reports/export?type=${tab}&range=${range}`} />}
+          >
+            <Download size={14} /> Export CSV
+          </Button>
+        )}
       </PageHeader>
 
       {/* Tabs */}

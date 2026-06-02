@@ -171,7 +171,7 @@ throughout).
   `/refills` (create + due list with actions) + sidebar. Verified (rollback test).
   _Deferred:_ automatic SMS/WhatsApp dispatch (needs the notification service).
 
-### Phase 5 — Reporting & intelligence  ← current
+### Phase 5 — Reporting & intelligence  ✅ complete
 Extends the existing `/reports` tabs (branch-scoped, range selector).
 
 - [x] 5A. Payment-method breakdown (from `SalePayment`, incl. share bar) +
@@ -180,7 +180,9 @@ Extends the existing `/reports` tabs (branch-scoped, range selector).
 - [x] 5B. Monthly statistical summary ("Monthly" tab): revenue this vs last month
   (abs + %), top 10 products, top 10 customers by visits, revenue by method,
   current stock value (cost + selling). AI narrative lands in Phase 6.
-- [ ] 5C. Exports (CSV) for the report tabs.
+- [x] 5C. CSV export. `GET /api/reports/export?type=sales|frequency|inventory&range=N`
+  streams a branch-scoped CSV (RFC-style escaping); "Export CSV" button on the
+  relevant report tabs. (PDF/Excel deferred.)
 
 ### Phase 6 — AI layer
 - `/lib/ai` Anthropic wrapper + `/lib/ai/prompts`, drug interaction checker,
@@ -233,3 +235,7 @@ Extends the existing `/reports` tabs (branch-scoped, range selector).
   (4D). New pages: /prescriptions, /refills + clinical fields on customers. All
   verified via rollback tests. Deferred: SMS/WhatsApp refill dispatch (Phase 8
   notifications). Next: Phase 5 (reporting), 6 (AI), 7 (import), 8 (cross-cutting).
+- _2026-06-02_ — **Phase 5 complete.** Reports gained Payments + Frequency tabs
+  (5A), a month-over-month Monthly summary (5B), and CSV export (5C). All
+  branch-scoped, tab-lazy queries. AI narrative for Monthly comes in Phase 6.
+  Next: Phase 6 (AI layer), 7 (import), 8 (cross-cutting).
