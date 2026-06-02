@@ -13,6 +13,7 @@ export const MASTER_MENU: (MenuItem & { defaultRoles: string[] })[] = [
   { key: 'dashboard', label: 'Dashboard',    path: '/',          visible: true, defaultRoles: ['MANAGER','MCA','NES'] },
   { key: 'pos',       label: 'Point of Sale', path: '/pos',       visible: true, defaultRoles: ['MANAGER','MCA']       },
   { key: 'sales',     label: 'Sales',         path: '/pos/sales', visible: true, defaultRoles: ['MANAGER','MCA','NES'] },
+  { key: 'eod',       label: 'End of Day',    path: '/pos/eod',   visible: true, defaultRoles: ['MANAGER'] },
   { key: 'inventory', label: 'Inventory',    path: '/inventory', visible: true, defaultRoles: ['MANAGER','MCA','NES'] },
   { key: 'customers', label: 'Customers',    path: '/customers', visible: true, defaultRoles: ['MANAGER','MCA']       },
   { key: 'reports',   label: 'Reports',      path: '/reports',   visible: true, defaultRoles: ['MANAGER','NES']       },

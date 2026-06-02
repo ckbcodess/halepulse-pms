@@ -128,7 +128,7 @@ stays the working source of truth until the cut-over sub-phases land.
   read and the low-stock/expiry alerts with per-branch batch sums) — `stockQty`
   remains the working aggregate for now and is kept in sync by every path.
 
-### Phase 3 — POS upgrade  ← current
+### Phase 3 — POS upgrade  ✅ complete
 - [x] 3A. Schema + backfill. `SalePayment` (immutable split tender), `Sale`
   void fields (`voidReason`/`voidedBy`/`voidedAt`), `EodReport` (one per
   branch/day). Pushed; `migrate-sale-payments.ts` backfilled one payment per
@@ -143,7 +143,10 @@ stays the working source of truth until the cut-over sub-phases land.
   management page (GET `/api/pos/sales`) lists branch sales with a manager-only
   Void action. Verified (rollback test).
   _Deferred:_ cashier "request correction" (needs the notification system).
-- [ ] 3D. EOD reconciliation + cash variance (locked after submit).
+- [x] 3D. EOD reconciliation. `GET/POST /api/pos/eod` computes the day's totals,
+  revenue by payment method, returns/voids, and cash variance (counted vs
+  expected); one `EodReport` per branch/day (unique → locked after submit). UI at
+  `/pos/eod` with live variance. Verified aggregation (payments sum = sales total).
 
 ### Phase 4 — Clinical: patients + prescriptions + refills
 - Upgrade `Customer → Patient` (DOB, gender, allergies, chronic conditions),
@@ -196,3 +199,7 @@ stays the working source of truth until the cut-over sub-phases land.
   verified via rollback tests. Every stock mutation now writes the immutable
   StockMovement ledger and keeps Product.stockQty in sync. Deferred: full read
   cutover to per-branch batch sums. Next: Phase 3 (POS upgrade) or per priorities.
+- _2026-06-02_ — **Phase 3 complete.** Split-tender SalePayment (3A/3B),
+  manager-only void with stock restore (3C), and EOD reconciliation with cash
+  variance + day lock (3D). New pages: /pos/sales, /pos/eod. All verified via
+  rollback / aggregation checks. Next: Phase 4 (clinical) or per priorities.
