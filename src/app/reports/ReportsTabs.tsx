@@ -1,12 +1,15 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { TrendingUp, Package, Calendar, BarChart2 } from 'lucide-react';
+import { TrendingUp, Package, Calendar, BarChart2, Wallet, Repeat, CalendarRange } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const TABS = [
   { key: 'sales', label: 'Sales Summary', icon: TrendingUp },
+  { key: 'monthly', label: 'Monthly', icon: CalendarRange },
+  { key: 'payments', label: 'Payments', icon: Wallet },
   { key: 'products', label: 'Top Products', icon: BarChart2 },
+  { key: 'frequency', label: 'Frequency', icon: Repeat },
   { key: 'inventory', label: 'Inventory', icon: Package },
   { key: 'expiry', label: 'Expiry', icon: Calendar },
 ];

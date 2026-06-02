@@ -107,6 +107,35 @@ export default async function ReportsPage({
   const dailyData = Array.from(salesByDay.entries()).slice(-days);
   const maxDay = Math.max(...dailyData.map(d => d[1]), 1);
 
+  // ── Payments tab: revenue by payment method over the range ───────────────────
+  const paymentBreakdown = tab === 'payments'
+    ? await prisma.salePayment.groupBy({
+        by: ['paymentMethod'],
+        _sum: { amount: true },
+        _count: true,
+        where: { ...saleFilter, createdAt: { gte: rangeStart }, sale: { status: { not: 'voided' } } },
+      })
+    : [];
+  const paymentTotal = paymentBreakdown.reduce((s, p) => s + (p._sum.amount ?? 0), 0);
+
+  // ── Frequency tab: products ranked by number of sale lines (transactions) ────
+  const frequency = tab === 'frequency'
+    ? await prisma.saleItem.groupBy({
+        by: ['productId'],
+        _count: { _all: true },
+        _sum: { quantity: true },
+        orderBy: { _count: { productId: 'desc' } },
+        take: 25,
+        where: { sale: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: rangeStart } } },
+      })
+    : [];
+  const freqNames = frequency.length
+    ? await prisma.product.findMany({ where: { id: { in: frequency.map(f => f.productId) } }, select: { id: true, name: true, category: true } })
+    : [];
+  const freqMap = new Map(freqNames.map(p => [p.id, p]));
+
+  const PAYMENT_LABEL: Record<string, string> = { cash: 'Cash', mobile_money: 'Mobile Money', card: 'Card', credit: 'Credit' };
+
   const ranges = [
     { value: '7', label: '7 days' },
     { value: '30', label: '30 days' },
@@ -206,6 +235,83 @@ export default async function ReportsPage({
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── PAYMENTS BREAKDOWN ─────────────────────────────────────────────────── */}
+      {tab === 'payments' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {['cash', 'mobile_money', 'card', 'credit'].map((m) => {
+              const row = paymentBreakdown.find((p) => p.paymentMethod === m);
+              const amt = row?._sum.amount ?? 0;
+              const pct = paymentTotal > 0 ? (amt / paymentTotal) * 100 : 0;
+              return (
+                <div key={m} className="bg-card border border-border rounded-2xl p-6">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{PAYMENT_LABEL[m]}</p>
+                  <p className="text-2xl font-bold text-foreground">₵{amt.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{pct.toFixed(1)}% · {row?._count ?? 0} payments</p>
+                </div>
+              );
+            })}
+          </div>
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-base font-semibold text-foreground">Total collected</h3>
+              <span className="text-lg font-bold text-foreground">₵{paymentTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex h-3 rounded-full overflow-hidden bg-muted">
+              {['cash', 'mobile_money', 'card', 'credit'].map((m, i) => {
+                const amt = paymentBreakdown.find((p) => p.paymentMethod === m)?._sum.amount ?? 0;
+                const pct = paymentTotal > 0 ? (amt / paymentTotal) * 100 : 0;
+                const colors = ['bg-primary', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
+                return pct > 0 ? <div key={m} className={colors[i]} style={{ width: `${pct}%` }} title={`${PAYMENT_LABEL[m]} ${pct.toFixed(1)}%`} /> : null;
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Last {range} days · excludes voided sales</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── PURCHASE FREQUENCY ─────────────────────────────────────────────────── */}
+      {tab === 'frequency' && (
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <h3 className="text-base font-semibold text-foreground">Most Frequently Sold</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Ranked by number of transactions in the last {range} days</p>
+          </div>
+          {frequency.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <Package size={32} className="mb-2 opacity-30" />
+              <p className="text-sm">No sales data for this period</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">#</TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead className="text-right">Transactions</TableHead>
+                  <TableHead className="text-right">Units</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {frequency.map((f, i) => {
+                  const p = freqMap.get(f.productId);
+                  return (
+                    <TableRow key={f.productId}>
+                      <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                      <TableCell className="font-medium text-foreground">{p?.name ?? `Product #${f.productId}`}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{p?.category ?? '—'}</TableCell>
+                      <TableCell className="text-right font-bold">{f._count._all}</TableCell>
+                      <TableCell className="text-right">{f._sum.quantity ?? 0}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </div>
       )}
 

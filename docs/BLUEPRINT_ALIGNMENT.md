@@ -171,9 +171,15 @@ throughout).
   `/refills` (create + due list with actions) + sidebar. Verified (rollback test).
   _Deferred:_ automatic SMS/WhatsApp dispatch (needs the notification service).
 
-### Phase 5 — Reporting & intelligence
-- Monthly statistical summary, payment-method breakdown, purchase-frequency
-  analytics, inventory valuation/movement, exports (PDF/Excel).
+### Phase 5 — Reporting & intelligence  ← current
+Extends the existing `/reports` tabs (branch-scoped, range selector).
+
+- [x] 5A. Payment-method breakdown (from `SalePayment`, incl. share bar) +
+  purchase-frequency analytics (products by transaction count). New "Payments"
+  and "Frequency" tabs.
+- [ ] 5B. Monthly statistical summary (month-over-month revenue, top products,
+  top customers, revenue by method, stock value).
+- [ ] 5C. Exports (CSV) for the report tabs.
 
 ### Phase 6 — AI layer
 - `/lib/ai` Anthropic wrapper + `/lib/ai/prompts`, drug interaction checker,
