@@ -160,7 +160,11 @@ throughout).
   allergies/conditions (`createCustomer` extended; `updateCustomer` action added).
   Customer detail now shows a clinical card (age, allergies highlighted, chronic
   conditions), upcoming refills, prescriptions, and the existing purchase history.
-- [ ] 4C. Prescriptions module — issue → verify → dispense, controlled logging.
+- [x] 4C. Prescriptions module. `POST/GET /api/prescriptions` (issue + list),
+  `PATCH /api/prescriptions/[id]` lifecycle (verify/dispense/void with role gating:
+  verify/dispense = pharmacist/TA, void = manager). Controlled-substance dispensing
+  writes a `CONTROLLED_DISPENSED` audit entry. UI at `/prescriptions` (issue form
+  with allergy warning + lifecycle actions) + sidebar. Verified (rollback test).
 - [ ] 4D. Refill reminder engine — set reminders, "refills due" list, dismiss/
   snooze/fulfil.
 
