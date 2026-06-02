@@ -137,8 +137,12 @@ stays the working source of truth until the cut-over sub-phases land.
   writes immutable `SalePayment` rows (falls back to a single payment from
   `paymentType` when none supplied). POS now passes the real cash/MoMo split it
   already captured. `paymentType` kept for compatibility.
-- [ ] 3C. Manager-only void workflow (restore stock + reverse, cashier "request
-  correction").
+- [x] 3C. Manager void workflow. `POST /api/pos/sales/[id]/void` (branch_manager+)
+  requires a reason, restores stock (batch `return` movements + Product.stockQty),
+  marks the sale `voided` (never deleted), and audit-logs it. New `/pos/sales`
+  management page (GET `/api/pos/sales`) lists branch sales with a manager-only
+  Void action. Verified (rollback test).
+  _Deferred:_ cashier "request correction" (needs the notification system).
 - [ ] 3D. EOD reconciliation + cash variance (locked after submit).
 
 ### Phase 4 — Clinical: patients + prescriptions + refills
