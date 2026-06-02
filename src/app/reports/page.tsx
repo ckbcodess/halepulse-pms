@@ -13,6 +13,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table';
 import { ReportsTabs } from './ReportsTabs';
+import MonthlyAiSummary from './MonthlyAiSummary';
 
 export default async function ReportsPage({
   searchParams,
@@ -296,6 +297,7 @@ export default async function ReportsPage({
       {/* ── MONTHLY SUMMARY ────────────────────────────────────────────────────── */}
       {tab === 'monthly' && monthly && (
         <div className="space-y-6">
+          <MonthlyAiSummary data={monthly} />
           {/* Revenue vs last month */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="bg-card border border-border rounded-2xl p-6">

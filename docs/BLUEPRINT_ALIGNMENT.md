@@ -184,10 +184,20 @@ Extends the existing `/reports` tabs (branch-scoped, range selector).
   streams a branch-scoped CSV (RFC-style escaping); "Export CSV" button on the
   relevant report tabs. (PDF/Excel deferred.)
 
-### Phase 6 — AI layer
-- `/lib/ai` Anthropic wrapper + `/lib/ai/prompts`, drug interaction checker,
-  monthly summary narrative, refill prediction, reorder recommendation,
-  prescription parser. Server-side key only, AI-call logging, feature-flag gated.
+### Phase 6 — AI layer  ✅ complete
+- [x] AI infrastructure: `lib/ai/client.ts` (server-side Anthropic wrapper —
+  key from `ANTHROPIC_API_KEY` only, never client-exposed; `isAiConfigured`
+  graceful 503; AI-call logging to AuditLog for cost tracking) + `lib/ai/prompts.ts`
+  (templates with tenant context).
+- [x] Monthly summary narrative: `POST /api/reports/ai-summary` + "AI Insights"
+  panel on the Monthly report tab.
+- [x] Drug interaction checker: `POST /api/prescriptions/[id]/check` (loads the
+  Rx's drugs + patient allergies/conditions server-side) + a per-prescription
+  "Sparkles" check button with a results modal.
+- `.env.production.example` documents `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL`.
+- _Deferred (extensible via the same wrapper):_ refill prediction, reorder
+  recommendation, prescription-image parser; per-tenant feature-flag gating
+  (currently gated by key presence + role `ai.tools.access`).
 
 ### Phase 7 — Import / migration hardening
 - `import_jobs` table, validate→preview→confirm workflow, templates, full vs
@@ -239,3 +249,7 @@ Extends the existing `/reports` tabs (branch-scoped, range selector).
   (5A), a month-over-month Monthly summary (5B), and CSV export (5C). All
   branch-scoped, tab-lazy queries. AI narrative for Monthly comes in Phase 6.
   Next: Phase 6 (AI layer), 7 (import), 8 (cross-cutting).
+- _2026-06-02_ — **Phase 6 complete.** Server-side Anthropic wrapper + prompts,
+  monthly AI narrative, and prescription drug-interaction checker, with AI-call
+  logging and graceful 503 when no key. Requires ANTHROPIC_API_KEY to activate.
+  Next: Phase 7 (import), 8 (cross-cutting).

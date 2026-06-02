@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { FileText, Plus, Trash2, Loader2, Check, ShieldAlert } from 'lucide-react';
+import { FileText, Plus, Trash2, Loader2, Check, ShieldAlert, Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,8 @@ export default function PrescriptionsPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState<number | null>(null);
+  const [aiBusy, setAiBusy] = useState<number | null>(null);
+  const [aiResult, setAiResult] = useState<{ id: number; text: string } | null>(null);
 
   // create form
   const [patientId, setPatientId] = useState('');
@@ -93,8 +95,35 @@ export default function PrescriptionsPage() {
     } catch (e: any) { toast.error(e.message); } finally { setBusy(null); }
   };
 
+  const checkRx = async (id: number) => {
+    setAiBusy(id);
+    try {
+      const res = await fetch(`/api/prescriptions/${id}/check`, { method: 'POST' });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error ?? 'Failed');
+      setAiResult({ id, text: d.analysis });
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setAiBusy(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* AI interaction-check result modal */}
+      {aiResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4" onClick={() => setAiResult(null)}>
+          <div className="bg-card border border-border rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 bg-card">
+              <h3 className="text-base font-semibold flex items-center gap-2"><Sparkles size={16} className="text-primary" /> Interaction Check — Rx #{aiResult.id}</h3>
+              <button onClick={() => setAiResult(null)} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
+            </div>
+            <div className="px-6 py-4 text-sm text-foreground whitespace-pre-wrap leading-relaxed">{aiResult.text}</div>
+          </div>
+        </div>
+      )}
+
       <PageHeader title="Prescriptions" description="Issue, verify and dispense prescriptions.">
         <Button onClick={() => setCreating((v) => !v)}>
           <Plus className="h-4 w-4" /> {creating ? 'Close' : 'New Prescription'}
@@ -189,6 +218,9 @@ export default function PrescriptionsPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button size="sm" variant="ghost" className="text-primary" disabled={aiBusy === rx.id} onClick={() => checkRx(rx.id)} title="AI drug interaction check">
+                      {aiBusy === rx.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    </Button>
                     {rx.status === 'issued' && (
                       <Button size="sm" variant="outline" disabled={busy === rx.id} onClick={() => act(rx.id, 'verify')}>Verify</Button>
                     )}
