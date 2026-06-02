@@ -148,10 +148,19 @@ stays the working source of truth until the cut-over sub-phases land.
   expected); one `EodReport` per branch/day (unique → locked after submit). UI at
   `/pos/eod` with live variance. Verified aggregation (payments sum = sales total).
 
-### Phase 4 — Clinical: patients + prescriptions + refills
-- Upgrade `Customer → Patient` (DOB, gender, allergies, chronic conditions),
-  drug purchase history view, prescriptions module (issue/verify/dispense,
-  controlled-substance logging), refill reminder engine + notifications.
+### Phase 4 — Clinical: patients + prescriptions + refills  ← current
+`Customer` doubles as the patient record (extended, not renamed — it's wired
+throughout).
+
+- [x] 4A. Schema. `Customer` extended with patient fields (dateOfBirth, gender,
+  address, knownAllergies, chronicConditions); `Product` gains
+  `requiresPrescription`/`isControlled`; `Sale.prescriptionId`; new `Prescription`
+  + `PrescriptionItem` + `RefillReminder` models. Pushed (additive, no backfill).
+- [ ] 4B. Patient profile — capture clinical fields; detail shows drug purchase
+  history + allergies/conditions.
+- [ ] 4C. Prescriptions module — issue → verify → dispense, controlled logging.
+- [ ] 4D. Refill reminder engine — set reminders, "refills due" list, dismiss/
+  snooze/fulfil.
 
 ### Phase 5 — Reporting & intelligence
 - Monthly statistical summary, payment-method breakdown, purchase-frequency

@@ -57,6 +57,8 @@ model Product {
   expiryDate        DateTime? // nearest_expiry_date across batches
   description       String?
   isActive          Boolean   @default(true) // soft-delete
+  requiresPrescription Boolean @default(false) // POS prompts for an Rx reference
+  isControlled         Boolean @default(false) // extra logging on dispensing
   supplierId        Int?
   createdBy         Int?
   createdAt         DateTime  @default(now())
@@ -70,6 +72,8 @@ model Product {
   stockItems         StockItem[]
   stockAdjustments   StockAdjustment[]
   inventoryAuditLogs InventoryAuditLog[] @relation("AuditProduct")
+  prescriptionItems  PrescriptionItem[]
+  refillReminders    RefillReminder[]
 
   @@unique([tenantId, sku])
   @@index([name])
@@ -159,15 +163,24 @@ model Category {
   @@index([tenantId])
 }
 
+// Customer doubles as the Patient record (blueprint §6.4, §7.5).
 model Customer {
-  id            Int      @id @default(autoincrement())
-  name          String
-  phone         String?
-  loyaltyPoints Int      @default(0)
-  createdAt     DateTime @default(now())
-  tenantId      String?
-  tenant        Tenant?  @relation(fields: [tenantId], references: [id])
-  sales         Sale[]
+  id                Int       @id @default(autoincrement())
+  name              String
+  phone             String?
+  loyaltyPoints     Int       @default(0)
+  createdAt         DateTime  @default(now())
+  tenantId          String?
+  // Patient/clinical fields
+  dateOfBirth       DateTime?
+  gender            String? // male | female | other
+  address           String?
+  knownAllergies    String?
+  chronicConditions String?
+  tenant            Tenant?         @relation(fields: [tenantId], references: [id])
+  sales             Sale[]
+  prescriptions     Prescription[]
+  refillReminders   RefillReminder[]
 
   @@unique([tenantId, phone])
 }
@@ -188,7 +201,9 @@ model Sale {
   voidReason  String? // mandatory when status = voided
   voidedBy    Int? // manager (branch_manager+) who voided
   voidedAt    DateTime?
+  prescriptionId Int? // linked prescription, if dispensed against one
   customer    Customer?     @relation(fields: [customerId], references: [id])
+  prescription Prescription? @relation(fields: [prescriptionId], references: [id])
   tenant      Tenant?       @relation(fields: [tenantId], references: [id])
   branch      Branch?       @relation(fields: [branchId], references: [id])
   items       SaleItem[]
@@ -261,6 +276,8 @@ model Tenant {
   stockTakeSessions      StockTakeSession[]
   salePayments           SalePayment[]
   eodReports             EodReport[]
+  prescriptions          Prescription[]
+  refillReminders        RefillReminder[]
 }
 
 model Branch {
@@ -282,6 +299,7 @@ model Branch {
   stockTakeSessions StockTakeSession[]
   salePayments      SalePayment[]
   eodReports        EodReport[]
+  prescriptions     Prescription[]
 
   @@index([tenantId, isActive])
 }
@@ -402,6 +420,72 @@ model LoginAttempt {
 
   // Hot path: IP rate-limit counts failures by ipAddress within a time window
   @@index([ipAddress, createdAt])
+}
+
+// ─── Phase 4: Clinical — prescriptions + refills (blueprint §6.4, §7.5) ──────
+
+model Prescription {
+  id            Int       @id @default(autoincrement())
+  tenantId      String
+  branchId      String?
+  patientId     Int // → Customer (patient record)
+  prescriberName String?
+  status        String    @default("issued") // issued | verified | dispensed | voided
+  notes         String?
+  issuedBy      Int
+  verifiedBy    Int?
+  dispensedBy   Int?
+  voidReason    String?
+  createdAt     DateTime  @default(now())
+  verifiedAt    DateTime?
+  dispensedAt   DateTime?
+
+  tenant  Tenant             @relation(fields: [tenantId], references: [id])
+  branch  Branch?            @relation(fields: [branchId], references: [id])
+  patient Customer           @relation(fields: [patientId], references: [id])
+  items   PrescriptionItem[]
+  sales   Sale[]
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([patientId])
+  @@index([status])
+}
+
+model PrescriptionItem {
+  id             Int     @id @default(autoincrement())
+  prescriptionId Int
+  productId      Int?
+  drugName       String
+  dosage         String?
+  quantity       Int     @default(1)
+  instructions   String?
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  product      Product?     @relation(fields: [productId], references: [id])
+
+  @@index([prescriptionId])
+}
+
+model RefillReminder {
+  id                Int      @id @default(autoincrement())
+  tenantId          String
+  patientId         Int
+  productId         Int
+  lastDispensedAt   DateTime
+  refillIntervalDays Int
+  nextRefillDate    DateTime
+  reminderDaysBefore Int     @default(3)
+  status            String   @default("active") // active | dismissed | fulfilled | snoozed
+  createdBy         Int
+  createdAt         DateTime @default(now())
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  patient Customer @relation(fields: [patientId], references: [id])
+  product Product  @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, nextRefillDate])
+  @@index([patientId])
+  @@index([status])
 }
 
 // ─── Phase 3: POS — split payments + EOD (blueprint §6.3, §7.4) ──────────────
