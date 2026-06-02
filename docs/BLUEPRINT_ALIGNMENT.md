@@ -88,7 +88,7 @@ All work lands on `blueprint-alignment` (branched off `audit-log`).
   - [x] §4.4 access matrix enforced: operational reads locked to home branch;
     branch selection validated against the tenant; switching gated to L≤1.
 
-### Phase 2 — Inventory & batches (GRN)  ← current
+### Phase 2 — Inventory & batches (GRN)  ✅ complete
 Done incrementally so the live POS/inventory never breaks. `Product.stockQty`
 stays the working source of truth until the cut-over sub-phases land.
 
@@ -119,8 +119,14 @@ stays the working source of truth until the cut-over sub-phases land.
   picker via `/api/branches?all=1`. Verified (rollback test).
   _Note:_ the blueprint's request→approve→dispatch→receive workflow is deferred;
   this is a single-step transfer for now.
-- [ ] 2F. Wire reads (inventory views, dashboards, alerts) to batch data;
-  expiry/low-stock from `stock_items`.
+- [x] 2F. Integrity + visibility. Legacy stock-adjustment path now syncs batches
+  (writes an `adjustment` StockMovement via `applyStockDelta`) — so every stock
+  mutation (GRN, sale, stock-take, transfer, adjustment) keeps the batch ledger
+  consistent. Product detail shows a "Batches by Branch" table (qty/cost/selling/
+  expiry per batch) from `stock_items`.
+  _Deferred refinement:_ a full read cutover (replacing every `Product.stockQty`
+  read and the low-stock/expiry alerts with per-branch batch sums) — `stockQty`
+  remains the working aggregate for now and is kept in sync by every path.
 
 ### Phase 3 — POS upgrade
 - `sale_payments` (split tender), sale items referencing the batch sold (FIFO
@@ -173,3 +179,8 @@ stays the working source of truth until the cut-over sub-phases land.
   GoodsReceivedNote, immutable StockMovement, StockTakeSession) + backfill of
   opening batches from current stock. Additive/non-breaking — app still uses
   Product.stockQty. Typecheck clean, dev server serves 200.
+- _2026-06-02_ — **Phase 2 complete.** GRN (2B), POS FIFO (2C), stock-take (2D),
+  transfers (2E), and adjustment batch-sync + batch visibility (2F) all landed and
+  verified via rollback tests. Every stock mutation now writes the immutable
+  StockMovement ledger and keeps Product.stockQty in sync. Deferred: full read
+  cutover to per-branch batch sums. Next: Phase 3 (POS upgrade) or per priorities.

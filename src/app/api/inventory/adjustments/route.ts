@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkRole } from '@/lib/auth/checkRole';
 import { resolveBranchId } from '@/lib/auth/branchContext';
 import { branchWhere } from '@/lib/auth/branchScope';
+import { applyStockDelta } from '@/lib/inventory/stock';
 import prisma from '@/lib/prisma';
 import { stockAdjustmentSchema } from '@/lib/validation/schemas';
 import { ZodError } from 'zod';
@@ -64,12 +65,13 @@ export async function POST(request: Request) {
     if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
 
     const delta = parsed.newQuantity - product.stockQty;
+    const adjustedBy = parseInt(userId, 10);
 
-    const [adjustment] = await prisma.$transaction([
-      prisma.stockAdjustment.create({
+    const adjustment = await prisma.$transaction(async (tx) => {
+      const adj = await tx.stockAdjustment.create({
         data: {
           productId:   parsed.productId,
-          adjustedBy:  parseInt(userId, 10),
+          adjustedBy,
           oldQuantity: product.stockQty,
           newQuantity: parsed.newQuantity,
           delta,
@@ -78,23 +80,38 @@ export async function POST(request: Request) {
           tenantId,
           branchId,
         },
-      }),
-      prisma.product.update({
+      });
+      await tx.product.update({
         where: { id: parsed.productId },
         data: { stockQty: parsed.newQuantity },
-      }),
-      prisma.inventoryAuditLog.create({
+      });
+      // Keep the batch ledger in sync (writes an "adjustment" StockMovement).
+      await applyStockDelta(tx, {
+        tenantId,
+        branchId,
+        productId: parsed.productId,
+        delta,
+        movementType: 'adjustment',
+        performedById: adjustedBy,
+        reason: parsed.reason,
+        referenceId: adj.id,
+        fallbackCost: product.costPrice ?? 0,
+        fallbackMarkup: product.markupPercent,
+        fallbackSelling: product.price,
+      });
+      await tx.inventoryAuditLog.create({
         data: {
           actionType:  'STOCK_ADJUSTED',
           productId:   parsed.productId,
-          performedBy: parseInt(userId, 10),
+          performedBy: adjustedBy,
           oldValue:    { stockQty: product.stockQty },
           newValue:    { stockQty: parsed.newQuantity, delta, reason: parsed.reason },
           notes:       parsed.notes,
           tenantId,
         },
-      }),
-    ]);
+      });
+      return adj;
+    });
 
     return NextResponse.json({ adjustment }, { status: 201 });
   } catch (err: any) {
