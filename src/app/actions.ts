@@ -421,7 +421,7 @@ export interface ImportRow {
   category: string;
 }
 
-export async function bulkImportProducts(rows: ImportRow[]) {
+export async function bulkImportProducts(rows: ImportRow[], fileName?: string) {
   const { tenantId, role, userId } = await getTenantContext();
 
   if (role !== 'MANAGER' && role !== 'SUPER_ADMIN') {
@@ -429,6 +429,18 @@ export async function bulkImportProducts(rows: ImportRow[]) {
   }
   if (!rows.length) throw new Error('No products to import');
   if (rows.length > 5000) throw new Error('Maximum 5,000 products per import');
+
+  // Track the import as an auditable job (blueprint §13.5).
+  const job = await prisma.importJob.create({
+    data: {
+      tenantId,
+      entityType: 'product',
+      fileName: fileName ?? null,
+      status: 'processing',
+      totalRows: rows.length,
+      performedBy: parseInt(userId, 10),
+    },
+  });
 
   let created = 0;
   let skipped = 0;
@@ -475,17 +487,29 @@ export async function bulkImportProducts(rows: ImportRow[]) {
     }
   }
 
+  // Finalise the import job.
+  await prisma.importJob.update({
+    where: { id: job.id },
+    data: {
+      status: 'completed',
+      successCount: created,
+      failureCount: skipped + errors.length,
+      failureReport: errors.length ? JSON.stringify(errors.slice(0, 100)) : null,
+      completedAt: new Date(),
+    },
+  }).catch(() => {});
+
   await prisma.inventoryAuditLog.create({
     data: {
       actionType: 'BULK_IMPORT',
       performedBy: parseInt(userId, 10),
-      newValue: { totalRows: rows.length, created, skipped, errorCount: errors.length },
+      newValue: { jobId: job.id, totalRows: rows.length, created, skipped, errorCount: errors.length },
       notes: `Bulk import: ${created} created, ${skipped} skipped, ${errors.length} errors`,
       tenantId,
     },
   }).catch(() => {});
 
-  return { created, skipped, errors: errors.slice(0, 20), total: rows.length };
+  return { created, skipped, errors: errors.slice(0, 20), total: rows.length, jobId: job.id };
 }
 
 // ── Tenant Info ───────────────────────────────────────────────────────────────

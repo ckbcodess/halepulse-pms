@@ -199,9 +199,19 @@ Extends the existing `/reports` tabs (branch-scoped, range selector).
   recommendation, prescription-image parser; per-tenant feature-flag gating
   (currently gated by key presence + role `ai.tools.access`).
 
-### Phase 7 — Import / migration hardening
-- `import_jobs` table, validate→preview→confirm workflow, templates, full vs
-  partial mode, duplicate handling, audit logging, background processing.
+### Phase 7 — Import / migration hardening  ✅ complete
+The upload → preview → confirm flow + duplicate-skip already existed; this adds
+the auditable job tracking the blueprint emphasises.
+
+- [x] `ImportJob` model (entityType, fileName, status, row counts, failureReport,
+  performedBy, timestamps) — blueprint §13.5. Pushed.
+- [x] `bulkImportProducts` records a job (processing → completed with counts +
+  failure report) and returns the `jobId`.
+- [x] `GET /api/import/jobs` + a "Recent Imports" history panel on the import page.
+- _Already present:_ CSV parse, validate/preview, duplicate skip, error report,
+  templates. _Deferred:_ Inngest background processing + object-storage failure
+  reports (the blueprint's Supabase-specific pieces); partial-vs-full mode toggle
+  (current behaviour = partial: valid rows commit, duplicates skipped).
 
 ### Phase 8 — Cross-cutting hardening
 - Unified `audit_logs` (before/after JSONB) written by every service after state
@@ -253,3 +263,6 @@ Extends the existing `/reports` tabs (branch-scoped, range selector).
   monthly AI narrative, and prescription drug-interaction checker, with AI-call
   logging and graceful 503 when no key. Requires ANTHROPIC_API_KEY to activate.
   Next: Phase 7 (import), 8 (cross-cutting).
+- _2026-06-02_ — **Phase 7 complete.** ImportJob tracking model + job recording in
+  bulkImportProducts + /api/import/jobs history panel. Verified write path.
+  Next: Phase 8 (cross-cutting).

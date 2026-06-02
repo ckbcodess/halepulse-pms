@@ -1,7 +1,7 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, ArrowLeft, Download } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, ArrowLeft, Download, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { bulkImportProducts, type ImportRow } from '@/app/actions';
 import { Button } from '@/components/ui/button';
@@ -63,6 +63,13 @@ export default function ImportPage() {
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [result, setResult] = useState<ImportResult | null>(null);
 
+  interface Job { id: number; entityType: string; fileName: string | null; status: string; totalRows: number; successCount: number; failureCount: number; createdAt: string }
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const loadJobs = useCallback(async () => {
+    try { const r = await fetch('/api/import/jobs'); if (r.ok) setJobs((await r.json()).jobs); } catch { /* ignore */ }
+  }, []);
+  useEffect(() => { loadJobs(); }, [loadJobs]);
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -90,9 +97,10 @@ export default function ImportPage() {
   const handleImport = async () => {
     setStep('importing');
     try {
-      const res = await bulkImportProducts(rows);
+      const res = await bulkImportProducts(rows, fileName);
       setResult(res);
       setStep('done');
+      loadJobs();
       if (res.created > 0) toast.success(`${res.created} products imported!`);
       if (res.skipped > 0) toast.info(`${res.skipped} duplicates skipped`);
       if (res.errors.length > 0) toast.warning(`${res.errors.length} errors`);
@@ -141,6 +149,31 @@ export default function ImportPage() {
               <Download size={14} /> Download your pre-formatted import file (1,896 products)
             </a>
           </div>
+
+          {/* Import history */}
+          {jobs.length > 0 && (
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-border flex items-center gap-2">
+                <Clock size={14} className="text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-foreground">Recent Imports</h3>
+              </div>
+              <div className="divide-y divide-border">
+                {jobs.map((j) => (
+                  <div key={j.id} className="px-5 py-3 flex items-center justify-between text-sm">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">{j.fileName ?? `${j.entityType} import`}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(j.createdAt).toLocaleString()} · {j.entityType}</p>
+                    </div>
+                    <div className="text-right text-xs flex-shrink-0">
+                      <span className="text-emerald-600 font-semibold">{j.successCount} ok</span>
+                      {j.failureCount > 0 && <span className="text-amber-600 font-semibold ml-2">{j.failureCount} skipped</span>}
+                      <span className="text-muted-foreground ml-2">of {j.totalRows}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

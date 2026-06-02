@@ -278,6 +278,7 @@ model Tenant {
   eodReports             EodReport[]
   prescriptions          Prescription[]
   refillReminders        RefillReminder[]
+  importJobs             ImportJob[]
 }
 
 model Branch {
@@ -420,6 +421,27 @@ model LoginAttempt {
 
   // Hot path: IP rate-limit counts failures by ipAddress within a time window
   @@index([ipAddress, createdAt])
+}
+
+// ─── Phase 7: Import / migration tracking (blueprint §13.5) ──────────────────
+
+model ImportJob {
+  id            Int       @id @default(autoincrement())
+  tenantId      String
+  entityType    String // product | stock | supplier | patient | user | sale
+  fileName      String?
+  status        String    @default("pending") // pending | validating | awaiting_confirmation | processing | completed | failed
+  totalRows     Int       @default(0)
+  successCount  Int       @default(0)
+  failureCount  Int       @default(0)
+  failureReport String? // serialized failure rows/reasons (no object storage here)
+  performedBy   Int
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt(sort: Desc)])
 }
 
 // ─── Phase 4: Clinical — prescriptions + refills (blueprint §6.4, §7.5) ──────
