@@ -213,11 +213,22 @@ the auditable job tracking the blueprint emphasises.
   reports (the blueprint's Supabase-specific pieces); partial-vs-full mode toggle
   (current behaviour = partial: valid rows commit, duplicates skipped).
 
-### Phase 8 — Cross-cutting hardening
-- Unified `audit_logs` (before/after JSONB) written by every service after state
-  changes; middleware stack (rate limiting, request logging, tenant-scope guard);
-  consistent API envelope `{ success, data, error, meta }` + pagination;
-  notification center.
+### Phase 8 — Cross-cutting hardening  ✅ core complete
+- [x] Notification center: `GET /api/notifications` aggregates low-stock,
+  expiring, and refill-due signals; `NotificationBell` in the app shell shows a
+  live count + dropdown (replaces the static bell).
+- [x] Standard API envelope `{ success, data, error, meta }` — `lib/api/response.ts`
+  (`ok`/`fail`/`failFromError`/`pageMeta`), adopted by `/api/notifications` as the
+  canonical pattern; existing routes migrate incrementally.
+- [~] Audit: system `AuditLog` (`logAction`, incl. ipAddress) + inventory
+  `InventoryAuditLog` (before/after JSONB, entity refs) already cover state-change
+  auditing, and the AI layer logs calls. _Deferred:_ collapsing the two tables
+  into a single `audit_logs` and back-filling `entity_type`/`before`/`after`
+  everywhere (large migration, low marginal value over current coverage).
+- [~] Middleware: JWT/tenant/super-admin/password guards (`proxy.ts`) + IP +
+  account-lockout rate limiting on auth (`loginSecurity`) exist. _Deferred:_
+  per-tenant/per-route rate limiting + structured request logging across all
+  routes; full `/api/v1` versioning + envelope migration of the ~40 existing routes.
 
 ---
 
@@ -266,3 +277,8 @@ the auditable job tracking the blueprint emphasises.
 - _2026-06-02_ — **Phase 7 complete.** ImportJob tracking model + job recording in
   bulkImportProducts + /api/import/jobs history panel. Verified write path.
   Next: Phase 8 (cross-cutting).
+- _2026-06-02_ — **Phase 8 core complete — all 8 phases addressed.** Notification
+  center (live bell) + standard API envelope helper landed. Audit + middleware
+  hardening already substantially in place; remaining items (single audit table,
+  full envelope/`/api/v1` migration of all routes, broader rate limiting) are
+  documented deferrals — polish over a working system, to be done incrementally.

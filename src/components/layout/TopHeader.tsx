@@ -1,7 +1,7 @@
 'use client';
 import { usePathname } from 'next/navigation';
 import {
-  Bell, Menu, ChevronDown, Sun, Moon, LogOut,
+  Menu, ChevronDown, Sun, Moon, LogOut,
   LayoutDashboard, ShoppingCart, Package, Users,
   FileText, Settings, UserCog, KeyRound, type LucideIcon,
 } from 'lucide-react';
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import BranchSwitcher from './BranchSwitcher';
+import NotificationBell from './NotificationBell';
 
 interface TopHeaderProps {
   user: {
@@ -118,11 +119,8 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
       {/* Right side — matches Figma Control Panel (node 156:67) */}
       <div className="flex items-center gap-2 py-1">
 
-        {/* Notification */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell size={16} strokeWidth={2} />
-          <span className="absolute top-[6px] right-[6px] w-[7px] h-[7px] bg-destructive rounded-full" />
-        </Button>
+        {/* Notifications */}
+        <NotificationBell />
 
         {/* Theme toggle */}
         <ThemeToggleButton />
