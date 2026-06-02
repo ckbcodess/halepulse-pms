@@ -133,7 +133,10 @@ stays the working source of truth until the cut-over sub-phases land.
   void fields (`voidReason`/`voidedBy`/`voidedAt`), `EodReport` (one per
   branch/day). Pushed; `migrate-sale-payments.ts` backfilled one payment per
   existing sale from legacy `paymentType`.
-- [ ] 3B. Split payments on sale write (dual-write SalePayment, keep paymentType).
+- [x] 3B. Split payments. `processSale` accepts a `payments[]` breakdown and
+  writes immutable `SalePayment` rows (falls back to a single payment from
+  `paymentType` when none supplied). POS now passes the real cash/MoMo split it
+  already captured. `paymentType` kept for compatibility.
 - [ ] 3C. Manager-only void workflow (restore stock + reverse, cashier "request
   correction").
 - [ ] 3D. EOD reconciliation + cash variance (locked after submit).

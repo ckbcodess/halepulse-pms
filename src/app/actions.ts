@@ -151,6 +151,7 @@ export async function processSale(
   discount?:    number,                              // fixed discount amount
   paymentType?: string,                              // 'Cash' | 'MoMo' | 'Split'
   miscItems?:   { name: string; price: number; quantity: number }[],
+  payments?:    { method: string; amount: number; reference?: string | null }[], // split tender
 ) {
   const ctx = await getTenantContext();
   const { tenantId, userId } = ctx;
@@ -271,6 +272,28 @@ export async function processSale(
         });
       }
     }
+
+    // ── Payment records (split tender, immutable) ─────────────────────────
+    const METHOD_LABEL: Record<string, string> = { Cash: 'cash', MoMo: 'mobile_money', Card: 'card', Credit: 'credit' };
+    const validMethods = new Set(['cash', 'mobile_money', 'card', 'credit']);
+    let paymentRows = (payments ?? [])
+      .filter(p => p.amount > 0 && validMethods.has(p.method))
+      .map(p => ({
+        saleId: sale.id, tenantId, branchId,
+        paymentMethod: p.method,
+        amount: Math.round(p.amount * 100) / 100,
+        reference: p.reference ?? null,
+      }));
+    if (paymentRows.length === 0) {
+      // No breakdown supplied — record a single payment from the chosen method.
+      paymentRows = [{
+        saleId: sale.id, tenantId, branchId,
+        paymentMethod: METHOD_LABEL[resolvedPaymentType] ?? 'cash',
+        amount: finalTotal,
+        reference: null,
+      }];
+    }
+    await tx.salePayment.createMany({ data: paymentRows });
 
     // ── Atomic stock decrement with race condition prevention ────────────
     // Product.stockQty remains the authoritative quantity (validated here);

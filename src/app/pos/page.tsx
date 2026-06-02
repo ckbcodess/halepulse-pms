@@ -178,6 +178,19 @@ export default function POSPage() {
       const regularItems = items.filter(i => !i.isMisc);
       const miscCartItems = items.filter(i => i.isMisc);
 
+      // Build the split-tender breakdown (amounts sum to the discounted total).
+      const payments: { method: string; amount: number; reference?: string | null }[] = [];
+      if (paymentMethod === 'Split') {
+        const momoPart = Math.min(parseFloat(momoAmount) || 0, discountedTotal);
+        const cashPart = Math.round((discountedTotal - momoPart) * 100) / 100;
+        if (momoPart > 0) payments.push({ method: 'mobile_money', amount: momoPart });
+        if (cashPart > 0) payments.push({ method: 'cash', amount: cashPart });
+      } else if (paymentMethod === 'MoMo') {
+        payments.push({ method: 'mobile_money', amount: discountedTotal });
+      } else {
+        payments.push({ method: 'cash', amount: discountedTotal });
+      }
+
       const sale = await processSale(
         regularItems.map(i => ({ id: i.id, quantity: i.quantity })),
         selectedCustomer?.id,
@@ -185,6 +198,7 @@ export default function POSPage() {
         discountAmount,
         paymentMethod,
         miscCartItems.map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
+        payments,
       );
 
       setReceiptData({
