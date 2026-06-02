@@ -148,7 +148,7 @@ stays the working source of truth until the cut-over sub-phases land.
   expected); one `EodReport` per branch/day (unique → locked after submit). UI at
   `/pos/eod` with live variance. Verified aggregation (payments sum = sales total).
 
-### Phase 4 — Clinical: patients + prescriptions + refills  ← current
+### Phase 4 — Clinical: patients + prescriptions + refills  ✅ complete
 `Customer` doubles as the patient record (extended, not renamed — it's wired
 throughout).
 
@@ -165,8 +165,11 @@ throughout).
   verify/dispense = pharmacist/TA, void = manager). Controlled-substance dispensing
   writes a `CONTROLLED_DISPENSED` audit entry. UI at `/prescriptions` (issue form
   with allergy warning + lifecycle actions) + sidebar. Verified (rollback test).
-- [ ] 4D. Refill reminder engine — set reminders, "refills due" list, dismiss/
-  snooze/fulfil.
+- [x] 4D. Refill reminder engine. `GET/POST /api/refills` (create + due list,
+  `?due=N`), `PATCH /api/refills/[id]` (dismiss / snooze / fulfil — fulfil rolls
+  the schedule forward). `nextRefillDate = lastDispensed + interval`. UI at
+  `/refills` (create + due list with actions) + sidebar. Verified (rollback test).
+  _Deferred:_ automatic SMS/WhatsApp dispatch (needs the notification service).
 
 ### Phase 5 — Reporting & intelligence
 - Monthly statistical summary, payment-method breakdown, purchase-frequency
@@ -218,3 +221,8 @@ throughout).
   manager-only void with stock restore (3C), and EOD reconciliation with cash
   variance + day lock (3D). New pages: /pos/sales, /pos/eod. All verified via
   rollback / aggregation checks. Next: Phase 4 (clinical) or per priorities.
+- _2026-06-02_ — **Phase 4 complete.** Patient records (4A/4B), prescriptions
+  module with controlled-substance logging (4C), and the refill reminder engine
+  (4D). New pages: /prescriptions, /refills + clinical fields on customers. All
+  verified via rollback tests. Deferred: SMS/WhatsApp refill dispatch (Phase 8
+  notifications). Next: Phase 5 (reporting), 6 (AI), 7 (import), 8 (cross-cutting).
