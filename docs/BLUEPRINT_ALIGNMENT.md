@@ -185,10 +185,12 @@ Extends the existing `/reports` tabs (branch-scoped, range selector).
   relevant report tabs. (PDF/Excel deferred.)
 
 ### Phase 6 — AI layer  ✅ complete
-- [x] AI infrastructure: `lib/ai/client.ts` (server-side Anthropic wrapper —
-  key from `ANTHROPIC_API_KEY` only, never client-exposed; `isAiConfigured`
-  graceful 503; AI-call logging to AuditLog for cost tracking) + `lib/ai/prompts.ts`
-  (templates with tenant context).
+- [x] AI infrastructure: `lib/ai/client.ts` — **provider-agnostic** wrapper
+  (OpenAI-compatible transport for Gemini/OpenRouter/Groq/Ollama/Qwen/Kimi/etc.
+  via `AI_BASE_URL`/`AI_API_KEY`/`AI_MODEL`, plus Anthropic via `ANTHROPIC_API_KEY`).
+  Key server-side only; `isAiConfigured` graceful 503; AI-call logging to AuditLog
+  for cost tracking. `lib/ai/prompts.ts` (tenant-context templates). Setup guide:
+  `docs/AI_SETUP.md` (incl. zero-cost free-tier configs).
 - [x] Monthly summary narrative: `POST /api/reports/ai-summary` + "AI Insights"
   panel on the Monthly report tab.
 - [x] Drug interaction checker: `POST /api/prescriptions/[id]/check` (loads the

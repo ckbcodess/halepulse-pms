@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkRole } from '@/lib/auth/checkRole';
-import { callClaude, logAiCall, isAiConfigured, AiNotConfiguredError } from '@/lib/ai/client';
+import { callAi, logAiCall, isAiConfigured, AiNotConfiguredError } from '@/lib/ai/client';
 import { drugInteractionPrompt } from '@/lib/ai/prompts';
 import prisma from '@/lib/prisma';
 
@@ -39,7 +39,7 @@ export async function POST(
       { drugs, allergies: rx.patient.knownAllergies, conditions: rx.patient.chronicConditions },
     );
 
-    const result = await callClaude({ system, prompt, maxTokens: 900 });
+    const result = await callAi({ system, prompt, maxTokens: 900 });
     await logAiCall({ tenantId: ctx.tenantId, userId: ctx.userId, feature: 'drug_interaction', result });
 
     return NextResponse.json({ analysis: result.text, drugs });

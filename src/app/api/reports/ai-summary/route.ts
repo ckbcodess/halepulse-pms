@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkRole } from '@/lib/auth/checkRole';
-import { callClaude, logAiCall, isAiConfigured, AiNotConfiguredError } from '@/lib/ai/client';
+import { callAi, logAiCall, isAiConfigured, AiNotConfiguredError } from '@/lib/ai/client';
 import { monthlySummaryPrompt } from '@/lib/ai/prompts';
 import prisma from '@/lib/prisma';
 
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       },
     );
 
-    const result = await callClaude({ system, prompt, maxTokens: 700 });
+    const result = await callAi({ system, prompt, maxTokens: 700 });
     await logAiCall({ tenantId: ctx.tenantId, userId: ctx.userId, feature: 'monthly_summary', result });
 
     return NextResponse.json({ summary: result.text });
