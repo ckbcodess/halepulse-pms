@@ -1,6 +1,10 @@
 import prisma from '@/lib/prisma';
 import { Activity } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
 
 export default async function AuditLogPage() {
   const logs = await prisma.auditLog.findMany({
@@ -26,40 +30,38 @@ export default async function AuditLogPage() {
       />
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
-            <tr>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[720px]">
+          <TableHeader>
+            <TableRow>
               {['Action', 'User', 'Tenant', 'IP', 'Time'].map(h => (
-                <th key={h} className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">
-                  {h}
-                </th>
+                <TableHead key={h}>{h}</TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {logs.map(log => (
-              <tr key={log.id} className="transition-colors">
-                <td className="px-6 py-3">
-                  <span className="text-xs font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded">
-                    {log.action}
-                  </span>
-                </td>
-                <td className="px-6 py-3 text-xs text-muted-foreground font-mono">
+              <TableRow key={log.id}>
+                <TableCell>
+                  <Badge variant="secondary" className="font-mono">{log.action}</Badge>
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground font-mono">
                   {log.userId.slice(0, 12)}...
-                </td>
-                <td className="px-6 py-3 text-xs text-muted-foreground">
-                  {log.tenantId ? (tenantMap[log.tenantId] || log.tenantId.slice(0, 8)) : <span className="text-muted-foreground">system</span>}
-                </td>
-                <td className="px-6 py-3 text-xs text-muted-foreground font-mono">
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {log.tenantId ? (tenantMap[log.tenantId] || log.tenantId.slice(0, 8)) : 'system'}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground font-mono">
                   {log.ipAddress || '-'}
-                </td>
-                <td className="px-6 py-3 text-xs text-muted-foreground">
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">
                   {new Date(log.createdAt).toLocaleString()}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
+        </div>
         {logs.length === 0 && (
           <div className="p-12 text-center">
             <Activity size={32} className="text-muted-foreground mx-auto mb-3" />

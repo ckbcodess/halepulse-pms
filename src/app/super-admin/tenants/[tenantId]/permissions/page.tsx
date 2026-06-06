@@ -1,7 +1,13 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Save } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
 
 const ROLES = ['MANAGER', 'MCA', 'NES'] as const;
 type Role = typeof ROLES[number];
@@ -56,58 +62,52 @@ export default function PermissionsMatrix() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Permission Matrix</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Toggle which roles have each permission.</p>
-        </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-primary-foreground text-sm font-semibold rounded-lg transition-colors"
-        >
+      <PageHeader title="Permission Matrix" description="Toggle which roles have each permission.">
+        <Button onClick={handleSave} disabled={saving}>
           <Save size={14} /> {saving ? 'Saving…' : savedMsg || 'Save Changes'}
-        </button>
-      </div>
+        </Button>
+      </PageHeader>
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
-            <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Permission</th>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[560px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Permission</TableHead>
               {ROLES.map(r => (
-                <th key={r} className="px-6 py-3 text-sm font-medium text-muted-foreground text-center w-28">{r}</th>
+                <TableHead key={r} className="text-center w-28">{r}</TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {categories.map(cat => (
-              <>
-                <tr key={`cat-${cat}`} className="bg-muted/30">
-                  <td colSpan={4} className="px-6 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{cat}</td>
-                </tr>
+              <Fragment key={`cat-${cat}`}>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableCell colSpan={4} className="py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{cat}</TableCell>
+                </TableRow>
                 {permissions.filter(p => p.category === cat).map(perm => (
-                  <tr key={perm.id} className="transition-colors">
-                    <td className="px-6 py-3">
+                  <TableRow key={perm.id}>
+                    <TableCell>
                       <p className="text-sm font-medium text-foreground">{perm.label}</p>
                       <p className="text-xs font-mono text-muted-foreground">{perm.key}</p>
-                    </td>
+                    </TableCell>
                     {ROLES.map(role => (
-                      <td key={role} className="px-6 py-3 text-center">
-                        <input
-                          type="checkbox"
-                          checked={rolePerms[role].has(perm.key)}
-                          onChange={() => toggle(role, perm.key)}
-                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-                        />
-                      </td>
+                      <TableCell key={role} className="text-center">
+                        <div className="flex justify-center">
+                          <Checkbox
+                            checked={rolePerms[role].has(perm.key)}
+                            onCheckedChange={() => toggle(role, perm.key)}
+                          />
+                        </div>
+                      </TableCell>
                     ))}
-                  </tr>
+                  </TableRow>
                 ))}
-              </>
+              </Fragment>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
+        </div>
       </div>
     </div>
   );

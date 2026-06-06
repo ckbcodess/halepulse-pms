@@ -1,9 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import { Building2, Phone, Mail, User, FileText, Shield, Check, Loader2, Lock } from 'lucide-react';
+import { Building2, Phone, Shield, Check, Loader2, Lock } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+
+function Field({
+  label, value, field, placeholder, type = 'text', readOnly = false, canEdit, onChange,
+}: {
+  label: string; value: string; field: string;
+  placeholder?: string; type?: string; readOnly?: boolean;
+  canEdit: boolean; onChange: (field: string, value: string) => void;
+}) {
+  const isReadOnly = readOnly || !canEdit;
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Input
+        type={type}
+        value={value}
+        disabled={isReadOnly}
+        onChange={e => onChange(field, e.target.value)}
+        placeholder={placeholder}
+        className="h-10"
+      />
+    </div>
+  );
+}
 
 type TenantSettings = {
   id: string;
@@ -73,35 +99,6 @@ export default function SettingsView({
     }
   };
 
-  const Field = ({
-    label, value, field, placeholder, type = 'text', readOnly = false,
-  }: {
-    label: string; value: string; field: string;
-    placeholder?: string; type?: string; readOnly?: boolean;
-  }) => (
-    <div className="space-y-1.5">
-      <label className="block text-xs font-semibold text-muted-foreground">{label}</label>
-      <input
-        type={type}
-        value={value}
-        readOnly={readOnly || !canEdit}
-        onChange={e => set(field, e.target.value)}
-        placeholder={placeholder}
-        className={`w-full px-3 py-2.5 rounded-lg text-sm font-medium border transition-all focus:outline-none text-foreground
-          ${readOnly || !canEdit
-            ? 'bg-muted border-border text-muted-foreground cursor-not-allowed'
-            : 'bg-background border-input focus:ring-2 focus:ring-primary/20 focus:border-primary'
-          }`}
-      />
-    </div>
-  );
-
-  const tierColors: Record<string, string> = {
-    basic:    'bg-muted dark:bg-sidebar text-muted-foreground',
-    standard: 'bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-400',
-    premium:  'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400',
-  };
-
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader
@@ -109,16 +106,12 @@ export default function SettingsView({
         description={`${tenant.subdomain}.halepulse.app`}
       >
         {canEdit && (
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
-          >
+          <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 size={14} className="animate-spin" /> :
              saved    ? <Check size={14} />                              :
                         null}
             {isSaving ? 'Saving…' : saved ? 'Saved!' : 'Save Changes'}
-          </button>
+          </Button>
         )}
       </PageHeader>
 
@@ -130,23 +123,23 @@ export default function SettingsView({
       )}
 
       {error && (
-        <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
+        <p className="text-sm text-destructive">{error}</p>
       )}
 
       {/* Business Info */}
       <div className="bg-card border border-border rounded-2xl divide-y divide-border">
         <div className="px-6 py-4 flex items-center gap-2">
           <Building2 size={16} className="text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground text-muted-foreground">Business Information</h3>
+          <h3 className="text-sm font-semibold text-foreground">Business Information</h3>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Display Name"  value={form.name}      field="name"      placeholder="Pharmacy name" />
-          <Field label="Legal Name"    value={form.legalName} field="legalName" placeholder="Registered legal name" />
+          <Field label="Display Name"  value={form.name}      field="name"      placeholder="Pharmacy name" canEdit={canEdit} onChange={set} />
+          <Field label="Legal Name"    value={form.legalName} field="legalName" placeholder="Registered legal name" canEdit={canEdit} onChange={set} />
           <div className="sm:col-span-2">
-            <Field label="Address" value={form.address} field="address" placeholder="Full business address" />
+            <Field label="Address" value={form.address} field="address" placeholder="Full business address" canEdit={canEdit} onChange={set} />
           </div>
-          <Field label="Licence Number" value={form.licenceNumber} field="licenceNumber" placeholder="Pharmacy licence no." />
-          <Field label="Tax / VAT Number" value={form.taxVatNumber} field="taxVatNumber" placeholder="Tax registration no." />
+          <Field label="Licence Number" value={form.licenceNumber} field="licenceNumber" placeholder="Pharmacy licence no." canEdit={canEdit} onChange={set} />
+          <Field label="Tax / VAT Number" value={form.taxVatNumber} field="taxVatNumber" placeholder="Tax registration no." canEdit={canEdit} onChange={set} />
         </div>
       </div>
 
@@ -154,12 +147,12 @@ export default function SettingsView({
       <div className="bg-card border border-border rounded-2xl divide-y divide-border">
         <div className="px-6 py-4 flex items-center gap-2">
           <Phone size={16} className="text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground text-muted-foreground">Contact Details</h3>
+          <h3 className="text-sm font-semibold text-foreground">Contact Details</h3>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Primary Contact Name"  value={form.primaryContact} field="primaryContact" placeholder="Contact person" />
-          <Field label="Phone Number"          value={form.primaryPhone}   field="primaryPhone"   type="tel" placeholder="+233 XX XXX XXXX" />
-          <Field label="Email Address"         value={form.primaryEmail}   field="primaryEmail"   type="email" placeholder="contact@pharmacy.com" />
+          <Field label="Primary Contact Name"  value={form.primaryContact} field="primaryContact" placeholder="Contact person" canEdit={canEdit} onChange={set} />
+          <Field label="Phone Number"          value={form.primaryPhone}   field="primaryPhone"   type="tel" placeholder="+233 XX XXX XXXX" canEdit={canEdit} onChange={set} />
+          <Field label="Email Address"         value={form.primaryEmail}   field="primaryEmail"   type="email" placeholder="contact@pharmacy.com" canEdit={canEdit} onChange={set} />
         </div>
       </div>
 
@@ -167,13 +160,13 @@ export default function SettingsView({
       <div className="bg-card border border-border rounded-2xl divide-y divide-border">
         <div className="px-6 py-4 flex items-center gap-2">
           <Shield size={16} className="text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground text-muted-foreground">System Information</h3>
+          <h3 className="text-sm font-semibold text-foreground">System Information</h3>
           <span className="ml-auto text-[10px] text-muted-foreground font-medium">Read only</span>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Business ID"   value={tenant.businessId ?? '—'} field="" readOnly />
-          <Field label="Subdomain"     value={tenant.subdomain}         field="" readOnly />
-          <Field label="Plan Tier"     value={tenant.subscriptionTier}  field="" readOnly />
+          <Field label="Business ID"   value={tenant.businessId ?? '—'} field="" readOnly canEdit={canEdit} onChange={set} />
+          <Field label="Subdomain"     value={tenant.subdomain}         field="" readOnly canEdit={canEdit} onChange={set} />
+          <Field label="Plan Tier"     value={tenant.subscriptionTier}  field="" readOnly canEdit={canEdit} onChange={set} />
         </div>
       </div>
     </div>

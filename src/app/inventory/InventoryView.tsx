@@ -23,6 +23,8 @@ import PageHeader from '@/components/layout/PageHeader';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 import { StatusBadge } from '@/components/inventory/StatusBadge';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetDescription,
@@ -32,7 +34,10 @@ import { Label } from '@/components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import {
+  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter, DialogClose,
+} from '@/components/ui/dialog';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
@@ -178,17 +183,18 @@ function AlertCard({ label, value, icon: Icon, color, bg, active, onClick }: {
   label: string; value: number; icon: React.ElementType; color: string; bg: string; active: boolean; onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
       onClick={onClick}
-      className={`flex items-start gap-3 p-4 rounded-xl border text-left transition-all hover:shadow-sm ${bg} ${active ? 'ring-2 ring-primary/20 ring-offset-1' : ''}`}
+      className={cn('h-auto items-start justify-start gap-3 p-4 rounded-xl text-left whitespace-normal hover:shadow-sm', bg, active && 'ring-2 ring-primary/20 ring-offset-1')}
     >
       <Icon size={18} className={`${color} mt-0.5 shrink-0`} />
       <div>
         <p className="text-[11px] font-semibold text-muted-foreground leading-none mb-1">{label}</p>
         <p className={`text-2xl font-bold leading-none ${value > 0 ? color : 'text-muted-foreground'}`}>{value}</p>
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -252,7 +258,7 @@ function AddProductSheet({ open, onClose, onSuccess }: { open: boolean; onClose:
             <SheetTitle className="text-[15px] font-semibold leading-tight">Add Product</SheetTitle>
             <p className="text-[12px] text-muted-foreground mt-0.5">Fill in the details to add a new item to inventory.</p>
           </div>
-          <SheetClose render={<button className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors mt-0.5" />}>
+          <SheetClose render={<Button variant="ghost" size="icon-sm" className="shrink-0 mt-0.5" />}>
             <X size={15} />
           </SheetClose>
         </div>
@@ -455,14 +461,15 @@ function StockAdjustForm({ productId, currentQty, onAdjusted }: {
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={toggle}
-        className="w-full px-4 py-2.5 flex items-center justify-between bg-muted/30 hover:bg-muted/50 transition-colors"
+        className="w-full h-auto px-4 py-2.5 justify-between rounded-none bg-muted/30 hover:bg-muted/50"
       >
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Adjust Stock</h3>
         <ChevronDown size={13} className={`text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
+      </Button>
 
       {open && (
         <div className="px-4 py-4 flex flex-col gap-3 border-t border-border">
@@ -643,7 +650,7 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
                   {!product.isActive && !editing && (
                     <Badge variant="outline" className="border-rose-300 text-rose-600">Archived</Badge>
                   )}
-                  <SheetClose render={<button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" />}>
+                  <SheetClose render={<Button variant="ghost" size="icon-sm" />}>
                     <X size={15} />
                   </SheetClose>
                 </div>
@@ -845,23 +852,25 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
                     <Pencil size={13} className="mr-1.5" /> Edit
                   </Button>
                   {product.isActive ? (
-                    <ConfirmDialog
-                      title="Archive this product?"
-                      description="It will be hidden from the inventory list but can be restored later."
-                      confirmLabel="Archive"
-                      variant="destructive"
-                      onConfirm={handleArchive}
-                    >
-                      {(open) => (
-                        <Button
-                          variant="outline"
-                          className="flex-1 text-rose-600 hover:text-rose-700 hover:border-rose-300"
-                          onClick={open}
-                        >
-                          <Archive size={13} className="mr-1.5" /> Archive
-                        </Button>
-                      )}
-                    </ConfirmDialog>
+                    <Dialog>
+                      <DialogTrigger render={<Button variant="destructive" className="flex-1" />}>
+                        <Archive size={13} className="mr-1.5" /> Archive
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Archive this product?</DialogTitle>
+                          <DialogDescription>
+                            It will be hidden from the inventory list but can be restored later.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+                          <DialogClose render={<Button variant="destructive" onClick={handleArchive} />}>
+                            Archive
+                          </DialogClose>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   ) : (
                     <Button
                       variant="outline"
@@ -974,9 +983,7 @@ export default function InventoryView() {
         description="Manage stock levels and pricing records across your pharmacy."
       >
         <DropdownMenu>
-          <DropdownMenuTrigger
-            render={<button className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] border border-[#e2e8f0] dark:border-border bg-white dark:bg-card text-[#08090e] dark:text-foreground text-[12.25px] font-medium hover:bg-muted/50 dark:hover:bg-muted transition-colors cursor-pointer" />}
-          >
+          <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
             More Actions
             <ChevronDown size={13} className="text-muted-foreground" />
           </DropdownMenuTrigger>
@@ -998,12 +1005,9 @@ export default function InventoryView() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <button
-          onClick={() => setShowAddProduct(true)}
-          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
-        >
+        <Button size="sm" onClick={() => setShowAddProduct(true)}>
           <Plus size={14} /> Add Product
-        </button>
+        </Button>
       </PageHeader>
 
       {/* Filter Pills — Figma style */}
@@ -1014,48 +1018,43 @@ export default function InventoryView() {
           { key: 'out_of_stock' as ActiveFilter, label: 'Out of Stock', count: summary?.outOfStockCount ?? 0, countBg: 'bg-[#fdecff]', countText: 'text-[#3d0378]' },
           { key: 'expired' as ActiveFilter, label: 'Expired', count: summary?.expiredCount ?? 0, countBg: 'bg-[#ffe4e4]', countText: 'text-[#940000]' },
         ].map(({ key, label, count, countBg, countText }) => (
-          <button
+          <Button
             key={key}
             type="button"
+            variant={activeFilter === key ? 'secondary' : 'outline'}
             onClick={() => handleFilterChange(key)}
-            className={`flex items-center gap-1 px-4 py-2 rounded-full border text-[12.5px] font-medium transition-all ${
-              activeFilter === key
-                ? 'border-[#08090e]/20 bg-[#f8f8f7] dark:bg-[#f8f8f7] dark:text-[#08090e] shadow-sm text-[#08090e]'
-                : 'border-[#08090e]/10 dark:border-foreground/25 text-[#08090e] dark:text-foreground hover:border-[#08090e]/20 dark:hover:border-foreground/40'
-            }`}
+            className="rounded-full"
           >
             {label}
             <span className={`${countBg} ${countText} text-[10.5px] font-medium px-2 py-0.5 rounded-full leading-tight`}>
               {count}
             </span>
-          </button>
+          </Button>
         ))}
       </div>
 
       {/* Search + Sort + Filter Toolbar */}
       <div className="flex items-center gap-6 animate-in slide-in-from-bottom-3 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '100ms' }}>
         {/* Search */}
-        <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-[#08090e14] dark:border-border rounded-[8px] bg-white dark:bg-card focus-within:border-primary/40 transition-colors w-[342px]">
+        <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors w-[342px]">
           <Search size={16} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
           <input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search inventory..."
-            className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-[#626369] font-normal"
+            className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-muted-foreground font-normal"
           />
           {searchInput && (
-            <button onClick={() => setSearchInput('')} className="text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="icon-xs" onClick={() => setSearchInput('')}>
               <X size={14} />
-            </button>
+            </Button>
           )}
         </div>
 
         <div className="flex items-center gap-4">
           {/* Sort dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<button className="flex items-center justify-between h-[36px] w-[115px] pl-[13px] pr-[10px] border border-[#08090e14] dark:border-border rounded-[8px] bg-white dark:bg-card text-[12.25px] text-foreground font-normal hover:border-primary/40 focus:outline-none transition-colors cursor-pointer" />}
-            >
+            <DropdownMenuTrigger render={<Button variant="outline" className="h-[36px] w-[115px] justify-between font-normal" />}>
               <span className="truncate">{SORT_OPTIONS.find(o => o.value === activeSort)?.label ?? 'Name A→Z'}</span>
               <ChevronDown size={13} className="shrink-0 text-muted-foreground" />
             </DropdownMenuTrigger>
@@ -1073,9 +1072,7 @@ export default function InventoryView() {
 
           {/* Category dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<button className={`flex items-center justify-between h-[36px] w-[115px] pl-[13px] pr-[10px] border rounded-[8px] bg-white dark:bg-card text-[12.25px] font-normal hover:border-primary/40 focus:outline-none transition-colors cursor-pointer ${activeCategories.length > 0 ? 'border-primary/40 text-foreground' : 'border-[#08090e14] dark:border-border text-foreground'}`} />}
-            >
+            <DropdownMenuTrigger render={<Button variant="outline" className={cn('h-[36px] w-[115px] justify-between font-normal', activeCategories.length > 0 && 'border-primary/40')} />}>
               <span className="truncate">Category{activeCategories.length > 0 ? ` (${activeCategories.length})` : ''}</span>
               <ChevronDown size={13} className="shrink-0 text-muted-foreground" />
             </DropdownMenuTrigger>
@@ -1104,9 +1101,7 @@ export default function InventoryView() {
 
           {/* Stock level dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<button className="flex items-center justify-between h-[36px] w-[115px] pl-[13px] pr-[10px] border border-[#08090e14] dark:border-border rounded-[8px] bg-white dark:bg-card text-[12.25px] text-foreground font-normal hover:border-primary/40 focus:outline-none transition-colors cursor-pointer" />}
-            >
+            <DropdownMenuTrigger render={<Button variant="outline" className="h-[36px] w-[115px] justify-between font-normal" />}>
               <span className="truncate">Stock Level</span>
               <ChevronDown size={13} className="shrink-0 text-muted-foreground" />
             </DropdownMenuTrigger>
@@ -1130,52 +1125,38 @@ export default function InventoryView() {
       {/* Product Table — Figma design */}
       <div className="border border-[#f1f1f1] dark:border-border rounded-[8px] overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '200ms' }}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px]">
-            <thead>
-              <tr className="bg-[#f8f8f7] dark:bg-muted/30">
-                <th className="px-4 w-[44px] h-[42px]">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); toggleSelectAll(); }}
-                    className={`w-[12px] h-[12px] rounded-[2px] border flex items-center justify-center transition-colors ${
-                      allSelected ? 'bg-[#151e17] border-[rgba(0,0,0,0.2)]' : someSelected ? 'bg-[#151e17]/50 border-[rgba(0,0,0,0.2)]' : 'border-[rgba(0,0,0,0.2)] hover:border-[rgba(0,0,0,0.4)]'
-                    }`}
-                  >
-                    {(allSelected || someSelected) && <Check size={8} className="text-white" strokeWidth={3} />}
-                  </button>
-                </th>
-                <th className="px-4 h-[42px] text-left">
-                  <span className="text-[12px] font-medium text-[#08090e] dark:text-foreground capitalize">Item Reference</span>
-                </th>
-                <th className="px-4 h-[42px] text-left w-[120px]">
-                  <span className="text-[12px] font-medium text-[#08090e] dark:text-foreground capitalize">SKU</span>
-                </th>
-                <th className="px-4 h-[42px] text-left">
-                  <span className="text-[12px] font-medium text-[#08090e] dark:text-foreground capitalize">Type</span>
-                </th>
-                <th className="px-4 h-[42px] text-center">
-                  <span className="text-[12px] font-medium text-[#08090e] dark:text-foreground capitalize">Current Stock</span>
-                </th>
-                <th className="px-4 h-[42px] text-left">
-                  <span className="text-[12px] font-medium text-[#08090e] dark:text-foreground capitalize">Unit Price</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-[900px]">
+            <TableHeader>
+              <TableRow className="bg-[#f8f8f7] dark:bg-muted/30">
+                <TableHead className="w-[44px]">
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={someSelected && !allSelected}
+                    onCheckedChange={() => toggleSelectAll()}
+                  />
+                </TableHead>
+                <TableHead>Item Reference</TableHead>
+                <TableHead className="w-[120px]">SKU</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="text-center">Current Stock</TableHead>
+                <TableHead>Unit Price</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {isLoading && Array.from({ length: 10 }).map((_, i) => (
-                <tr key={i} className="animate-pulse">
-                  <td className="px-4 h-[42px]"><div className="w-[12px] h-[12px] bg-muted rounded-[2px]" /></td>
-                  <td className="px-4 h-[42px]"><div className="h-3.5 bg-muted rounded w-40" /></td>
-                  <td className="px-4 h-[42px]"><div className="h-3.5 bg-muted rounded w-20" /></td>
-                  <td className="px-4 h-[42px]"><div className="h-3.5 bg-muted rounded w-24" /></td>
-                  <td className="px-4 h-[42px] text-center"><div className="h-3.5 bg-muted rounded w-12 mx-auto" /></td>
-                  <td className="px-4 h-[42px]"><div className="h-3.5 bg-muted rounded w-16" /></td>
-                </tr>
+                <TableRow key={i} className="animate-pulse">
+                  <TableCell className="px-4 h-[42px]"><div className="w-[12px] h-[12px] bg-muted rounded-[2px]" /></TableCell>
+                  <TableCell className="px-4 h-[42px]"><div className="h-3.5 bg-muted rounded w-40" /></TableCell>
+                  <TableCell className="px-4 h-[42px]"><div className="h-3.5 bg-muted rounded w-20" /></TableCell>
+                  <TableCell className="px-4 h-[42px]"><div className="h-3.5 bg-muted rounded w-24" /></TableCell>
+                  <TableCell className="px-4 h-[42px] text-center"><div className="h-3.5 bg-muted rounded w-12 mx-auto" /></TableCell>
+                  <TableCell className="px-4 h-[42px]"><div className="h-3.5 bg-muted rounded w-16" /></TableCell>
+                </TableRow>
               ))}
 
               {!isLoading && products.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-24 text-center">
+                <TableRow>
+                  <TableCell colSpan={6} className="px-4 py-24 text-center">
                     <div className="flex flex-col items-center justify-center max-w-[280px] mx-auto">
                       <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4 border border-border">
                         <Search size={28} className="text-muted-foreground" />
@@ -1185,45 +1166,40 @@ export default function InventoryView() {
                         {debouncedSearch ? `No results for "${debouncedSearch}".` : 'No products match the current filters.'}
                       </p>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
 
-              {!isLoading && products.map((p, idx) => {
+              {!isLoading && products.map((p) => {
                 const isSelected = selectedIds.has(p.id);
                 const isExpired = p.expiryDate && new Date(p.expiryDate) < new Date();
                 const isLow = p.stockQty > 0 && p.stockQty < p.lowStockThreshold;
                 const isOut = p.stockQty <= 0;
 
                 return (
-                  <tr
+                  <TableRow
                     key={p.id}
-                    className={`group cursor-pointer border-t border-[#f1f1f1] dark:border-border transition-colors hover:bg-[#fafafa] dark:hover:bg-muted/20 ${
+                    className={`group cursor-pointer transition-colors ${
                       isSelected ? 'bg-[#f4f4f4] dark:bg-muted/30' : ''
                     }`}
                     onClick={() => setSelectedProductId(p.id)}
                   >
-                    <td className="px-4 h-[42px]" onClick={e => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={() => toggleSelect(p.id)}
-                        className={`w-[12px] h-[12px] rounded-[2px] border flex items-center justify-center transition-colors ${
-                          isSelected ? 'bg-[#151e17] border-[rgba(0,0,0,0.2)]' : 'border-[rgba(0,0,0,0.2)] hover:border-[rgba(0,0,0,0.4)]'
-                        }`}
-                      >
-                        {isSelected && <Check size={8} className="text-white" strokeWidth={3} />}
-                      </button>
-                    </td>
-                    <td className="px-4 h-[42px]">
-                      <span className="text-[14px] font-normal text-[#08090e] dark:text-foreground capitalize">{p.name.toLowerCase()}</span>
-                    </td>
-                    <td className="px-4 h-[42px]">
+                    <TableCell className="px-4 h-[42px]" onClick={e => e.stopPropagation()}>
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelect(p.id)}
+                      />
+                    </TableCell>
+                    <TableCell className="px-4 h-[42px]">
+                      <span className="text-[14px] font-normal text-foreground capitalize">{p.name.toLowerCase()}</span>
+                    </TableCell>
+                    <TableCell className="px-4 h-[42px]">
                       <span className="text-[12px] font-mono text-muted-foreground">{p.sku ?? '—'}</span>
-                    </td>
-                    <td className="px-4 h-[42px]">
-                      <span className="text-[14px] font-normal text-[#08090e] dark:text-foreground capitalize">{p.category}</span>
-                    </td>
-                    <td className="px-4 h-[42px]">
+                    </TableCell>
+                    <TableCell className="px-4 h-[42px]">
+                      <span className="text-[14px] font-normal text-foreground capitalize">{p.category}</span>
+                    </TableCell>
+                    <TableCell className="px-4 h-[42px]">
                       <div className="flex items-center justify-center gap-3">
                         {isOut ? (
                           <StatusBadge status="OUT_OF_STOCK" />
@@ -1231,7 +1207,7 @@ export default function InventoryView() {
                           <StatusBadge status="EXPIRED" />
                         ) : (
                           <>
-                            <span className="text-[14px] font-medium text-[#08090e] dark:text-foreground">
+                            <span className="text-[14px] font-medium text-foreground">
                               {p.stockQty.toString().padStart(2, '0')}
                             </span>
                             {isLow && (
@@ -1240,15 +1216,15 @@ export default function InventoryView() {
                           </>
                         )}
                       </div>
-                    </td>
-                    <td className="px-4 h-[42px]">
-                      <span className="text-[14px] font-normal text-[#08090e] dark:text-foreground">₵ {p.price.toFixed(2)}</span>
-                    </td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="px-4 h-[42px]">
+                      <span className="text-[14px] font-normal text-foreground">₵ {p.price.toFixed(2)}</span>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Bulk Markup Sheet */}
@@ -1260,7 +1236,7 @@ export default function InventoryView() {
                 <SheetTitle className="text-[15px] font-semibold leading-tight">Bulk Update Markup</SheetTitle>
                 <p className="text-[12px] text-muted-foreground mt-0.5">Applies to {selectedIds.size} selected product{selectedIds.size !== 1 ? 's' : ''}.</p>
               </div>
-              <SheetClose render={<button className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors mt-0.5" />}>
+              <SheetClose render={<Button variant="ghost" size="icon-sm" className="shrink-0 mt-0.5" />}>
                 <X size={15} />
               </SheetClose>
             </div>
@@ -1348,21 +1324,19 @@ export default function InventoryView() {
 
           <div className="h-[14px] w-px bg-[#e0e0e0] dark:bg-border mx-4" />
 
-          <button type="button" onClick={() => router.push('/inventory/restock')}
-            className="flex items-center gap-1 h-[47px] px-1 text-[14px] font-medium text-[#1e1e1e] dark:text-foreground hover:opacity-70 transition-opacity">
+          <Button type="button" variant="ghost" size="sm" onClick={() => router.push('/inventory/restock')}>
             Restock <ChevronDown size={13} className="rotate-180" />
-          </button>
+          </Button>
 
           <div className="h-[14px] w-px bg-[#e0e0e0] dark:bg-border mx-4" />
 
-          <button type="button" onClick={() => setShowBulkMarkup(true)}
-            className="flex items-center gap-1 h-[47px] px-1 text-[14px] font-medium text-[#1e1e1e] dark:text-foreground hover:opacity-70 transition-opacity">
+          <Button type="button" variant="ghost" size="sm" onClick={() => setShowBulkMarkup(true)}>
             Edit Markup <ChevronDown size={13} className="rotate-180" />
-          </button>
+          </Button>
 
           <div className="h-[14px] w-px bg-[#e0e0e0] dark:bg-border mx-4" />
 
-          <button type="button"
+          <Button type="button" variant="ghost" size="sm"
             onClick={() => {
               const selected = products.filter(p => selectedIds.has(p.id));
               const headers = ['ID','Name','SKU','Category','Cost Price','Markup %','Selling Price','Stock','Status'];
@@ -1377,36 +1351,47 @@ export default function InventoryView() {
               const a = document.createElement('a'); a.href = url; a.download = `inventory-export-${Date.now()}.csv`; a.click();
               URL.revokeObjectURL(url);
               toast.success(`Exported ${selected.length} product(s) as CSV`);
-            }}
-            className="flex items-center gap-1 h-[47px] px-1 text-[14px] font-medium text-[#1e1e1e] dark:text-foreground hover:opacity-70 transition-opacity">
+            }}>
             Export <ChevronDown size={13} className="rotate-180" />
-          </button>
+          </Button>
 
           <div className="h-[14px] w-px bg-[#e0e0e0] dark:bg-border mx-4" />
 
-          <ConfirmDialog
-            title={`Archive ${selectedIds.size} product(s)?`}
-            description="They will be hidden from the inventory list but can be restored later."
-            confirmLabel="Archive All"
-            variant="destructive"
-            onConfirm={async () => {
-              try {
-                await Promise.all(Array.from(selectedIds).map(pid =>
-                  fetch(`/api/inventory/products/${pid}/archive`, { method: 'PATCH' })
-                ));
-                toast.success(`${selectedIds.size} product(s) archived`);
-                clearSelection();
-                invalidateAll();
-              } catch { toast.error('Failed to archive products'); }
-            }}
-          >
-            {(open) => (
-              <button type="button" onClick={open}
-                className="flex items-center gap-1 h-[47px] px-1 text-[14px] font-medium text-red-500 hover:opacity-70 transition-opacity">
-                Delete <X size={16} className="text-red-500" />
-              </button>
-            )}
-          </ConfirmDialog>
+          <Dialog>
+            <DialogTrigger render={<Button variant="destructive" size="sm" />}>
+              Delete <X size={16} className="ml-1" />
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Archive {selectedIds.size} product(s)?</DialogTitle>
+                <DialogDescription>
+                  They will be hidden from the inventory list but can be restored later.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+                <DialogClose
+                  render={
+                    <Button
+                      variant="destructive"
+                      onClick={async () => {
+                        try {
+                          await Promise.all(Array.from(selectedIds).map(pid =>
+                            fetch(`/api/inventory/products/${pid}/archive`, { method: 'PATCH' })
+                          ));
+                          toast.success(`${selectedIds.size} product(s) archived`);
+                          clearSelection();
+                          invalidateAll();
+                        } catch { toast.error('Failed to archive products'); }
+                      }}
+                    />
+                  }
+                >
+                  Archive All
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
     </div>

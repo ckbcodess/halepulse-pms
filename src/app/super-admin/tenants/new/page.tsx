@@ -1,7 +1,10 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import PageHeader from '@/components/layout/PageHeader';
 
 export default function NewTenantPage() {
   const router = useRouter();
@@ -64,17 +67,17 @@ export default function NewTenantPage() {
           <p className="text-sm text-muted-foreground mb-6">
             A default Manager account was created. Share these credentials once — they won't be shown again.
           </p>
-          <div className="bg-white dark:bg-sidebar rounded-xl p-4 text-left space-y-2 border border-border dark:border-border font-mono text-sm mb-4">
-            <p className="text-foreground text-muted-foreground">Email: <span className="font-bold">{createdCreds.email}</span></p>
-            <p className="text-foreground text-muted-foreground">Password: <span className="font-bold">{createdCreds.password}</span></p>
+          <div className="bg-card rounded-xl p-4 text-left space-y-2 border border-border font-mono text-sm mb-4">
+            <p className="text-muted-foreground">Email: <span className="font-bold text-foreground">{createdCreds.email}</span></p>
+            <p className="text-muted-foreground">Password: <span className="font-bold text-foreground">{createdCreds.password}</span></p>
           </div>
           <div className="flex gap-3">
-            <button onClick={copyToClipboard} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-border dark:border-border rounded-lg text-sm font-medium hover:bg-muted dark:hover:bg-sidebar transition-colors">
+            <Button variant="outline" onClick={copyToClipboard} className="flex-1">
               {copied ? <><Check size={14} /> Copied!</> : <><Copy size={14} /> Copy</>}
-            </button>
-            <button onClick={() => router.push('/super-admin/tenants')} className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors">
+            </Button>
+            <Button onClick={() => router.push('/super-admin/tenants')} className="flex-1">
               Done
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -83,13 +86,10 @@ export default function NewTenantPage() {
 
   return (
     <div className="max-w-xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">New Tenant</h1>
-        <p className="text-muted-foreground mt-1">Creates the tenant and a default Manager account.</p>
-      </div>
+      <PageHeader title="New Tenant" description="Creates the tenant and a default Manager account." />
 
       {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-lg text-sm font-medium">{error}</div>
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-lg text-sm font-medium">{error}</div>
       )}
 
       <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 space-y-5">
@@ -100,14 +100,14 @@ export default function NewTenantPage() {
         ].map(f => (
           <div key={f.name} className="space-y-1.5">
             <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">{f.label}</label>
-            <input
+            <Input
               name={f.name}
               type={f.type}
               placeholder={f.placeholder}
               value={form[f.name as keyof typeof form]}
               onChange={handleChange}
               required={f.name !== 'logoUrl'}
-              className="w-full px-4 py-2.5 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-muted-foreground"
+              className="h-10"
             />
           </div>
         ))}
@@ -125,14 +125,14 @@ export default function NewTenantPage() {
                   name={f.name}
                   value={form[f.name as keyof typeof form]}
                   onChange={handleChange}
-                  className="w-10 h-10 rounded-lg border border-border dark:border-border cursor-pointer p-1"
+                  className="w-10 h-10 rounded-lg border border-input bg-transparent cursor-pointer p-1"
                 />
-                <input
+                <Input
                   type="text"
                   name={f.name}
                   value={form[f.name as keyof typeof form]}
                   onChange={handleChange}
-                  className="flex-1 px-3 py-2 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-muted-foreground"
+                  className="h-10 flex-1 font-mono"
                 />
               </div>
             </div>
@@ -153,13 +153,9 @@ export default function NewTenantPage() {
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground font-bold rounded-xl transition-colors"
-        >
+        <Button type="submit" disabled={loading} size="lg" className="w-full">
           {loading ? 'Creating…' : 'Create Tenant'}
-        </button>
+        </Button>
       </form>
     </div>
   );

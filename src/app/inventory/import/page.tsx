@@ -1,9 +1,13 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, ArrowLeft, Download } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, ArrowLeft, Download, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { bulkImportProducts, type ImportRow } from '@/app/actions';
+import { Button } from '@/components/ui/button';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
 
 type Step = 'upload' | 'preview' | 'importing' | 'done';
 
@@ -59,6 +63,13 @@ export default function ImportPage() {
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [result, setResult] = useState<ImportResult | null>(null);
 
+  interface Job { id: number; entityType: string; fileName: string | null; status: string; totalRows: number; successCount: number; failureCount: number; createdAt: string }
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const loadJobs = useCallback(async () => {
+    try { const r = await fetch('/api/import/jobs'); if (r.ok) setJobs((await r.json()).jobs); } catch { /* ignore */ }
+  }, []);
+  useEffect(() => { loadJobs(); }, [loadJobs]);
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -86,9 +97,10 @@ export default function ImportPage() {
   const handleImport = async () => {
     setStep('importing');
     try {
-      const res = await bulkImportProducts(rows);
+      const res = await bulkImportProducts(rows, fileName);
       setResult(res);
       setStep('done');
+      loadJobs();
       if (res.created > 0) toast.success(`${res.created} products imported!`);
       if (res.skipped > 0) toast.info(`${res.skipped} duplicates skipped`);
       if (res.errors.length > 0) toast.warning(`${res.errors.length} errors`);
@@ -102,9 +114,9 @@ export default function ImportPage() {
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => router.push('/inventory')} className="p-2 rounded-xl border border-border dark:border-border hover:bg-muted dark:hover:bg-sidebar transition-colors">
-          <ArrowLeft size={18} className="text-muted-foreground" />
-        </button>
+        <Button variant="outline" size="icon" onClick={() => router.push('/inventory')}>
+          <ArrowLeft size={18} />
+        </Button>
         <p className="text-sm text-muted-foreground">Upload a CSV file to bulk-add products to your inventory</p>
       </div>
 
@@ -113,74 +125,99 @@ export default function ImportPage() {
         <div className="space-y-6">
           <div
             onClick={() => fileRef.current?.click()}
-            className="border-2 border-dashed border-slate-300 dark:border-border rounded-2xl p-12 text-center cursor-pointer hover:border-indigo-400 dark:hover:border-primary hover:bg-indigo-50/50 dark:hover:bg-primary/5 transition-all"
+            className="border-2 border-dashed border-border rounded-2xl p-12 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-all"
           >
             <Upload size={40} className="mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg font-medium text-foreground text-muted-foreground mb-1">Click to upload CSV</p>
+            <p className="text-lg font-medium text-foreground mb-1">Click to upload CSV</p>
             <p className="text-sm text-muted-foreground">or drag and drop your file here</p>
             <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
           </div>
 
           {/* Expected format */}
           <div className="bg-muted dark:bg-sidebar rounded-xl p-6 border border-border dark:border-border">
-            <h3 className="text-sm font-semibold text-foreground text-muted-foreground mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <FileSpreadsheet size={16} /> Expected CSV Format
             </h3>
-            <code className="text-xs text-muted-foreground block bg-white dark:bg-sidebar p-3 rounded-lg border border-border dark:border-border overflow-x-auto">
+            <code className="text-xs text-muted-foreground block bg-background p-3 rounded-lg border border-border overflow-x-auto">
               name,price,costPrice,stockQty,expiryDate,barcode,category
             </code>
             <p className="text-xs text-muted-foreground mt-3">
               Only <strong>name</strong> is required. All other columns are optional. The importer also recognizes
-              alternate column names like <code className="bg-muted dark:bg-slate-700 px-1 rounded">ITEM_NAME</code>, <code className="bg-muted dark:bg-slate-700 px-1 rounded">RATE_A</code>, <code className="bg-muted dark:bg-slate-700 px-1 rounded">PRATE</code>, <code className="bg-muted dark:bg-slate-700 px-1 rounded">STOCK</code>.
+              alternate column names like <code className="bg-muted px-1 rounded">ITEM_NAME</code>, <code className="bg-muted px-1 rounded">RATE_A</code>, <code className="bg-muted px-1 rounded">PRATE</code>, <code className="bg-muted px-1 rounded">STOCK</code>.
             </p>
             <a href="/import-template.csv" download className="inline-flex items-center gap-2 text-xs text-primary dark:text-primary/80 font-medium mt-3 hover:underline">
               <Download size={14} /> Download your pre-formatted import file (1,896 products)
             </a>
           </div>
+
+          {/* Import history */}
+          {jobs.length > 0 && (
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-border flex items-center gap-2">
+                <Clock size={14} className="text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-foreground">Recent Imports</h3>
+              </div>
+              <div className="divide-y divide-border">
+                {jobs.map((j) => (
+                  <div key={j.id} className="px-5 py-3 flex items-center justify-between text-sm">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">{j.fileName ?? `${j.entityType} import`}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(j.createdAt).toLocaleString()} · {j.entityType}</p>
+                    </div>
+                    <div className="text-right text-xs flex-shrink-0">
+                      <span className="text-emerald-600 font-semibold">{j.successCount} ok</span>
+                      {j.failureCount > 0 && <span className="text-amber-600 font-semibold ml-2">{j.failureCount} skipped</span>}
+                      <span className="text-muted-foreground ml-2">of {j.totalRows}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Preview Step */}
       {step === 'preview' && (
         <div className="space-y-6">
-          <div className="bg-indigo-50 dark:bg-primary/10 border border-indigo-200 dark:border-primary/20 rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <FileSpreadsheet size={20} className="text-primary dark:text-primary/80" />
+              <FileSpreadsheet size={20} className="text-primary" />
               <div>
-                <p className="text-sm font-medium text-indigo-900 dark:text-indigo-200">{fileName}</p>
-                <p className="text-xs text-indigo-700 dark:text-primary/70">{rows.length} products ready to import</p>
+                <p className="text-sm font-medium text-foreground">{fileName}</p>
+                <p className="text-xs text-muted-foreground">{rows.length} products ready to import</p>
               </div>
             </div>
-            <button onClick={() => { setStep('upload'); setRows([]); }} className="text-xs text-primary dark:text-primary/80 hover:underline">
+            <Button variant="link" size="sm" onClick={() => { setStep('upload'); setRows([]); }}>
               Change file
-            </button>
+            </Button>
           </div>
 
           {/* Preview table */}
           <div className="border border-border dark:border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">#</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Name</th>
-                    <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground">Price</th>
-                    <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground">Stock</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Category</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
+              <Table>
+                <TableHeader className="sticky top-0">
+                  <TableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                    <TableHead className="text-right">Stock</TableHead>
+                    <TableHead>Category</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {rows.slice(0, 100).map((r, i) => (
-                    <tr key={i}>
-                      <td className="px-4 py-2 text-xs text-muted-foreground">{i + 1}</td>
-                      <td className="px-4 py-2 font-medium text-foreground">{r.name}</td>
-                      <td className="px-4 py-2 text-right text-muted-foreground">{r.price.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-right text-muted-foreground">{r.stockQty}</td>
-                      <td className="px-4 py-2 text-muted-foreground text-xs">{r.category}</td>
-                    </tr>
+                    <TableRow key={i}>
+                      <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+                      <TableCell className="font-medium text-foreground">{r.name}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{r.price.toFixed(2)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{r.stockQty}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{r.category}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
             {rows.length > 100 && (
               <div className="bg-muted dark:bg-sidebar px-4 py-2 text-xs text-muted-foreground text-center border-t border-border dark:border-border">
@@ -190,12 +227,12 @@ export default function ImportPage() {
           </div>
 
           <div className="flex gap-3 justify-end">
-            <button onClick={() => { setStep('upload'); setRows([]); }} className="px-5 py-2.5 rounded-xl border border-border dark:border-border text-sm font-medium text-muted-foreground hover:bg-muted dark:hover:bg-sidebar transition-colors">
+            <Button variant="outline" onClick={() => { setStep('upload'); setRows([]); }}>
               Cancel
-            </button>
-            <button onClick={handleImport} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold transition-colors">
+            </Button>
+            <Button onClick={handleImport}>
               Import {rows.length} Products
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -203,8 +240,8 @@ export default function ImportPage() {
       {/* Importing Step */}
       {step === 'importing' && (
         <div className="text-center py-20">
-          <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-6" />
-          <p className="text-lg font-medium text-foreground text-muted-foreground">Importing {rows.length} products...</p>
+          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-6" />
+          <p className="text-lg font-medium text-foreground">Importing {rows.length} products...</p>
           <p className="text-sm text-muted-foreground mt-2">This may take a minute for large files</p>
         </div>
       )}
@@ -243,12 +280,12 @@ export default function ImportPage() {
           )}
 
           <div className="flex gap-3 justify-center">
-            <button onClick={() => router.push('/inventory')} className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold transition-colors">
+            <Button onClick={() => router.push('/inventory')}>
               Go to Inventory
-            </button>
-            <button onClick={() => { setStep('upload'); setRows([]); setResult(null); }} className="px-5 py-2.5 rounded-xl border border-border dark:border-border text-sm font-medium text-muted-foreground hover:bg-muted dark:hover:bg-sidebar transition-colors">
+            </Button>
+            <Button variant="outline" onClick={() => { setStep('upload'); setRows([]); setResult(null); }}>
               Import More
-            </button>
+            </Button>
           </div>
         </div>
       )}

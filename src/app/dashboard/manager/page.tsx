@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 import { getImpersonation } from '@/lib/auth/getImpersonation';
+import { getTenantContext } from '@/lib/auth/getTenantContext';
+import { branchWhere } from '@/lib/auth/branchScope';
 import prisma from '@/lib/prisma';
 import DashboardView from './DashboardView';
 
@@ -15,6 +17,9 @@ export default async function ManagerDashboard() {
   if (!isImpersonating && session.user.role !== 'MANAGER') redirect('/login');
 
   const tenantId = isImpersonating ? impersonation.tenantId : session.user.tenantId!;
+
+  const ctx = await getTenantContext();
+  const branchFilter = await branchWhere(ctx); // {} for tenant-wide, { branchId } when scoped
 
   // ── Date boundaries ──
   const todayStart = new Date();
@@ -45,23 +50,23 @@ export default async function ManagerDashboard() {
     prisma.sale.aggregate({
       _sum: { totalAmount: true },
       _count: true,
-      where: { tenantId, createdAt: { gte: todayStart } },
+      where: { tenantId, ...branchFilter, createdAt: { gte: todayStart } },
     }),
     prisma.sale.aggregate({
       _sum: { totalAmount: true },
-      where: { tenantId, createdAt: { gte: yesterdayStart, lt: todayStart } },
+      where: { tenantId, ...branchFilter, createdAt: { gte: yesterdayStart, lt: todayStart } },
     }),
     prisma.sale.findMany({
-      where: { tenantId, createdAt: { gte: yearStart } },
+      where: { tenantId, ...branchFilter, createdAt: { gte: yearStart } },
       select: { totalAmount: true, createdAt: true },
     }),
     prisma.sale.groupBy({
       by: ['paymentType'],
       _sum: { totalAmount: true },
-      where: { tenantId, createdAt: { gte: todayStart } },
+      where: { tenantId, ...branchFilter, createdAt: { gte: todayStart } },
     }),
     prisma.sale.findMany({
-      where: { tenantId },
+      where: { tenantId, ...branchFilter },
       take: 5,
       orderBy: { createdAt: 'desc' },
       include: { customer: true, items: true },

@@ -110,7 +110,7 @@ export function AuditTable({
   return (
     <div ref={tableRef} className="flex-1 overflow-y-auto custom-scrollbar">
       <Table>
-        <TableHeader className="sticky top-0 z-10 bg-[#f9f9f9] dark:bg-muted/50">
+        <TableHeader className="sticky top-0 z-10 bg-muted/50">
           <TableRow>
             <TableHead className="w-[140px] text-[12px] uppercase tracking-wider">Action</TableHead>
             <TableHead className="text-[12px] uppercase tracking-wider">Entity</TableHead>

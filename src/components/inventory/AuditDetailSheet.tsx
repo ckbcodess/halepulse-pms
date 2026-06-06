@@ -6,7 +6,10 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import {
+  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter, DialogClose,
+} from '@/components/ui/dialog';
 import { AuditActionBadge } from './AuditActionBadge';
 import { AuditDiffView } from './AuditDiffView';
 import { cn } from '@/lib/utils';
@@ -197,26 +200,28 @@ export function AuditDetailSheet({ entry, open, onOpenChange, onReverted }: Audi
             {/* Footer — sticky at bottom */}
             {canRevert && !isCreation && (
               <SheetFooter className="border-t border-border/40 bg-background/80 backdrop-blur-sm">
-                <ConfirmDialog
-                  title="Revert this change?"
-                  description={`This will restore ${entry.product?.name ?? 'the entity'} to its previous state. This action creates a new audit entry.`}
-                  confirmLabel="Revert"
-                  variant="destructive"
-                  onConfirm={handleRevert}
-                >
-                  {(openConfirm) => (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={openConfirm}
-                      disabled={reverting}
-                      className="w-full text-[13px]"
-                    >
-                      <RotateCcw className="size-3.5 mr-1.5" />
-                      {reverting ? 'Reverting...' : 'Revert this change'}
-                    </Button>
-                  )}
-                </ConfirmDialog>
+                <Dialog>
+                  <DialogTrigger
+                    render={<Button variant="outline" size="sm" disabled={reverting} className="w-full text-[13px]" />}
+                  >
+                    <RotateCcw className="size-3.5 mr-1.5" />
+                    {reverting ? 'Reverting...' : 'Revert this change'}
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Revert this change?</DialogTitle>
+                      <DialogDescription>
+                        This will restore {entry.product?.name ?? 'the entity'} to its previous state. This action creates a new audit entry.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <DialogClose render={<Button variant="outline" size="sm" />}>Cancel</DialogClose>
+                      <Button variant="destructive" size="sm" onClick={handleRevert} disabled={reverting}>
+                        {reverting ? 'Processing…' : 'Revert'}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </SheetFooter>
             )}
           </>

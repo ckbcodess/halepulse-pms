@@ -6,6 +6,11 @@ import {
   Users, Package, ShoppingBag, GitBranch, Paintbrush, Shield, Menu,
   UserPlus, Eye, EyeOff, ChevronRight, Circle,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
 
 interface TenantUser {
   id: number;
@@ -93,9 +98,9 @@ export default function TenantDetailPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-foreground">{tenant.name}</h1>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${tenant.isActive ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-destructive/10 text-destructive'}`}>
+              <Badge variant={tenant.isActive ? 'success' : 'destructive'}>
                 {tenant.isActive ? 'Active' : 'Disabled'}
-              </span>
+              </Badge>
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
               <code>{tenant.subdomain}</code> &middot; Created {new Date(tenant.createdAt).toLocaleDateString()}
@@ -105,7 +110,7 @@ export default function TenantDetailPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {stats.map((s, i) => (
           <div key={i} className="bg-card border border-border rounded-xl p-4">
             <s.icon size={16} className={`${s.color} mb-2`} />
@@ -116,7 +121,7 @@ export default function TenantDetailPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Branding', href: `/super-admin/tenants/${tenantId}/branding`, icon: Paintbrush, bg: 'bg-muted text-muted-foreground' },
           { label: 'Permissions', href: `/super-admin/tenants/${tenantId}/permissions`, icon: Shield, bg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
@@ -135,15 +140,16 @@ export default function TenantDetailPage() {
       <div className="bg-card border border-border rounded-xl p-5">
         <h3 className="text-sm font-bold text-foreground mb-3">View Dashboard As</h3>
         <p className="text-xs text-muted-foreground mb-4">Preview what each role sees in this tenant&apos;s dashboard.</p>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           {(['MANAGER', 'MCA', 'NES'] as const).map(role => (
-            <Link
+            <Button
               key={role}
-              href={`/super-admin/impersonate?tenantId=${tenantId}&role=${role}`}
-              className="px-4 py-2 bg-muted hover:bg-accent text-sm font-semibold text-muted-foreground hover:text-accent-foreground rounded-lg transition-colors"
+              variant="secondary"
+              nativeButton={false}
+              render={<Link href={`/super-admin/impersonate?tenantId=${tenantId}&role=${role}`} />}
             >
               View as {role}
-            </Link>
+            </Button>
           ))}
         </div>
       </div>
@@ -152,68 +158,66 @@ export default function TenantDetailPage() {
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <h3 className="text-base font-semibold text-foreground">Users ({users.length})</h3>
-          <Link
-            href={`/super-admin/tenants/${tenantId}/users/new`}
-            className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
-          >
+          <Button size="sm" nativeButton={false} render={<Link href={`/super-admin/tenants/${tenantId}/users/new`} />}>
             <UserPlus size={13} /> Add User
-          </Link>
+          </Button>
         </div>
-        <table className="w-full text-left">
-          <thead className="bg-[#f9f9f9] dark:bg-muted/50 border-b border-border">
-            <tr>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[640px]">
+          <TableHeader>
+            <TableRow>
               {['User', 'Role', 'Branch', 'Status', 'Activity', 'Actions'].map(h => (
-                <th key={h} className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">{h}</th>
+                <TableHead key={h}>{h}</TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {users.map(user => {
               const online = isOnline(user.lastActiveAt);
               return (
-                <tr key={user.id} className="transition-colors">
-                  <td className="px-6 py-3">
+                <TableRow key={user.id}>
+                  <TableCell>
                     <p className="text-sm font-medium text-foreground">{user.email || user.username}</p>
                     <p className="text-[11px] text-muted-foreground">ID: {user.id}</p>
-                  </td>
-                  <td className="px-6 py-3">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-muted text-muted-foreground">
-                      {user.saasRole || user.username}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3 text-xs text-muted-foreground">
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{user.saasRole || user.username}</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
                     {user.branch?.name || '—'}
-                  </td>
-                  <td className="px-6 py-3">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${user.isActive ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-destructive/10 text-destructive'}`}>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={user.isActive ? 'success' : 'destructive'}>
                       {user.isActive ? 'Active' : 'Disabled'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3">
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     {online ? (
-                      <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      <Badge variant="success" className="gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Online
-                      </span>
+                      </Badge>
                     ) : (
                       <span className="text-xs text-muted-foreground">
                         {user.lastActiveAt ? new Date(user.lastActiveAt).toLocaleString() : 'Never'}
                       </span>
                     )}
-                  </td>
-                  <td className="px-6 py-3">
-                    <button
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={() => toggleUser(user.id, user.isActive)}
-                      className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground"
                       title={user.isActive ? 'Disable user' : 'Enable user'}
                     >
                       {user.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
+        </div>
         {users.length === 0 && (
           <div className="p-12 text-center text-muted-foreground text-sm">No users in this tenant yet.</div>
         )}

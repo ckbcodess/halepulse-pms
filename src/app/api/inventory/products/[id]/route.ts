@@ -25,6 +25,11 @@ export async function GET(
           take: 20,
           include: { adjuster: { select: { id: true, username: true } } },
         },
+        stockItems: {
+          where: { quantity: { gt: 0 } },
+          orderBy: [{ createdAt: 'asc' }],
+          include: { branch: { select: { id: true, name: true } } },
+        },
       },
     });
 
@@ -38,6 +43,16 @@ export async function GET(
       stockAdjustments: product.stockAdjustments.map(a => ({
         ...a,
         adjustedAt: a.adjustedAt.toISOString(),
+      })),
+      stockItems: product.stockItems.map(s => ({
+        id: s.id,
+        branchId: s.branchId,
+        branchName: s.branch.name,
+        batchNumber: s.batchNumber,
+        quantity: s.quantity,
+        costPrice: s.costPrice,
+        sellingPrice: s.sellingPrice,
+        expiryDate: s.expiryDate?.toISOString() ?? null,
       })),
     });
   } catch (err: any) {

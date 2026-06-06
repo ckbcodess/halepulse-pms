@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Save, Eye, EyeOff } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/button';
 
 const ROLES = ['MANAGER', 'MCA', 'NES'] as const;
 type Role = typeof ROLES[number];
@@ -60,13 +61,9 @@ export default function MenuEditor() {
         title="Menu Visibility"
         description="Control which menu items each role can see."
       >
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors"
-        >
+        <Button onClick={handleSave} disabled={saving}>
           <Save size={14} /> {saving ? 'Saving…' : savedMsg || 'Save Changes'}
-        </button>
+        </Button>
       </PageHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -80,18 +77,15 @@ export default function MenuEditor() {
             </div>
             <div className="p-3 space-y-1">
               {(menus[role] ?? []).map(item => (
-                <button
+                <Button
                   key={item.key}
+                  variant={item.visible ? 'secondary' : 'ghost'}
                   onClick={() => toggleItem(role, item.key)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
-                    item.visible
-                      ? 'bg-secondary text-foreground'
-                      : 'text-muted-foreground hover:bg-muted/50'
-                  }`}
+                  className="w-full justify-between"
                 >
                   <span className="font-medium">{item.label}</span>
                   {item.visible ? <Eye size={14} /> : <EyeOff size={14} />}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

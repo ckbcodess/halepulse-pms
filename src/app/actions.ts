@@ -1,6 +1,8 @@
 'use server';
 import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/auth/getTenantContext';
+import { resolveBranchId } from '@/lib/auth/branchContext';
+import { deductStockFifo } from '@/lib/inventory/fifo';
 import {
   updateProductSchema, addStockSchema,
   createCustomerSchema,
@@ -114,7 +116,15 @@ export async function getCustomers(search?: string) {
   });
 }
 
-export async function createCustomer(name: string, phone: string) {
+export interface PatientDetails {
+  dateOfBirth?: string;
+  gender?: string;
+  address?: string;
+  knownAllergies?: string;
+  chronicConditions?: string;
+}
+
+export async function createCustomer(name: string, phone: string, details?: PatientDetails) {
   const { tenantId, userId } = await getTenantContext();
   const { name: trimmedName, phone: trimmedPhone } = createCustomerSchema.parse({ name, phone });
 
@@ -125,7 +135,16 @@ export async function createCustomer(name: string, phone: string) {
   if (existing) throw new Error('A customer with this phone number already exists');
 
   const customer = await prisma.customer.create({
-    data: { name: trimmedName, phone: trimmedPhone, tenantId },
+    data: {
+      name: trimmedName,
+      phone: trimmedPhone,
+      tenantId,
+      dateOfBirth:       details?.dateOfBirth ? new Date(details.dateOfBirth) : null,
+      gender:            details?.gender || null,
+      address:           details?.address || null,
+      knownAllergies:    details?.knownAllergies || null,
+      chronicConditions: details?.chronicConditions || null,
+    },
   });
 
   await prisma.inventoryAuditLog.create({
@@ -133,6 +152,38 @@ export async function createCustomer(name: string, phone: string) {
       actionType: 'CUSTOMER_CREATED',
       performedBy: parseInt(userId, 10),
       newValue: { name: trimmedName, phone: trimmedPhone, customerId: customer.id },
+      tenantId,
+    },
+  }).catch(() => {});
+
+  return customer;
+}
+
+// Update a patient's clinical details (allergies, conditions, etc.).
+export async function updateCustomer(id: number, details: PatientDetails & { name?: string; phone?: string }) {
+  const { tenantId, userId } = await getTenantContext();
+
+  const existing = await prisma.customer.findFirst({ where: { id, tenantId } });
+  if (!existing) throw new Error('Patient not found');
+
+  const customer = await prisma.customer.update({
+    where: { id },
+    data: {
+      ...(details.name !== undefined ? { name: details.name } : {}),
+      ...(details.phone !== undefined ? { phone: details.phone || null } : {}),
+      dateOfBirth:       details.dateOfBirth ? new Date(details.dateOfBirth) : (details.dateOfBirth === '' ? null : undefined),
+      gender:            details.gender ?? undefined,
+      address:           details.address ?? undefined,
+      knownAllergies:    details.knownAllergies ?? undefined,
+      chronicConditions: details.chronicConditions ?? undefined,
+    },
+  });
+
+  await prisma.inventoryAuditLog.create({
+    data: {
+      actionType: 'CUSTOMER_UPDATED',
+      performedBy: parseInt(userId, 10),
+      newValue: { customerId: id },
       tenantId,
     },
   }).catch(() => {});
@@ -149,8 +200,11 @@ export async function processSale(
   discount?:    number,                              // fixed discount amount
   paymentType?: string,                              // 'Cash' | 'MoMo' | 'Split'
   miscItems?:   { name: string; price: number; quantity: number }[],
+  payments?:    { method: string; amount: number; reference?: string | null }[], // split tender
 ) {
-  const { tenantId, userId } = await getTenantContext();
+  const ctx = await getTenantContext();
+  const { tenantId, userId } = ctx;
+  const branchId = await resolveBranchId(ctx);
 
   // Basic shape validation
   const hasRegularItems = items.length > 0;
@@ -179,13 +233,24 @@ export async function processSale(
 
   // ── Idempotency check: if this clientToken already processed, return early ──
   if (clientToken) {
-    const existing = await prisma.sale.findUnique({ where: { clientToken } });
+    const existing = await prisma.sale.findFirst({ where: { clientToken, tenantId } });
     if (existing) return existing;
   }
 
   return prisma.$transaction(async (tx) => {
     let serverTotal = 0;
     let productMap = new Map<number, any>();
+
+    // ── Verify the customer (if supplied) belongs to this tenant ──────────
+    // BOLA protection: prevents attaching a sale / awarding loyalty points to
+    // another tenant's customer by passing a foreign customerId.
+    if (customerId) {
+      const customer = await tx.customer.findFirst({
+        where: { id: customerId, tenantId },
+        select: { id: true },
+      });
+      if (!customer) throw new Error('Customer not found');
+    }
 
     if (hasRegularItems) {
       // ── Batch-fetch all products in ONE query (kills N+1) ─────────
@@ -229,6 +294,7 @@ export async function processSale(
         status:      'Completed',
         sellerId,
         tenantId,
+        branchId,
         ...(clientToken ? { clientToken } : {}),
         ...(customerId  ? { customerId }  : {}),
         ...(resolvedMiscItems.length > 0 ? { miscItems: JSON.stringify(resolvedMiscItems) } : {}),
@@ -242,6 +308,7 @@ export async function processSale(
           },
         } : {}),
       },
+      include: { items: true },
     });
 
     // ── Loyalty points ────────────────────────────────────────────────────
@@ -255,7 +322,31 @@ export async function processSale(
       }
     }
 
+    // ── Payment records (split tender, immutable) ─────────────────────────
+    const METHOD_LABEL: Record<string, string> = { Cash: 'cash', MoMo: 'mobile_money', Card: 'card', Credit: 'credit' };
+    const validMethods = new Set(['cash', 'mobile_money', 'card', 'credit']);
+    let paymentRows = (payments ?? [])
+      .filter(p => p.amount > 0 && validMethods.has(p.method))
+      .map(p => ({
+        saleId: sale.id, tenantId, branchId,
+        paymentMethod: p.method,
+        amount: Math.round(p.amount * 100) / 100,
+        reference: p.reference ?? null,
+      }));
+    if (paymentRows.length === 0) {
+      // No breakdown supplied — record a single payment from the chosen method.
+      paymentRows = [{
+        saleId: sale.id, tenantId, branchId,
+        paymentMethod: METHOD_LABEL[resolvedPaymentType] ?? 'cash',
+        amount: finalTotal,
+        reference: null,
+      }];
+    }
+    await tx.salePayment.createMany({ data: paymentRows });
+
     // ── Atomic stock decrement with race condition prevention ────────────
+    // Product.stockQty remains the authoritative quantity (validated here);
+    // batch stock_items are deducted FIFO in parallel to build the ledger.
     if (hasRegularItems) {
       for (const item of items) {
         const affected = await tx.product.updateMany({
@@ -270,6 +361,22 @@ export async function processSale(
           throw new Error(
             `Stock conflict for ${productMap.get(item.id)?.name}: insufficient stock. Please refresh and retry.`,
           );
+        }
+
+        // FIFO batch deduction + immutable movement ledger (best-effort).
+        const { firstStockItemId } = await deductStockFifo(tx, {
+          tenantId,
+          branchId,
+          productId: item.id,
+          quantity: item.quantity,
+          performedById: sellerId,
+          referenceId: sale.id,
+        });
+        if (firstStockItemId !== null) {
+          const saleItem = sale.items.find(si => si.productId === item.id);
+          if (saleItem) {
+            await tx.saleItem.update({ where: { id: saleItem.id }, data: { stockItemId: firstStockItemId } });
+          }
         }
       }
     }
@@ -314,7 +421,7 @@ export interface ImportRow {
   category: string;
 }
 
-export async function bulkImportProducts(rows: ImportRow[]) {
+export async function bulkImportProducts(rows: ImportRow[], fileName?: string) {
   const { tenantId, role, userId } = await getTenantContext();
 
   if (role !== 'MANAGER' && role !== 'SUPER_ADMIN') {
@@ -322,6 +429,18 @@ export async function bulkImportProducts(rows: ImportRow[]) {
   }
   if (!rows.length) throw new Error('No products to import');
   if (rows.length > 5000) throw new Error('Maximum 5,000 products per import');
+
+  // Track the import as an auditable job (blueprint §13.5).
+  const job = await prisma.importJob.create({
+    data: {
+      tenantId,
+      entityType: 'product',
+      fileName: fileName ?? null,
+      status: 'processing',
+      totalRows: rows.length,
+      performedBy: parseInt(userId, 10),
+    },
+  });
 
   let created = 0;
   let skipped = 0;
@@ -368,17 +487,29 @@ export async function bulkImportProducts(rows: ImportRow[]) {
     }
   }
 
+  // Finalise the import job.
+  await prisma.importJob.update({
+    where: { id: job.id },
+    data: {
+      status: 'completed',
+      successCount: created,
+      failureCount: skipped + errors.length,
+      failureReport: errors.length ? JSON.stringify(errors.slice(0, 100)) : null,
+      completedAt: new Date(),
+    },
+  }).catch(() => {});
+
   await prisma.inventoryAuditLog.create({
     data: {
       actionType: 'BULK_IMPORT',
       performedBy: parseInt(userId, 10),
-      newValue: { totalRows: rows.length, created, skipped, errorCount: errors.length },
+      newValue: { jobId: job.id, totalRows: rows.length, created, skipped, errorCount: errors.length },
       notes: `Bulk import: ${created} created, ${skipped} skipped, ${errors.length} errors`,
       tenantId,
     },
   }).catch(() => {});
 
-  return { created, skipped, errors: errors.slice(0, 20), total: rows.length };
+  return { created, skipped, errors: errors.slice(0, 20), total: rows.length, jobId: job.id };
 }
 
 // ── Tenant Info ───────────────────────────────────────────────────────────────

@@ -6,6 +6,8 @@ import Link from 'next/link';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 export default function CreateUserPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
@@ -67,28 +69,19 @@ export default function CreateUserPage() {
             </div>
           </div>
 
-          <button
-            onClick={copyCredentials}
-            className="flex items-center gap-2 mx-auto px-4 py-2 bg-sidebar dark:bg-white dark:text-foreground text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity"
-          >
+          <Button variant="secondary" onClick={copyCredentials} className="mx-auto">
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? 'Copied!' : 'Copy Credentials'}
-          </button>
+          </Button>
         </div>
 
         <div className="flex gap-3">
-          <Link
-            href={`/super-admin/tenants/${tenantId}`}
-            className="flex-1 text-center px-4 py-2.5 bg-muted text-sm font-semibold text-muted-foreground rounded-lg hover:opacity-80 transition-opacity"
-          >
+          <Button variant="outline" className="flex-1" nativeButton={false} render={<Link href={`/super-admin/tenants/${tenantId}`} />}>
             Back to Tenant
-          </Link>
-          <button
-            onClick={() => { setResult(null); setEmail(''); }}
-            className="flex-1 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-lg transition-colors"
-          >
+          </Button>
+          <Button className="flex-1" onClick={() => { setResult(null); setEmail(''); }}>
             Create Another
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -97,9 +90,9 @@ export default function CreateUserPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href={`/super-admin/tenants/${tenantId}`} className="p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground">
+        <Button variant="ghost" size="icon" nativeButton={false} render={<Link href={`/super-admin/tenants/${tenantId}`} />}>
           <ArrowLeft size={20} />
-        </Link>
+        </Button>
         <div>
           <h1 className="text-xl font-bold text-foreground">Create User</h1>
           <p className="text-sm text-muted-foreground">Add a new user to this tenant.</p>
@@ -107,7 +100,7 @@ export default function CreateUserPage() {
       </div>
 
       {error && (
-        <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 p-4 rounded-xl text-sm font-semibold">
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-xl text-sm font-semibold">
           {error}
         </div>
       )}
@@ -115,12 +108,12 @@ export default function CreateUserPage() {
       <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 space-y-5">
         <div className="space-y-1.5">
           <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Email</label>
-          <input
+          <Input
             type="email"
             required
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="w-full px-4 py-3 bg-muted border border-border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
+            className="h-11"
             placeholder="user@example.com"
           />
         </div>
@@ -128,7 +121,7 @@ export default function CreateUserPage() {
         <div className="space-y-1.5">
           <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Role</label>
           <Select value={role} onValueChange={v => v && setRole(v)}>
-            <SelectTrigger className="w-full px-4 py-3 h-auto bg-muted border border-border rounded-lg text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full h-11"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="MANAGER">Manager</SelectItem>
               <SelectItem value="MCA">MCA</SelectItem>
@@ -139,13 +132,9 @@ export default function CreateUserPage() {
 
         <p className="text-xs text-muted-foreground">A temporary password will be auto-generated and shown once after creation.</p>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-primary-foreground font-bold py-3 rounded-lg transition-colors"
-        >
+        <Button type="submit" disabled={saving} size="lg" className="w-full">
           {saving ? 'Creating...' : 'Create User'}
-        </button>
+        </Button>
       </form>
     </div>
   );

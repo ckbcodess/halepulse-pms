@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRole } from '@/lib/auth/checkRole';
+import { resolveBranchId } from '@/lib/auth/branchContext';
+import { branchWhere } from '@/lib/auth/branchScope';
+import { applyStockDelta } from '@/lib/inventory/stock';
 import prisma from '@/lib/prisma';
 import { stockAdjustmentSchema } from '@/lib/validation/schemas';
 import { ZodError } from 'zod';
@@ -7,15 +10,17 @@ import { ZodError } from 'zod';
 // ── GET /api/inventory/adjustments ────────────────────────────────────────────
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await checkRole('MANAGER');
+    const ctx = await checkRole('MANAGER');
+    const { tenantId } = ctx;
+    const bf = await branchWhere(ctx);
     const params = request.nextUrl.searchParams;
     const page  = Math.max(1, parseInt(params.get('page') ?? '1', 10));
     const limit = Math.min(100, Math.max(1, parseInt(params.get('limit') ?? '20', 10)));
 
     const [total, adjustments] = await Promise.all([
-      prisma.stockAdjustment.count({ where: { tenantId } }),
+      prisma.stockAdjustment.count({ where: { tenantId, ...bf } }),
       prisma.stockAdjustment.findMany({
-        where: { tenantId },
+        where: { tenantId, ...bf },
         orderBy: { adjustedAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
@@ -48,7 +53,9 @@ export async function GET(request: NextRequest) {
 // ── POST /api/inventory/adjustments ───────────────────────────────────────────
 export async function POST(request: Request) {
   try {
-    const { tenantId, userId } = await checkRole('MANAGER', 'NES');
+    const ctx = await checkRole('MANAGER', 'NES');
+    const { tenantId, userId } = ctx;
+    const branchId = await resolveBranchId(ctx);
     const body = await request.json();
     const parsed = stockAdjustmentSchema.parse(body);
 
@@ -58,36 +65,53 @@ export async function POST(request: Request) {
     if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
 
     const delta = parsed.newQuantity - product.stockQty;
+    const adjustedBy = parseInt(userId, 10);
 
-    const [adjustment] = await prisma.$transaction([
-      prisma.stockAdjustment.create({
+    const adjustment = await prisma.$transaction(async (tx) => {
+      const adj = await tx.stockAdjustment.create({
         data: {
           productId:   parsed.productId,
-          adjustedBy:  parseInt(userId, 10),
+          adjustedBy,
           oldQuantity: product.stockQty,
           newQuantity: parsed.newQuantity,
           delta,
           reason:      parsed.reason,
           notes:       parsed.notes,
           tenantId,
+          branchId,
         },
-      }),
-      prisma.product.update({
+      });
+      await tx.product.update({
         where: { id: parsed.productId },
         data: { stockQty: parsed.newQuantity },
-      }),
-      prisma.inventoryAuditLog.create({
+      });
+      // Keep the batch ledger in sync (writes an "adjustment" StockMovement).
+      await applyStockDelta(tx, {
+        tenantId,
+        branchId,
+        productId: parsed.productId,
+        delta,
+        movementType: 'adjustment',
+        performedById: adjustedBy,
+        reason: parsed.reason,
+        referenceId: adj.id,
+        fallbackCost: product.costPrice ?? 0,
+        fallbackMarkup: product.markupPercent,
+        fallbackSelling: product.price,
+      });
+      await tx.inventoryAuditLog.create({
         data: {
           actionType:  'STOCK_ADJUSTED',
           productId:   parsed.productId,
-          performedBy: parseInt(userId, 10),
+          performedBy: adjustedBy,
           oldValue:    { stockQty: product.stockQty },
           newValue:    { stockQty: parsed.newQuantity, delta, reason: parsed.reason },
           notes:       parsed.notes,
           tenantId,
         },
-      }),
-    ]);
+      });
+      return adj;
+    });
 
     return NextResponse.json({ adjustment }, { status: 201 });
   } catch (err: any) {

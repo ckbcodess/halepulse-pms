@@ -1,7 +1,7 @@
 'use client';
 import { usePathname } from 'next/navigation';
 import {
-  Bell, Menu, ChevronDown, Sun, Moon, LogOut,
+  Menu, ChevronDown, Sun, Moon, LogOut,
   LayoutDashboard, ShoppingCart, Package, Users,
   FileText, Settings, UserCog, KeyRound, type LucideIcon,
 } from 'lucide-react';
@@ -15,6 +15,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import BranchSwitcher from './BranchSwitcher';
+import NotificationBell from './NotificationBell';
 
 interface TopHeaderProps {
   user: {
@@ -57,14 +60,15 @@ const ROLE_LABEL: Record<string, string> = {
 function ThemeToggleButton() {
   const { setTheme, theme } = useTheme();
   return (
-    <button
+    <Button
+      variant="ghost"
+      size="icon-sm"
       onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-      className="w-7 h-7 flex items-center justify-center rounded-[7px] hover:bg-muted/50 text-muted-foreground transition-all"
       aria-label="Toggle theme"
     >
       <Sun className="h-3.5 w-3.5 dark:hidden block" />
       <Moon className="h-3.5 w-3.5 hidden dark:block" />
-    </button>
+    </Button>
   );
 }
 
@@ -90,13 +94,15 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
 
       {/* Left: hamburger (mobile) + icon + page title */}
       <div className="flex items-center gap-2">
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={onMenuToggle}
-          className="p-1.5 -ml-1 rounded-md surface-interactive lg:hidden text-muted-foreground"
+          className="-ml-1 lg:hidden"
           aria-label="Toggle menu"
         >
           <Menu size={18} />
-        </button>
+        </Button>
 
         <div className="flex items-center gap-2">
           <PageIcon size={20} className="text-foreground/60 flex-shrink-0" />
@@ -104,16 +110,17 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
             {pageTitle}
           </h1>
         </div>
+
+        {/* Branch context / switcher */}
+        <div className="w-px h-[17.5px] bg-border flex-shrink-0 hidden sm:block" />
+        <BranchSwitcher />
       </div>
 
       {/* Right side — matches Figma Control Panel (node 156:67) */}
       <div className="flex items-center gap-2 py-1">
 
-        {/* Notification */}
-        <button className="relative w-[31.5px] h-[31.5px] flex items-center justify-center rounded-[12.25px] hover:bg-muted/50 text-muted-foreground transition-all">
-          <Bell size={16} strokeWidth={2} />
-          <span className="absolute top-[6px] right-[6px] w-[7px] h-[7px] bg-destructive rounded-full" />
-        </button>
+        {/* Notifications */}
+        <NotificationBell />
 
         {/* Theme toggle */}
         <ThemeToggleButton />
@@ -124,9 +131,7 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
         {/* User profile dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={
-              <button className="flex items-center gap-[10.5px] rounded-[12.25px] hover:bg-muted/50 px-[7px] py-2 transition-all" />
-            }
+            render={<Button variant="ghost" className="h-auto gap-[10.5px] px-[7px] py-2" />}
           >
             <div className="w-7 h-7 rounded-[8.75px] bg-muted flex items-center justify-center flex-shrink-0 border border-border">
               <span className="text-[11px] font-bold text-muted-foreground leading-none">

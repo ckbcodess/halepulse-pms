@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { Building2, Plus, Edit3, X, Check, Loader2, Phone, MapPin, Power } from 'lucide-react';
+import { Building2, Plus, Edit3, Check, Loader2, Phone, MapPin, Power } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import PageHeader from '@/components/layout/PageHeader';
 
 type Branch = {
   id: string;
@@ -101,50 +105,38 @@ export default function BranchesPage() {
     <form onSubmit={onSubmit} className="p-6 space-y-4 border-b border-border bg-muted/30">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-muted-foreground">Branch Name <span className="text-rose-500">*</span></label>
-          <input required value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Main Branch"
-            className="w-full px-3 py-2.5 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm font-medium text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+          <label className="block text-xs font-semibold text-muted-foreground">Branch Name <span className="text-destructive">*</span></label>
+          <Input required value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Main Branch" className="h-10" />
         </div>
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-muted-foreground">Phone</label>
-          <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+233 XX XXX XXXX"
-            className="w-full px-3 py-2.5 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm font-medium text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+          <Input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+233 XX XXX XXXX" className="h-10" />
         </div>
         <div className="sm:col-span-2 space-y-1.5">
           <label className="block text-xs font-semibold text-muted-foreground">Address</label>
-          <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="Full branch address"
-            className="w-full px-3 py-2.5 bg-white dark:bg-sidebar border border-border dark:border-border rounded-lg text-sm font-medium text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+          <Input value={form.address} onChange={e => set('address', e.target.value)} placeholder="Full branch address" className="h-10" />
         </div>
       </div>
-      {error && <p className="text-xs text-rose-600 dark:text-rose-400">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <button type="submit" disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-semibold transition-colors disabled:opacity-60">
+        <Button type="submit" disabled={saving}>
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
           {saving ? 'Saving…' : 'Save'}
-        </button>
-        <button type="button" onClick={onCancel}
-          className="px-4 py-2 border border-border dark:border-white/10 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-muted dark:hover:bg-white/5 transition-colors">
+        </Button>
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground">Branches</h2>
-          <p className="text-sm text-muted-foreground mt-1">{branches.length} branch{branches.length !== 1 ? 'es' : ''}</p>
-        </div>
-        <button
-          onClick={() => { setShowCreate(true); setEditingId(null); setForm(emptyForm); setError(''); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-sm font-semibold transition-colors"
-        >
+      <PageHeader title="Branches" description={`${branches.length} branch${branches.length !== 1 ? 'es' : ''}`}>
+        <Button onClick={() => { setShowCreate(true); setEditingId(null); setForm(emptyForm); setError(''); }}>
           <Plus size={14} /> New Branch
-        </button>
-      </div>
+        </Button>
+      </PageHeader>
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         {showCreate && (
@@ -179,10 +171,10 @@ export default function BranchesPage() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground text-muted-foreground">{branch.name}</p>
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${branch.isActive ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-muted dark:bg-sidebar text-muted-foreground'}`}>
+                        <p className="text-sm font-semibold text-foreground">{branch.name}</p>
+                        <Badge variant={branch.isActive ? 'success' : 'secondary'}>
                           {branch.isActive ? 'Active' : 'Inactive'}
-                        </span>
+                        </Badge>
                       </div>
                       <div className="flex items-center gap-3 mt-0.5">
                         {branch.address && (
@@ -201,14 +193,12 @@ export default function BranchesPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(branch)}
-                        className="p-2 rounded-lg hover:bg-muted dark:hover:bg-sidebar text-muted-foreground hover:text-muted-foreground dark:hover:text-muted-foreground transition-colors">
+                      <Button variant="ghost" size="icon-sm" onClick={() => openEdit(branch)}>
                         <Edit3 size={14} />
-                      </button>
-                      <button onClick={() => toggleActive(branch)}
-                        className={`p-2 rounded-lg transition-colors ${branch.isActive ? 'hover:bg-rose-50 dark:hover:bg-rose-500/10 text-muted-foreground hover:text-rose-600' : 'hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-muted-foreground hover:text-emerald-600'}`}>
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => toggleActive(branch)}>
                         <Power size={14} />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}

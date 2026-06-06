@@ -176,12 +176,9 @@ export default function SuppliersPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title="Suppliers" description="Manage your wholesale suppliers and contacts.">
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
-        >
+        <Button onClick={() => setShowAdd(true)}>
           <Plus size={14} /> Add Supplier
-        </button>
+        </Button>
       </PageHeader>
 
       {/* Search */}
@@ -192,12 +189,12 @@ export default function SuppliersPage() {
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             placeholder="Search suppliers..."
-            className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-[#626369] font-normal"
+            className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-muted-foreground font-normal"
           />
           {searchInput && (
-            <button onClick={() => setSearchInput('')} className="text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="icon-xs" onClick={() => setSearchInput('')}>
               <X size={14} />
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -248,7 +245,7 @@ export default function SuppliersPage() {
                   </TableCell>
                   <TableCell className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
-                      <DropdownMenuTrigger render={<button className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors" />}>
+                      <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
                         <MoreHorizontal size={16} className="text-muted-foreground" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-40">

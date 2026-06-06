@@ -13,6 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
@@ -514,13 +518,9 @@ export default function BatchRestockPage() {
 
     return (
       <div className="relative">
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5"
-        >
+        <Button type="button" variant="link" size="sm" onClick={() => setOpen(!open)} className="h-auto p-0 text-xs gap-0.5">
           <Search size={10} /> Reassign
-        </button>
+        </Button>
         {open && (
           <div className="absolute right-0 top-6 z-50 w-72 bg-card border border-border rounded-xl shadow-lg overflow-hidden">
             <div className="p-2 border-b border-border">
@@ -534,18 +534,19 @@ export default function BatchRestockPage() {
             </div>
             <div className="max-h-48 overflow-y-auto">
               {filtered.map(p => (
-                <button
+                <Button
                   key={p.id}
                   type="button"
+                  variant="ghost"
                   onClick={() => { onSelect(p.id); setOpen(false); setQ(''); }}
-                  className="w-full px-3 py-2 text-left hover:bg-muted/50 transition-colors flex items-center justify-between"
+                  className="w-full h-auto px-3 py-2 justify-between rounded-none"
                 >
-                  <div>
+                  <div className="text-left">
                     <p className="text-xs font-medium text-foreground">{p.name}</p>
                     <p className="text-[10px] text-muted-foreground">{p.sku} · {p.category}</p>
                   </div>
                   <Badge variant="outline" className="text-[10px]">{p.stockQty}</Badge>
-                </button>
+                </Button>
               ))}
               {filtered.length === 0 && <p className="px-3 py-4 text-xs text-muted-foreground text-center">No products found</p>}
             </div>
@@ -560,9 +561,9 @@ export default function BatchRestockPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/inventory')} className="p-2 rounded-xl border border-border hover:bg-muted transition-colors">
-            <ArrowLeft size={18} className="text-muted-foreground" />
-          </button>
+          <Button variant="outline" size="icon" onClick={() => router.push('/inventory')}>
+            <ArrowLeft size={18} />
+          </Button>
           <div>
             <h1 className="text-lg font-bold text-foreground">Batch Restock</h1>
             <p className="text-xs text-muted-foreground">Import a supplier invoice CSV to restock multiple products at once</p>
@@ -635,9 +636,9 @@ export default function BatchRestockPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => { setStep('upload'); setCsvRows([]); setMappedItems([]); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <Button variant="ghost" size="sm" onClick={() => { setStep('upload'); setCsvRows([]); setMappedItems([]); }}>
                 Change file
-              </button>
+              </Button>
               <Button size="sm" onClick={handleSubmit} disabled={includedItems.length === 0}>
                 <Package size={14} className="mr-1.5" /> Confirm Restock ({includedItems.length})
               </Button>
@@ -654,28 +655,29 @@ export default function BatchRestockPage() {
                 placeholder="Filter items..."
                 className="flex-1 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground"
               />
-              {searchFilter && <button onClick={() => setSearchFilter('')}><X size={12} className="text-muted-foreground" /></button>}
+              {searchFilter && (
+                <Button variant="ghost" size="icon-xs" onClick={() => setSearchFilter('')}>
+                  <X size={12} />
+                </Button>
+              )}
             </div>
-            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
+            <Label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+              <Checkbox
                 checked={roundPrices}
-                onChange={(e) => setRoundPrices(e.target.checked)}
-                className="rounded border-border"
+                onCheckedChange={(checked) => setRoundPrices(checked === true)}
               />
               Round to nearest ₵0.50
-            </label>
+            </Label>
             <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
               {(['all', 'matched', 'unmatched'] as const).map(tab => (
-                <button
+                <Button
                   key={tab}
+                  variant={activeTab === tab ? 'secondary' : 'ghost'}
+                  size="xs"
                   onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all ${
-                    activeTab === tab ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
-                  }`}
                 >
                   {tab === 'all' ? `All (${mappedItems.length})` : tab === 'matched' ? `Matched (${matchedCount})` : `Unmatched (${unmatchedCount})`}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -683,54 +685,49 @@ export default function BatchRestockPage() {
           {/* Items Table */}
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/30 border-b border-border">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest w-10">
-                      <input
-                        type="checkbox"
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
                         checked={filteredItems.every(i => i.included || !i.matchedProduct)}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
+                        onCheckedChange={(checked) => {
                           setMappedItems(prev => prev.map(item => {
                             if (!item.matchedProduct) return item;
-                            return { ...item, included: checked };
+                            return { ...item, included: checked === true };
                           }));
                         }}
-                        className="rounded border-border"
                       />
-                    </th>
-                    <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">CSV Item</th>
-                    <th className="text-left px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Matched Product</th>
-                    <th className="text-center px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest w-20">Qty</th>
-                    <th className="text-right px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest w-24">Cost (GHS)</th>
-                    <th className="text-center px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest w-20">Markup</th>
-                    <th className="text-right px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest w-28">Selling (GHS)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
+                    </TableHead>
+                    <TableHead>CSV Item</TableHead>
+                    <TableHead>Matched Product</TableHead>
+                    <TableHead className="text-center w-20">Qty</TableHead>
+                    <TableHead className="text-right w-24">Cost (GHS)</TableHead>
+                    <TableHead className="text-center w-20">Markup</TableHead>
+                    <TableHead className="text-right w-28">Selling (GHS)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filteredItems.map((item, _filteredIdx) => {
                     const realIdx = mappedItems.indexOf(item);
                     const isMatch = item.matchedProduct !== null;
                     return (
-                      <tr key={realIdx} className={`transition-colors ${!isMatch ? 'bg-amber-50/50 dark:bg-amber-950/10' : item.included ? '' : 'opacity-40'}`}>
-                        <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
+                      <TableRow key={realIdx} className={`${!isMatch ? 'bg-amber-50/50 dark:bg-amber-950/10' : item.included ? '' : 'opacity-40'}`}>
+                        <TableCell className="px-4 py-3">
+                          <Checkbox
                             checked={item.included}
                             disabled={!isMatch}
-                            onChange={() => updateItem(realIdx, { included: !item.included })}
-                            className="rounded border-border"
+                            onCheckedChange={() => updateItem(realIdx, { included: !item.included })}
                           />
-                        </td>
-                        <td className="px-4 py-3">
+                        </TableCell>
+                        <TableCell className="px-4 py-3">
                           <p className="text-xs font-medium text-foreground">{item.csvRow.name}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             {item.csvRow.batchNumber && <span className="text-[10px] text-muted-foreground">Batch: {item.csvRow.batchNumber}</span>}
                             {item.csvRow.expiryDate && <span className="text-[10px] text-muted-foreground">Exp: {item.csvRow.expiryDate}</span>}
                           </div>
-                        </td>
-                        <td className="px-4 py-3">
+                        </TableCell>
+                        <TableCell className="px-4 py-3">
                           {isMatch ? (
                             <div className="flex items-center justify-between gap-2">
                               <div>
@@ -755,20 +752,22 @@ export default function BatchRestockPage() {
                                 <span className="text-xs text-amber-600 font-medium">No match found</span>
                               </div>
                               <div className="flex items-center gap-1.5">
-                                <button
+                                <Button
                                   type="button"
+                                  variant="link"
+                                  size="sm"
                                   onClick={() => handleCreateProduct(realIdx)}
                                   disabled={creatingProductIdx === realIdx}
-                                  className="text-xs text-emerald-600 font-medium hover:underline flex items-center gap-0.5 disabled:opacity-50"
+                                  className="h-auto p-0 text-xs text-emerald-600 gap-0.5"
                                 >
                                   {creatingProductIdx === realIdx ? <Loader2 size={10} className="animate-spin" /> : <Plus size={10} />} Create New
-                                </button>
+                                </Button>
                                 <ProductSearchDropdown onSelect={(id) => rematchItem(realIdx, id)} />
                               </div>
                             </div>
                           )}
-                        </td>
-                        <td className="px-4 py-3 text-center">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-center">
                           <Input
                             type="number"
                             min="0"
@@ -777,8 +776,8 @@ export default function BatchRestockPage() {
                             className="w-16 h-7 text-center text-xs mx-auto"
                             disabled={!isMatch}
                           />
-                        </td>
-                        <td className="px-4 py-3 text-right">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-right">
                           <Input
                             type="number"
                             step="0.01"
@@ -791,8 +790,8 @@ export default function BatchRestockPage() {
                             className="w-20 h-7 text-right text-xs ml-auto"
                             disabled={!isMatch}
                           />
-                        </td>
-                        <td className="px-4 py-3 text-center">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-0.5">
                             <Input
                               type="number"
@@ -808,17 +807,17 @@ export default function BatchRestockPage() {
                             />
                             <span className="text-[10px] text-muted-foreground">%</span>
                           </div>
-                        </td>
-                        <td className="px-4 py-3 text-right">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-right">
                           <span className="text-xs font-semibold text-foreground">
                             {isMatch ? `₵ ${item.sellingPrice.toFixed(2)}` : '—'}
                           </span>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
 
             {/* Footer totals */}
@@ -844,23 +843,17 @@ export default function BatchRestockPage() {
 
           {/* Bottom Actions */}
           <div className="flex items-center justify-between">
-            <button onClick={() => { setStep('upload'); setCsvRows([]); setMappedItems([]); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <Button variant="ghost" size="sm" onClick={() => { setStep('upload'); setCsvRows([]); setMappedItems([]); }}>
               ← Start over
-            </button>
+            </Button>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-0.5">
-                <button
-                  onClick={() => setUpdateAllStock(true)}
-                  className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all ${updateAllStock ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                >
+                <Button variant={updateAllStock ? 'secondary' : 'ghost'} size="xs" onClick={() => setUpdateAllStock(true)}>
                   Update All Stock
-                </button>
-                <button
-                  onClick={() => setUpdateAllStock(false)}
-                  className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all ${!updateAllStock ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                >
+                </Button>
+                <Button variant={!updateAllStock ? 'secondary' : 'ghost'} size="xs" onClick={() => setUpdateAllStock(false)}>
                   New Batch Only
-                </button>
+                </Button>
               </div>
               <Button onClick={handleSubmit} disabled={includedItems.length === 0} size="lg">
                 <Package size={16} className="mr-2" /> Confirm Restock — {includedItems.length} items, {includedItems.reduce((s, i) => s + i.quantityToAdd, 0)} units

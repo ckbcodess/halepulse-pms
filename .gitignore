@@ -57,3 +57,6 @@ skills-lock.json
 PLAN.md
 import_error.log
 scripts/check-*.js
+
+# Migration data snapshots (contain real records — never commit)
+scripts/backups/

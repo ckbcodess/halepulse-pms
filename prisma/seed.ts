@@ -7,8 +7,16 @@
  */
 import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { ROLES, PERMISSIONS, permissionsForRole, type RoleSlug } from '../src/lib/auth/roleHierarchy';
 
 const prisma = new PrismaClient();
+
+const DOMAIN_CATEGORY: Record<string, string> = {
+  TENANT_MGMT: 'Platform', USER_MGMT: 'User Management', BRANCH_MGMT: 'Branch Management',
+  INVENTORY: 'Inventory', POS: 'Sales & Dispensing', PRESCRIPTIONS: 'Prescriptions',
+  PATIENTS: 'Patients', SUPPLIERS: 'Suppliers', BILLING: 'Billing', REPORTS: 'Reporting',
+  AUDIT_LOG: 'Audit', AI_TOOLS: 'AI Tools', SETTINGS: 'Configuration',
+};
 
 async function main() {
   console.log('🌱 Seeding SaaS infrastructure...\n');
@@ -94,6 +102,16 @@ async function main() {
   }
   console.log(`  ✓ ${permissions.length} permissions (legacy + dot-notation)`);
 
+  // Canonical permissions from the blueprint §5.2 matrix (single source of truth)
+  for (const p of PERMISSIONS) {
+    await prisma.permission.upsert({
+      where: { key: p.key },
+      update: { label: p.label, category: DOMAIN_CATEGORY[p.domain] ?? p.domain },
+      create: { key: p.key, label: p.label, category: DOMAIN_CATEGORY[p.domain] ?? p.domain },
+    });
+  }
+  console.log(`  ✓ ${PERMISSIONS.length} canonical permissions (blueprint matrix)`);
+
   // ═══════════════════════════════════════════════════════════════════════════
   // 2. DEMO TENANT — only seeded when demo data is enabled
   // ═══════════════════════════════════════════════════════════════════════════
@@ -156,33 +174,8 @@ async function main() {
   }
   console.log(`  ✓ DynamicRole: ${superAdminRole.name} (Level 0, system)`);
 
-  // Tenant-level system roles
-  const tenantRoleDefs = [
-    {
-      slug:        'business_admin',
-      name:        'Business Admin',
-      description: 'Full business-level administrator',
-      level:       1,
-    },
-    {
-      slug:        'manager',
-      name:        'Manager',
-      description: 'Manager with access to assigned modules',
-      level:       2,
-    },
-    {
-      slug:        'pharmacist',
-      name:        'Pharmacist',
-      description: 'Pharmacist with dispensing and inventory access',
-      level:       2,
-    },
-    {
-      slug:        'viewer',
-      name:        'Viewer',
-      description: 'Read-only access for auditing and viewing',
-      level:       3,
-    },
-  ];
+  // Tenant-level system roles — canonical 5-tier hierarchy (blueprint §4.1)
+  const tenantRoleDefs = ROLES.filter((r) => r.slug !== 'super_admin');
 
   const tenantRoles: Record<string, any> = {};
   for (const def of tenantRoleDefs) {
@@ -206,43 +199,10 @@ async function main() {
   // 4. DYNAMIC ROLE PERMISSIONS — map permissions to dynamic roles
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // All new dot-notation permission keys
-  const allNewPermKeys = permissions
-    .filter(p => p.key.includes('.'))
-    .map(p => p.key);
-
-  const dynamicRolePerms: Record<string, string[]> = {
-    // Business Admin gets everything
-    business_admin: allNewPermKeys,
-
-    // Manager gets most operational permissions
-    manager: [
-      'inventory.stock.view', 'inventory.stock.add', 'inventory.stock.edit', 'inventory.stock.transfer',
-      'inventory.expiry.view', 'inventory.expiry.manage',
-      'sales.pos.access', 'sales.create_sale', 'sales.void_sale', 'sales.apply_discount', 'sales.view_history',
-      'dispensing.dispense', 'dispensing.verify',
-      'reports.view', 'reports.export', 'reports.inventory',
-      'user_management.view_users',
-      'audit.view_logs',
-    ],
-
-    // Pharmacist gets dispensing + inventory
-    pharmacist: [
-      'inventory.stock.view', 'inventory.stock.add', 'inventory.stock.edit',
-      'inventory.expiry.view',
-      'sales.pos.access', 'sales.create_sale', 'sales.view_history',
-      'dispensing.dispense', 'dispensing.verify',
-      'reports.view',
-    ],
-
-    // Viewer gets read-only
-    viewer: [
-      'inventory.stock.view', 'inventory.expiry.view',
-      'sales.view_history',
-      'reports.view', 'reports.inventory',
-      'audit.view_logs',
-    ],
-  };
+  // Grants come straight from the blueprint §5.2 matrix via permissionsForRole().
+  const dynamicRolePerms: Record<string, string[]> = Object.fromEntries(
+    tenantRoleDefs.map((r) => [r.slug, permissionsForRole(r.slug as RoleSlug)]),
+  );
 
   for (const [roleSlug, permKeys] of Object.entries(dynamicRolePerms)) {
     const role = tenantRoles[roleSlug];
@@ -277,15 +237,15 @@ async function main() {
   ];
 
   const dynamicMenuByRole: Record<string, typeof allMenuItems> = {
-    business_admin: allMenuItems.map(i => ({ ...i, visible: true })),
-    manager:        allMenuItems.map(i => ({ ...i, visible: true })),
+    tenant_admin:   allMenuItems.map(i => ({ ...i, visible: true })),
+    branch_manager: allMenuItems.map(i => ({ ...i, visible: true })),
     pharmacist:     allMenuItems.map(i => ({
       ...i,
-      visible: ['dashboard', 'pos', 'inventory', 'customers'].includes(i.key),
+      visible: ['dashboard', 'pos', 'inventory', 'customers', 'reports'].includes(i.key),
     })),
-    viewer:         allMenuItems.map(i => ({
+    cashier:        allMenuItems.map(i => ({
       ...i,
-      visible: ['dashboard', 'inventory', 'reports'].includes(i.key),
+      visible: ['dashboard', 'pos', 'customers'].includes(i.key),
     })),
   };
 
@@ -374,7 +334,7 @@ async function main() {
       plainPass:        'Manager@1234',
       saasRole:         Role.MANAGER,
       tenantId:         tenant.id,
-      dynamicRoleId:    tenantRoles['business_admin'].id, // MANAGER maps to Business Admin
+      dynamicRoleId:    tenantRoles['tenant_admin'].id, // MANAGER → Tenant Admin (L2)
     },
     {
       username:         'mca@demo.com',
@@ -383,7 +343,7 @@ async function main() {
       plainPass:        'Mca@1234',
       saasRole:         Role.MCA,
       tenantId:         tenant.id,
-      dynamicRoleId:    tenantRoles['pharmacist'].id, // MCA maps to Pharmacist
+      dynamicRoleId:    tenantRoles['pharmacist'].id, // MCA → Pharmacist (L4)
     },
     {
       username:         'nes@demo.com',
@@ -392,7 +352,7 @@ async function main() {
       plainPass:        'Nes@1234',
       saasRole:         Role.NES,
       tenantId:         tenant.id,
-      dynamicRoleId:    tenantRoles['viewer'].id, // NES maps to Viewer
+      dynamicRoleId:    tenantRoles['cashier'].id, // NES → Cashier (L5)
     },
   ];
 
@@ -487,9 +447,9 @@ async function main() {
   console.log('  Business ID: 0721');
   console.log('  ─────────────────────────────────────────────────────────');
   console.log('  superadmin@system.com  /  Admin@1234    (Super Admin)');
-  console.log('  manager@demo.com       /  Manager@1234  (Business Admin)');
+  console.log('  manager@demo.com       /  Manager@1234  (Tenant Admin)');
   console.log('  mca@demo.com           /  Mca@1234      (Pharmacist)');
-  console.log('  nes@demo.com           /  Nes@1234      (Viewer)');
+  console.log('  nes@demo.com           /  Nes@1234      (Cashier)');
   console.log('  ─────────────────────────────────────────────────────────');
   console.log('  3-field login: 0721 + businessUsername + password');
 }

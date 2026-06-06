@@ -16,9 +16,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Phone, Award, Search, ArrowRight, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/layout/PageHeader';
-import { Input } from '@/components/ui/input';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -85,12 +84,9 @@ export default function CustomersView() {
         title="Customers"
         description="Track customer purchases and award loyalty points."
       >
-        <Link
-          href="/customers/new"
-          className="flex items-center gap-2 px-[13px] py-[9px] rounded-[8px] bg-primary text-primary-foreground text-[12.25px] font-medium hover:bg-primary/90 transition-colors"
-        >
+        <Button nativeButton={false} render={<Link href="/customers/new" />}>
           <Plus size={14} /> Add Customer
-        </Link>
+        </Button>
       </PageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -99,18 +95,18 @@ export default function CustomersView() {
         <div className="lg:col-span-2 flex flex-col gap-4">
 
           {/* Search — instant client-side filtering */}
-          <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-[#08090e14] dark:border-border rounded-[8px] bg-white dark:bg-card focus-within:border-primary/40 transition-colors w-full max-w-[342px]">
+          <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors w-full max-w-[342px]">
             <Search size={16} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search customers by name or phone..."
-              className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-[#626369] font-normal"
+              className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-muted-foreground font-normal"
             />
             {search && (
-              <button onClick={() => setSearch('')} className="text-muted-foreground hover:text-foreground">
+              <Button variant="ghost" size="icon-xs" onClick={() => setSearch('')}>
                 <X size={14} />
-              </button>
+              </Button>
             )}
           </div>
 

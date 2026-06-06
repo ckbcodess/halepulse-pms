@@ -54,6 +54,16 @@ type ProductDetail = {
     adjustedAt: string;
     adjuster: { id: number; username: string };
   }[];
+  stockItems: {
+    id: number;
+    branchId: string;
+    branchName: string;
+    batchNumber: string | null;
+    quantity: number;
+    costPrice: number;
+    sellingPrice: number;
+    expiryDate: string | null;
+  }[];
 };
 
 async function fetchProduct(id: string): Promise<ProductDetail> {
@@ -191,9 +201,9 @@ export default function ProductDetailPage() {
     <div className="flex flex-col gap-6">
       {/* Back + Actions */}
       <div className="flex items-center justify-between">
-        <button onClick={() => router.push('/inventory')} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <Button variant="ghost" size="sm" onClick={() => router.push('/inventory')} className="text-muted-foreground hover:text-foreground">
           <ArrowLeft size={16} /> Back to Inventory
-        </button>
+        </Button>
         <div className="flex items-center gap-2">
           {editing ? (
             <>
@@ -302,6 +312,54 @@ export default function ProductDetailPage() {
           </>
         )}
       </div>
+
+      {/* Batches (per branch) */}
+      {product.stockItems && product.stockItems.length > 0 && (
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="text-sm font-bold text-card-foreground">Batches by Branch</h2>
+            <span className="text-xs text-muted-foreground">
+              {product.stockItems.reduce((s, b) => s + b.quantity, 0)} units across {product.stockItems.length} batch(es)
+            </span>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-6">Branch</TableHead>
+                <TableHead className="px-6">Batch</TableHead>
+                <TableHead className="px-6">Qty</TableHead>
+                <TableHead className="px-6">Cost</TableHead>
+                <TableHead className="px-6">Selling</TableHead>
+                <TableHead className="px-6">Expiry</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {product.stockItems.map(b => {
+                const daysLeft = b.expiryDate ? Math.ceil((new Date(b.expiryDate).getTime() - Date.now()) / 86400000) : null;
+                return (
+                  <TableRow key={b.id}>
+                    <TableCell className="px-6 text-xs">{b.branchName}</TableCell>
+                    <TableCell className="px-6 text-xs text-muted-foreground">{b.batchNumber ?? '—'}</TableCell>
+                    <TableCell className="px-6 text-xs font-medium">{b.quantity}</TableCell>
+                    <TableCell className="px-6 text-xs">₵ {b.costPrice.toFixed(2)}</TableCell>
+                    <TableCell className="px-6 text-xs">₵ {b.sellingPrice.toFixed(2)}</TableCell>
+                    <TableCell className="px-6 text-xs">
+                      {b.expiryDate ? (
+                        <span className="flex items-center gap-2">
+                          {new Date(b.expiryDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {daysLeft !== null && daysLeft <= 30 && (
+                            <Badge variant="destructive">{daysLeft}d</Badge>
+                          )}
+                        </span>
+                      ) : '—'}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {/* Adjustment History */}
       {product.stockAdjustments.length > 0 && (
