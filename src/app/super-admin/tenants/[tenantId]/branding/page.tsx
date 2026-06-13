@@ -198,23 +198,59 @@ export default function BrandingPage() {
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState('');
   const [error, setError] = useState('');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  async function handleLogoUpload(file: File) {
+    setUploadingLogo(true);
+    setError('');
+    try {
+      const fd = new FormData();
+      fd.append('logo', file);
+      const res = await fetch(`/api/super-admin/tenants/${tenantId}/logo`, {
+        method: 'POST',
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setForm((p) => ({ ...p, logoUrl: data.logoUrl }));
+      setSavedMsg('Logo uploaded');
+      setTimeout(() => setSavedMsg(''), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Logo upload failed');
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
+
+  async function handleLogoRemove() {
+    setUploadingLogo(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/super-admin/tenants/${tenantId}/logo`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Remove failed');
+      setForm((p) => ({ ...p, logoUrl: '' }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Logo removal failed');
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
 
   // Fetch existing branding
   useEffect(() => {
-    fetch(`/api/super-admin/tenants`)
+    fetch(`/api/super-admin/tenants/${tenantId}/detail`)
       .then((r) => r.json())
-      .then((tenants: any[]) => {
-        const t = tenants.find((t: any) => t.id === tenantId);
-        if (t) {
-          const rawColor = t.baseColor ?? t.primaryColor ?? '#6366f1';
-          const { hex, neutral } = unpackTheme(rawColor);
-          setForm({
-            name: t.name,
-            baseColor: hex,
-            baseNeutral: neutral,
-            logoUrl: t.logoUrl ?? '',
-          });
-        }
+      .then((t: any) => {
+        if (!t || t.error) return;
+        const rawColor = t.baseColor ?? t.primaryColor ?? '#6366f1';
+        const { hex, neutral } = unpackTheme(rawColor);
+        setForm({
+          name: t.name,
+          baseColor: hex,
+          baseNeutral: neutral,
+          logoUrl: t.logoUrl ?? '',
+        });
         setLoading(false);
       });
   }, [tenantId]);
@@ -431,16 +467,48 @@ export default function BrandingPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="logoUrl">Logo URL</Label>
-                <Input
-                  id="logoUrl"
-                  type="url"
-                  value={form.logoUrl}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, logoUrl: e.target.value }))
-                  }
-                  placeholder="https://…/logo.png"
-                />
+                <Label htmlFor="logoFile">Logo</Label>
+                <div className="flex items-center gap-4">
+                  {form.logoUrl ? (
+                    <img
+                      src={form.logoUrl}
+                      alt="Tenant logo preview"
+                      className="h-14 w-14 rounded-lg object-contain border border-border bg-card"
+                    />
+                  ) : (
+                    <div className="h-14 w-14 rounded-lg border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground">
+                      No logo
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    <Input
+                      id="logoFile"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      disabled={uploadingLogo}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleLogoUpload(file);
+                        e.target.value = '';
+                      }}
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-muted-foreground">PNG, JPG, WebP or SVG — max 2MB</span>
+                      {form.logoUrl && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={uploadingLogo}
+                          onClick={handleLogoRemove}
+                          className="h-auto py-0.5 px-2 text-[11px] text-destructive hover:text-destructive"
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

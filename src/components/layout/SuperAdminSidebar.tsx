@@ -4,24 +4,24 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, Building2, LogOut, Shield, Activity, Plus,
-  Users, Paintbrush, ShieldCheck, Menu, GitBranch, X,
+  Users, Paintbrush, ShieldCheck, Menu, GitBranch, X, CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const MAIN_NAV = [
   { label: 'Overview',      href: '/super-admin',              icon: LayoutDashboard },
-  { label: 'Tenants',       href: '/super-admin/tenants',      icon: Building2       },
-  { label: 'New Tenant',    href: '/super-admin/tenants/new',  icon: Plus            },
+  { label: 'Businesses',    href: '/super-admin/tenants',      icon: Building2       },
   { label: 'Audit Log',     href: '/super-admin/audit',        icon: Activity        },
 ];
 
 const TENANT_SUB_NAV = [
   { label: 'Details',     suffix: '',              icon: Building2    },
-  { label: 'Users',       suffix: '/users/new',    icon: Users        },
   { label: 'Branches',    suffix: '/branches',     icon: GitBranch    },
   { label: 'Branding',    suffix: '/branding',     icon: Paintbrush   },
+  { label: 'Dashboard',   suffix: '/dashboard-visibility', icon: LayoutDashboard },
   { label: 'Permissions', suffix: '/permissions',  icon: ShieldCheck  },
   { label: 'Menus',       suffix: '/menus',        icon: Menu         },
+  { label: 'Subscription', suffix: '/subscription', icon: CreditCard  },
 ];
 
 function extractTenantId(pathname: string): string | null {
@@ -87,7 +87,7 @@ export default function SuperAdminSidebar({
         {activeTenantId && (
           <>
             <div className="pt-3 mt-3 border-t border-sidebar-border">
-              <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/50 mb-2">Tenant</p>
+              <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/50 mb-2">Business</p>
             </div>
             {TENANT_SUB_NAV.map(({ label, suffix, icon: Icon }) => {
               const href = `/super-admin/tenants/${activeTenantId}${suffix}`;
@@ -114,7 +114,7 @@ export default function SuperAdminSidebar({
       <div className="p-3 border-t border-sidebar-border">
         <Button
           variant="ghost"
-          onClick={() => signOut({ callbackUrl: '/login' })}
+          onClick={() => signOut({ callbackUrl: '/sp-login' })}
           className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
         >
           <LogOut size={16} />

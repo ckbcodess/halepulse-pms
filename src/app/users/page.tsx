@@ -46,7 +46,9 @@ export default async function UsersPage() {
 
   const roleBadgeClass: Record<string, string> = {
     MANAGER:    'border-indigo-200/50 bg-indigo-50/50 text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-400',
+    PHARMACIST: 'border-sky-200/50 bg-sky-50/50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-400',
     MCA:        'border-emerald-200/50 bg-emerald-50/50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400',
+    AUDIT:      'border-amber-200/50 bg-amber-50/50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400',
     NES:        'border-amber-200/50 bg-amber-50/50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400',
     SUPER_ADMIN:'border-purple-200/50 bg-purple-50/50 text-purple-700 dark:border-purple-500/20 dark:bg-purple-500/10 dark:text-purple-400',
   };

@@ -1,0 +1,79 @@
+import { redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/authOptions';
+import { getImpersonation } from '@/lib/auth/getImpersonation';
+import { getTenantContext } from '@/lib/auth/getTenantContext';
+import { branchWhere } from '@/lib/auth/branchScope';
+import prisma from '@/lib/prisma';
+import DashboardView from '../manager/DashboardView';
+import { getHiddenWidgets } from '@/lib/dashboard/widgets';
+
+// Pharmacist dashboard — today's sales, low stock + expiry alerts.
+export default async function PharmacistDashboard() {
+  const session = await getServerSession(authOptions);
+  if (!session) redirect('/login');
+
+  const impersonation = await getImpersonation();
+  const isImpersonating = !!impersonation;
+
+  if (!isImpersonating && session.user.role !== 'PHARMACIST') redirect('/login');
+
+  const tenantId = isImpersonating ? impersonation.tenantId : session.user.tenantId!;
+
+  const ctx = await getTenantContext();
+  const hiddenWidgets = Array.from(await getHiddenWidgets(tenantId, isImpersonating ? impersonation.role : session.user.role));
+  const branchFilter = await branchWhere(ctx);
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const yesterdayStart = new Date(todayStart);
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+  const in30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const yearStart = new Date(todayStart.getFullYear(), 0, 1);
+
+  const [
+    totalProducts, lowStock, expiringSoon,
+    salesTodayAgg, salesYesterdayAgg, yearSales, todaySalesByPayment, recentSales,
+  ] = await Promise.all([
+    prisma.product.count({ where: { tenantId } }),
+    prisma.product.count({ where: { tenantId, stockQty: { lte: 5 } } }),
+    prisma.product.count({ where: { tenantId, expiryDate: { gt: new Date(), lte: in30Days } } }),
+    prisma.sale.aggregate({ _sum: { totalAmount: true }, _count: true, where: { tenantId, ...branchFilter, createdAt: { gte: todayStart } } }),
+    prisma.sale.aggregate({ _sum: { totalAmount: true }, where: { tenantId, ...branchFilter, createdAt: { gte: yesterdayStart, lt: todayStart } } }),
+    prisma.sale.findMany({ where: { tenantId, ...branchFilter, createdAt: { gte: yearStart } }, select: { totalAmount: true, createdAt: true } }),
+    prisma.sale.groupBy({ by: ['paymentType'], _sum: { totalAmount: true }, where: { tenantId, ...branchFilter, createdAt: { gte: todayStart } } }),
+    prisma.sale.findMany({ where: { tenantId, ...branchFilter }, take: 5, orderBy: { createdAt: 'desc' }, include: { customer: true, items: true } }),
+  ]);
+
+  const todayTotal = salesTodayAgg._sum.totalAmount ?? 0;
+  const yesterdayTotal = salesYesterdayAgg._sum.totalAmount ?? 0;
+  const salesChange = yesterdayTotal > 0 ? ((todayTotal - yesterdayTotal) / yesterdayTotal) * 100 : todayTotal > 0 ? 100 : null;
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthlyMap = new Map<number, number>();
+  for (const sale of yearSales) {
+    const m = new Date(sale.createdAt).getMonth();
+    monthlyMap.set(m, (monthlyMap.get(m) ?? 0) + sale.totalAmount);
+  }
+  const monthlySales = months.map((name, i) => ({ month: name, amount: Math.round((monthlyMap.get(i) ?? 0) * 100) / 100 }));
+  const todayByPayment = todaySalesByPayment.map((g) => ({ name: g.paymentType || 'Other', value: g._sum.totalAmount ?? 0 }));
+  const formattedSales = recentSales.map((s) => ({
+    id: s.id,
+    customerName: s.customer?.name ?? 'Walk-in Customer',
+    time: new Date(s.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    itemCount: s.items.length,
+    amount: s.totalAmount,
+  }));
+
+  return (
+    <DashboardView
+      userName={session.user.email}
+      stats={{ totalProducts, lowStock, expiringSoon, salesToday: todayTotal, salesChange }}
+      monthlySales={monthlySales}
+      todayByPayment={todayByPayment}
+      recentSales={formattedSales}
+      alerts={{ lowStockCount: lowStock, expiringCount: expiringSoon }}
+      hiddenWidgets={hiddenWidgets}
+    />
+  );
+}

@@ -1,8 +1,11 @@
 'use server';
 import prisma from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/authOptions';
 import { getTenantContext } from '@/lib/auth/getTenantContext';
 import { resolveBranchId } from '@/lib/auth/branchContext';
 import { deductStockFifo } from '@/lib/inventory/fifo';
+import { roundMoney, sumMoney } from '@/lib/money';
 import {
   updateProductSchema, addStockSchema,
   createCustomerSchema,
@@ -191,6 +194,97 @@ export async function updateCustomer(id: number, details: PatientDetails & { nam
   return customer;
 }
 
+// Fetch a single customer (tenant-scoped) for the edit form.
+export async function getCustomerById(id: number) {
+  const { tenantId } = await getTenantContext();
+  const customer = await prisma.customer.findFirst({ where: { id, tenantId } });
+  if (!customer) throw new Error('Customer not found');
+  return {
+    id: customer.id,
+    name: customer.name,
+    phone: customer.phone,
+    loyaltyPoints: customer.loyaltyPoints,
+    dateOfBirth: customer.dateOfBirth ? customer.dateOfBirth.toISOString().slice(0, 10) : '',
+    gender: customer.gender ?? '',
+    address: customer.address ?? '',
+    knownAllergies: customer.knownAllergies ?? '',
+    chronicConditions: customer.chronicConditions ?? '',
+  };
+}
+
+// Bulk import customers from CSV rows. Skips duplicates (by phone within tenant).
+export interface CustomerImportRow {
+  name?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  address?: string;
+  knownAllergies?: string;
+  chronicConditions?: string;
+}
+
+export async function bulkImportCustomers(rows: CustomerImportRow[], fileName?: string) {
+  const { tenantId, role, userId } = await getTenantContext();
+
+  if (role !== 'MANAGER' && role !== 'SUPER_ADMIN') {
+    throw new Error('Only managers can import customers');
+  }
+  if (!rows.length) throw new Error('No customers to import');
+  if (rows.length > 5000) throw new Error('Maximum 5,000 customers per import');
+
+  let created = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  for (const row of rows) {
+    try {
+      const name = (row.name || '').trim();
+      if (!name) { skipped++; continue; }
+      const phone = (row.phone || '').trim() || null;
+
+      // Skip duplicates by phone within tenant (phone is unique per tenant)
+      if (phone) {
+        const existing = await prisma.customer.findFirst({ where: { phone, tenantId } });
+        if (existing) { skipped++; continue; }
+      }
+
+      let dob: Date | null = null;
+      if (row.dateOfBirth) {
+        const d = new Date(row.dateOfBirth);
+        if (!isNaN(d.getTime())) dob = d;
+      }
+
+      await prisma.customer.create({
+        data: {
+          name,
+          phone,
+          tenantId,
+          dateOfBirth: dob,
+          gender: (row.gender || '').trim() || null,
+          address: (row.address || '').trim() || null,
+          knownAllergies: (row.knownAllergies || '').trim() || null,
+          chronicConditions: (row.chronicConditions || '').trim() || null,
+        },
+      });
+      created++;
+    } catch (err: any) {
+      errors.push(`Row "${row.name}": ${err.message}`);
+    }
+  }
+
+  await prisma.inventoryAuditLog.create({
+    data: {
+      actionType: 'BULK_IMPORT',
+      performedBy: parseInt(userId, 10),
+      newValue: { entityType: 'customer', total: rows.length, created, skipped, errorCount: errors.length },
+      notes: `Customer import: ${created} created, ${skipped} skipped, ${errors.length} errors`,
+      tenantId,
+    },
+  }).catch(() => {});
+
+  return { created, skipped, errors: errors.slice(0, 20), total: rows.length };
+}
+
 // ── Sales ─────────────────────────────────────────────────────────────────────
 
 export async function processSale(
@@ -226,10 +320,15 @@ export async function processSale(
   const resolvedMiscItems = hasMiscItems
     ? miscItems!.filter(m => m.name && m.price > 0 && m.quantity >= 1)
     : [];
-  const miscTotal = resolvedMiscItems.reduce((sum, m) => sum + m.price * m.quantity, 0);
+  const miscTotal = sumMoney(resolvedMiscItems.map(m => m.price * m.quantity));
 
   const sellerId = parseInt(userId, 10);
   if (isNaN(sellerId)) throw new Error('Invalid user session — please log in again');
+
+  // Role-credential tagging (who rang up the sale)
+  const sessionForSale = await getServerSession(authOptions);
+  const roleAccount = sessionForSale?.user.credentialCode ?? null;
+  const assignedPerson = sessionForSale?.user.assignedPerson ?? null;
 
   // ── Idempotency check: if this clientToken already processed, return early ──
   if (clientToken) {
@@ -275,15 +374,27 @@ export async function processSale(
       }
 
       // ── Server-side pricing — never trust client-supplied price ────
-      serverTotal = items.reduce((sum, item) => {
-        return sum + productMap.get(item.id)!.price * item.quantity;
-      }, 0);
+      serverTotal = sumMoney(items.map(item => productMap.get(item.id)!.price * item.quantity));
     }
 
     // Cap discount at gross total
-    const grossTotal = serverTotal + miscTotal;
-    const cappedDiscount = Math.min(resolvedDiscount, grossTotal);
-    const finalTotal = Math.round((grossTotal - cappedDiscount) * 100) / 100;
+    const grossTotal = roundMoney(serverTotal + miscTotal);
+    const cappedDiscount = roundMoney(Math.min(resolvedDiscount, grossTotal));
+    const finalTotal = roundMoney(grossTotal - cappedDiscount);
+
+    // ── Receipt number: ${branchBusinessId}-${YYYYMMDD}-${seq padded 6} ─────
+    const branchRow = branchId
+      ? await tx.branch.findUnique({ where: { id: branchId }, select: { businessId: true } })
+      : null;
+    const branchBusinessId = branchRow?.businessId ?? 'HQ';
+    const now = new Date();
+    const yyyymmdd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(now); dayEnd.setHours(23, 59, 59, 999);
+    const todaysCount = await tx.sale.count({
+      where: { tenantId, branchId: branchId ?? undefined, createdAt: { gte: dayStart, lte: dayEnd } },
+    });
+    const receiptNo = `${branchBusinessId}-${yyyymmdd}-${String(todaysCount + 1).padStart(6, '0')}`;
 
     // ── Create sale with authoritative server price ───────────────────────
     const sale = await tx.sale.create({
@@ -295,7 +406,9 @@ export async function processSale(
         sellerId,
         tenantId,
         branchId,
-        ...(clientToken ? { clientToken } : {}),
+        roleAccount,
+        assignedPerson,
+        clientToken: clientToken ?? receiptNo,
         ...(customerId  ? { customerId }  : {}),
         ...(resolvedMiscItems.length > 0 ? { miscItems: JSON.stringify(resolvedMiscItems) } : {}),
         ...(hasRegularItems ? {
@@ -330,7 +443,7 @@ export async function processSale(
       .map(p => ({
         saleId: sale.id, tenantId, branchId,
         paymentMethod: p.method,
-        amount: Math.round(p.amount * 100) / 100,
+        amount: roundMoney(p.amount),
         reference: p.reference ?? null,
       }));
     if (paymentRows.length === 0) {

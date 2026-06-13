@@ -41,9 +41,11 @@ interface SidebarProps {
 }
 
 const ROLE_DASHBOARD: Record<string, string> = {
-  MANAGER: '/dashboard/manager',
-  MCA:     '/dashboard/mca',
-  NES:     '/dashboard/nes',
+  MANAGER:    '/dashboard/manager',
+  PHARMACIST: '/dashboard/pharmacist',
+  MCA:        '/dashboard/mca',
+  AUDIT:      '/dashboard/audit',
+  NES:        '/dashboard/audit',
 };
 
 function getDefaultItems(role: string): MenuItem[] {
@@ -63,6 +65,19 @@ export default function Sidebar({
   const pathname = usePathname();
   const items = (menuItems ?? getDefaultItems(user.role)).filter(i => i.visible);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const [tenantLogoUrl, setTenantLogoUrl] = useState<string | null>(null);
+  const [tenantName, setTenantName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user.tenantId) return;
+    fetch('/api/tenant/branding')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        setTenantLogoUrl(data?.logoUrl ?? null);
+        setTenantName(data?.name ?? null);
+      })
+      .catch(() => {});
+  }, [user.tenantId]);
 
   // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
@@ -99,10 +114,14 @@ export default function Sidebar({
           >
             {/* Purple container — fades out on hover */}
             <span className="
-              absolute inset-0 rounded-md flex items-center justify-center
+              absolute inset-0 rounded-md flex items-center justify-center overflow-hidden
               transition-opacity duration-150 group-hover/logo:opacity-0
-            " style={{ background: 'var(--primary)' }}>
-              <span className="text-primary-foreground text-xs font-medium leading-none">H</span>
+            " style={{ background: tenantLogoUrl ? 'transparent' : 'var(--primary)' }}>
+              {tenantLogoUrl ? (
+                <img src={tenantLogoUrl} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <span className="text-primary-foreground text-xs font-medium leading-none">{(tenantName || 'H').charAt(0).toUpperCase()}</span>
+              )}
             </span>
             {/* Bare expand icon — fades in on hover, no container */}
             <PanelLeftOpen
@@ -115,19 +134,20 @@ export default function Sidebar({
           /* Expanded: static logo on left, separate collapse button on right */
           <>
             <div className="flex items-center gap-3 min-w-0 group/brand cursor-default">
-              {/* Static purple logo */}
+              {/* Tenant logo, falling back to static purple "H" mark */}
               <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20 transition-transform group-hover/brand:scale-110"
-                style={{ background: 'var(--primary, #6366f1)' }}
+                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20 transition-transform group-hover/brand:scale-110 overflow-hidden"
+                style={{ background: tenantLogoUrl ? 'transparent' : 'var(--primary, #6366f1)' }}
               >
-                <span className="text-primary-foreground text-[14px] font-black leading-none">H</span>
+                {tenantLogoUrl ? (
+                  <img src={tenantLogoUrl} alt="Tenant logo" className="w-full h-full object-contain" />
+                ) : (
+                  <span className="text-primary-foreground text-[14px] font-black leading-none">{(tenantName || 'H').charAt(0).toUpperCase()}</span>
+                )}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-[14px] font-bold text-foreground tracking-tight leading-none">
-                  HalePulse
-                </span>
-                <span className="text-[10px] text-muted-foreground/60 font-semibold uppercase tracking-widest mt-0.5">
-                  Pharmacy
+                <span className="text-[14px] font-bold text-foreground tracking-tight leading-tight truncate">
+                  {tenantName || 'HalePulse'}
                 </span>
               </div>
             </div>

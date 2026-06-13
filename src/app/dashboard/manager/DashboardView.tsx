@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 
 export interface DashboardProps {
   userName: string;
+  firstName?: string | null;
   stats: {
     totalProducts: number;
     lowStock: number;
@@ -44,6 +45,8 @@ export interface DashboardProps {
     lowStockCount: number;
     expiringCount: number;
   };
+  /** Widget keys hidden for this user's role (set by Super Admin). */
+  hiddenWidgets?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -128,19 +131,25 @@ function StatCard({
 
 export default function DashboardView({
   userName,
+  firstName: firstNameProp,
   stats,
   monthlySales,
   todayByPayment,
   recentSales,
   alerts,
+  hiddenWidgets = [],
 }: DashboardProps) {
-  const firstName = userName.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  const firstName = firstNameProp
+    ? firstNameProp
+    : userName.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   const totalEarning = todayByPayment.reduce((sum, item) => sum + item.value, 0);
+  const hidden = new Set(hiddenWidgets);
+  const show = (key: string) => !hidden.has(key);
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title={`${getGreeting()}, ${firstName} 🩵`}
+        title={`${getGreeting()}, ${firstName}`}
         description={getFormattedDate()}
       />
 
@@ -160,23 +169,33 @@ export default function DashboardView({
 
       {/* ── KPI Stats ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Inventory" value={stats.totalProducts.toLocaleString()} />
-        <StatCard
-          label="Low Stock Alerts"
-          value={stats.lowStock.toLocaleString()}
-          indicator={stats.lowStock > 0 ? 'warning' : undefined}
-        />
-        <StatCard label="Expiring Soon" value={stats.expiringSoon.toLocaleString()} />
-        <StatCard
-          label="Sales Today"
-          value={`₵${stats.salesToday.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          change={stats.salesChange}
-        />
+        {show('kpi_total_inventory') && (
+          <StatCard label="Total Inventory" value={stats.totalProducts.toLocaleString()} />
+        )}
+        {show('kpi_low_stock') && (
+          <StatCard
+            label="Low Stock Alerts"
+            value={stats.lowStock.toLocaleString()}
+            indicator={stats.lowStock > 0 ? 'warning' : undefined}
+          />
+        )}
+        {show('kpi_expiring') && (
+          <StatCard label="Expiring Soon" value={stats.expiringSoon.toLocaleString()} />
+        )}
+        {show('kpi_sales_today') && (
+          <StatCard
+            label="Sales Today"
+            value={`₵${stats.salesToday.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            change={stats.salesChange}
+          />
+        )}
       </div>
 
       {/* ── Charts row ── */}
+      {(show('monthly_revenue') || show('todays_report')) && (
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
         {/* Monthly Progress */}
+        {show('monthly_revenue') && (
         <Card>
           <CardHeader>
             <CardTitle>Monthly Progress</CardTitle>
@@ -215,8 +234,10 @@ export default function DashboardView({
             </div>
           </CardFooter>
         </Card>
+        )}
 
         {/* Today's Report (Donut) */}
+        {show('todays_report') && (
         <Card className="p-6 py-6 gap-0">
           <h3 className="text-lg font-medium text-card-foreground mb-2">Today&apos;s Report</h3>
           {todayByPayment.length === 0 ? (
@@ -270,11 +291,15 @@ export default function DashboardView({
             </div>
           )}
         </Card>
+        )}
       </div>
+      )}
 
       {/* ── Bottom row ── */}
+      {(show('recent_transactions') || show('inventory_alerts')) && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Recent Transactions */}
+        {show('recent_transactions') && (
         <Card className="py-0 gap-0 overflow-hidden">
           <div className="flex items-center justify-between px-6 py-5 border-b border-border">
             <h3 className="font-medium text-card-foreground">Recent Transactions</h3>
@@ -312,8 +337,10 @@ export default function DashboardView({
             )}
           </div>
         </Card>
+        )}
 
         {/* Inventory Alerts */}
+        {show('inventory_alerts') && (
         <Card className="py-0 gap-0 overflow-hidden">
           <div className="flex items-center justify-between px-6 py-5 border-b border-border">
             <h3 className="font-medium text-card-foreground">Inventory Alerts</h3>
@@ -354,7 +381,9 @@ export default function DashboardView({
             )}
           </div>
         </Card>
+        )}
       </div>
+      )}
     </div>
   );
 }

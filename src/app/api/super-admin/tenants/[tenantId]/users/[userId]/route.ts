@@ -22,7 +22,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ tena
   }
 
   const updateData: Record<string, unknown> = {};
-  if (role !== undefined && ['MANAGER', 'MCA', 'NES'].includes(role)) {
+  if (role !== undefined && ['MANAGER', 'PHARMACIST', 'MCA', 'AUDIT', 'NES'].includes(role)) {
     updateData.saasRole = role;
     updateData.role = role;
   }

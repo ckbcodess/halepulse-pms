@@ -5,15 +5,20 @@ declare module 'next-auth' {
   interface User {
     id: string;
     email: string;
-    role: string;               // Legacy enum string (SUPER_ADMIN, MANAGER, etc.) — kept for backward compat
+    role: string;
     tenantId: string | null;
     branchId: string | null;
-    // Phase 2: Dynamic role fields
     dynamicRoleId: string | null;
     dynamicRoleSlug: string | null;
-    roleLevel: number;           // 0=SuperAdmin, 1=BusinessAdmin, 2=Manager, 3=Viewer
+    roleLevel: number;
     mustChangePassword: boolean;
-    businessId: string | null;   // Human-readable Business ID (e.g., "PH-00001")
+    businessId: string | null;
+    credentialCode?: string | null;
+    assignedPerson?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    canCreateUsers?: boolean;
+    primaryColor?: string | null;
   }
   interface Session {
     user: {
@@ -27,7 +32,13 @@ declare module 'next-auth' {
       roleLevel: number;
       mustChangePassword: boolean;
       businessId: string | null;
-    };
+      credentialCode?: string | null;
+      assignedPerson?: string | null;
+      firstName?: string | null;
+      lastName?: string | null;
+      canCreateUsers?: boolean;
+      primaryColor?: string | null;
+      };
   }
 }
 
@@ -42,5 +53,11 @@ declare module 'next-auth/jwt' {
     roleLevel: number;
     mustChangePassword: boolean;
     businessId: string | null;
+    credentialCode?: string | null;
+    assignedPerson?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    canCreateUsers?: boolean;
+    primaryColor?: string | null;
   }
 }

@@ -1,7 +1,7 @@
 import { getTenantContext } from '@/lib/auth/getTenantContext';
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import { ArrowLeft, Phone, Award, ShoppingBag, Calendar, TrendingUp, User } from 'lucide-react';
+import { ArrowLeft, Phone, Award, ShoppingBag, Calendar, TrendingUp, User, Pencil } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function CustomerDetailPage({
@@ -83,6 +83,12 @@ export default async function CustomerDetailPage({
             </div>
           </div>
         </div>
+        <Link
+          href={`/customers/${customer.id}/edit`}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm font-medium hover:bg-muted dark:hover:bg-white/5 transition-colors"
+        >
+          <Pencil size={14} /> Edit
+        </Link>
       </div>
 
       {/* Stats */}

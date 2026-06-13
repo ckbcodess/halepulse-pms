@@ -112,9 +112,35 @@ export function subordinateRoles(actor: RoleSlug): RoleSlug[] {
 export const LEGACY_ROLE_TO_SLUG: Record<string, RoleSlug> = {
   SUPER_ADMIN: 'super_admin',
   MANAGER: 'branch_manager', // default; migration may promote HQ managers to tenant_admin
-  MCA: 'pharmacist',
+  PHARMACIST: 'pharmacist',
+  MCA: 'cashier',
+  AUDIT: 'cashier',
   NES: 'cashier',
 };
+
+// ─── App-role (branch credential) levels ─────────────────────────────────────
+// Used for the 4 branch role-credential accounts. Manager=1 (highest in branch),
+// Audit=4 (read-only). Distinct from the slug-based ROLE_LEVEL above.
+export const APP_ROLE_LEVEL: Record<string, number> = {
+  MANAGER: 1,
+  PHARMACIST: 2,
+  MCA: 3,
+  AUDIT: 4,
+  NES: 4, // legacy alias for AUDIT
+};
+
+/** Display label for an app role string. */
+export function appRoleLabel(role: string): string {
+  switch (role) {
+    case 'MANAGER':     return 'Manager';
+    case 'PHARMACIST':  return 'Pharmacist';
+    case 'MCA':         return 'MCA';
+    case 'AUDIT':
+    case 'NES':         return 'Audit';
+    case 'SUPER_ADMIN': return 'Super Admin';
+    default: return role;
+  }
+}
 
 // ─── Permission domains (blueprint §5.1) ─────────────────────────────────────
 

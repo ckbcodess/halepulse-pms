@@ -4,7 +4,7 @@ import { requireRole } from '@/lib/auth/requireRole';
 import { logAction } from '@/lib/audit/logAction';
 import { MASTER_MENU } from '@/lib/menus/getMenuForUser';
 
-const ROLES = ['MANAGER', 'MCA', 'NES'] as const;
+const ROLES = ['MANAGER', 'PHARMACIST', 'MCA', 'AUDIT'] as const;
 
 function mergeForEditor(stored: any[], role: string) {
   const storedMap = new Map(stored.map((i: any) => [i.key, i]));

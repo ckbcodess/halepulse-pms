@@ -9,7 +9,7 @@ export interface CartItem {
 }
 
 export interface Discount {
-  type: 'fixed';
+  type: 'fixed' | 'percent';
   value: number;
 }
 

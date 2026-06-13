@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { Building2, Plus, Edit3, Check, Loader2, Phone, MapPin, Power } from 'lucide-react';
+import { Building2, Plus, Edit3, Check, Loader2, Phone, MapPin, Power, Key } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,52 +17,206 @@ type Branch = {
   _count: { users: number };
 };
 
+type Credential = { userId: number; credentialCode: string | null; role: string; roleName: string; password?: string };
+
+// Stable form component — defined outside the page so it never re-mounts on parent state changes
+const BranchForm = ({
+  initialValues,
+  onSubmit,
+  onCancel,
+  saving,
+  error,
+}: {
+  initialValues: { name: string; address: string; phone: string };
+  onSubmit: (values: { name: string; address: string; phone: string }) => void;
+  onCancel: () => void;
+  saving: boolean;
+  error: string;
+}) => {
+  const [name, setName] = useState(initialValues.name);
+  const [address, setAddress] = useState(initialValues.address);
+  const [phone, setPhone] = useState(initialValues.phone);
+
+  // Sync when parent resets (e.g. opening a different edit)
+  const prevInitial = useRef(initialValues);
+  useEffect(() => {
+    if (prevInitial.current !== initialValues) {
+      setName(initialValues.name);
+      setAddress(initialValues.address);
+      setPhone(initialValues.phone);
+      prevInitial.current = initialValues;
+    }
+  }, [initialValues]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({ name, address, phone });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="p-6 space-y-4 border-b border-border bg-muted/30">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-muted-foreground">Branch Name <span className="text-destructive">*</span></label>
+          <Input required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Main Branch" className="h-10" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-muted-foreground">Phone</label>
+          <Input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+233 XX XXX XXXX" className="h-10" />
+        </div>
+        <div className="sm:col-span-2 space-y-1.5">
+          <label className="block text-xs font-semibold text-muted-foreground">Address</label>
+          <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Full branch address" className="h-10" />
+        </div>
+      </div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      <div className="flex gap-2">
+        <Button type="submit" disabled={saving}>
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+          {saving ? 'Saving…' : 'Save'}
+        </Button>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+};
+
+// Credentials modal
+const CredentialsModal = ({
+  branch,
+  tenantId,
+  onClose,
+}: {
+  branch: Branch;
+  tenantId: string;
+  onClose: () => void;
+}) => {
+  const [creds, setCreds] = useState<Credential[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/super-admin/tenants/${tenantId}/branches/${branch.id}/credentials`)
+      .then(r => r.json())
+      .then(d => setCreds(d.credentials ?? []))
+      .finally(() => setLoading(false));
+  }, [branch.id, tenantId]);
+
+  const resetCred = async (userId: number) => {
+    const res = await fetch(`/api/super-admin/tenants/${tenantId}/branches/${branch.id}/credentials`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setCreds(prev => prev.map(c => c.userId === userId ? { ...c, password: data.password } : c));
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-2xl mx-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold text-foreground">Credentials — {branch.name}</h3>
+          <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
+        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 size={20} className="animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-muted-foreground border-b border-border">
+                <tr>
+                  <th className="py-2 pr-4">User ID</th>
+                  <th className="py-2 pr-4">Username</th>
+                  <th className="py-2 pr-4">Role</th>
+                  <th className="py-2 pr-4">Password</th>
+                  <th className="py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {creds.map(c => (
+                  <tr key={c.userId} className="border-t border-border">
+                    <td className="py-2 pr-4 font-mono text-xs">{c.userId}</td>
+                    <td className="py-2 pr-4 font-mono text-xs">{c.credentialCode}</td>
+                    <td className="py-2 pr-4">{c.roleName}</td>
+                    <td className="py-2 pr-4 font-mono text-xs">{c.password ?? '••••••'}</td>
+                    <td className="py-2 text-right">
+                      <Button variant="ghost" size="sm" onClick={() => resetCred(c.userId)}>
+                        <Key size={12} /> Reset
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {creds.length === 0 && (
+                  <tr><td colSpan={5} className="py-4 text-muted-foreground">No credentials found.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const emptyForm = { name: '', address: '', phone: '' };
+
 export default function BranchesPage() {
   const params = useParams();
   const tenantId = params.tenantId as string;
 
-  const [branches, setBranches]           = useState<Branch[]>([]);
-  const [loading, setLoading]             = useState(true);
-  const [showCreate, setShowCreate]       = useState(false);
-  const [editingId, setEditingId]         = useState<string | null>(null);
-  const [saving, setSaving]              = useState(false);
-  const [error, setError]               = useState('');
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [credsModalBranch, setCredsModalBranch] = useState<Branch | null>(null);
 
-  const emptyForm = { name: '', address: '', phone: '' };
-  const [form, setForm] = useState(emptyForm);
+  const [createInitial, setCreateInitial] = useState(emptyForm);
+  const [editInitial, setEditInitial] = useState(emptyForm);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/super-admin/tenants/${tenantId}/branches`);
     const data = await res.json();
     setBranches(data.branches ?? []);
     setLoading(false);
+  }, [tenantId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const openCreate = () => {
+    setCreateInitial(emptyForm);
+    setShowCreate(true);
+    setEditingBranch(null);
+    setError('');
   };
-
-  useEffect(() => { load(); }, [tenantId]);
-
-  const set = (field: string, value: string) =>
-    setForm(prev => ({ ...prev, [field]: value }));
 
   const openEdit = (b: Branch) => {
-    setEditingId(b.id);
-    setForm({ name: b.name, address: b.address ?? '', phone: b.phone ?? '' });
+    const vals = { name: b.name, address: b.address ?? '', phone: b.phone ?? '' };
+    setEditInitial(vals);
+    setEditingBranch(b);
     setShowCreate(false);
+    setError('');
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreate = async (values: { name: string; address: string; phone: string }) => {
     setSaving(true);
     setError('');
     try {
       const res = await fetch(`/api/super-admin/tenants/${tenantId}/branches`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(values),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? 'Failed');
       setShowCreate(false);
-      setForm(emptyForm);
       await load();
     } catch (err: any) {
       setError(err.message);
@@ -71,19 +225,18 @@ export default function BranchesPage() {
     }
   };
 
-  const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingId) return;
+  const handleEdit = async (values: { name: string; address: string; phone: string }) => {
+    if (!editingBranch) return;
     setSaving(true);
     setError('');
     try {
-      const res = await fetch(`/api/super-admin/tenants/${tenantId}/branches/${editingId}`, {
+      const res = await fetch(`/api/super-admin/tenants/${tenantId}/branches/${editingBranch.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(values),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? 'Failed');
-      setEditingId(null);
+      setEditingBranch(null);
       await load();
     } catch (err: any) {
       setError(err.message);
@@ -101,48 +254,23 @@ export default function BranchesPage() {
     await load();
   };
 
-  const FormFields = ({ onSubmit, onCancel }: { onSubmit: (e: React.FormEvent) => void; onCancel: () => void }) => (
-    <form onSubmit={onSubmit} className="p-6 space-y-4 border-b border-border bg-muted/30">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-muted-foreground">Branch Name <span className="text-destructive">*</span></label>
-          <Input required value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Main Branch" className="h-10" />
-        </div>
-        <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-muted-foreground">Phone</label>
-          <Input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+233 XX XXX XXXX" className="h-10" />
-        </div>
-        <div className="sm:col-span-2 space-y-1.5">
-          <label className="block text-xs font-semibold text-muted-foreground">Address</label>
-          <Input value={form.address} onChange={e => set('address', e.target.value)} placeholder="Full branch address" className="h-10" />
-        </div>
-      </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
-      <div className="flex gap-2">
-        <Button type="submit" disabled={saving}>
-          {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-          {saving ? 'Saving…' : 'Save'}
-        </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-    </form>
-  );
-
   return (
     <div className="space-y-6">
       <PageHeader title="Branches" description={`${branches.length} branch${branches.length !== 1 ? 'es' : ''}`}>
-        <Button onClick={() => { setShowCreate(true); setEditingId(null); setForm(emptyForm); setError(''); }}>
+        <Button onClick={openCreate}>
           <Plus size={14} /> New Branch
         </Button>
       </PageHeader>
 
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         {showCreate && (
-          <FormFields
+          <BranchForm
+            key="create"
+            initialValues={createInitial}
             onSubmit={handleCreate}
             onCancel={() => { setShowCreate(false); setError(''); }}
+            saving={saving}
+            error={error}
           />
         )}
 
@@ -159,10 +287,14 @@ export default function BranchesPage() {
           <div className="divide-y divide-border">
             {branches.map(branch => (
               <div key={branch.id}>
-                {editingId === branch.id ? (
-                  <FormFields
+                {editingBranch?.id === branch.id ? (
+                  <BranchForm
+                    key={`edit-${branch.id}`}
+                    initialValues={editInitial}
                     onSubmit={handleEdit}
-                    onCancel={() => { setEditingId(null); setError(''); }}
+                    onCancel={() => { setEditingBranch(null); setError(''); }}
+                    saving={saving}
+                    error={error}
                   />
                 ) : (
                   <div className="flex items-center gap-4 px-6 py-4 hover:bg-muted dark:hover:bg-white/[0.02] group">
@@ -192,7 +324,10 @@ export default function BranchesPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="sm" onClick={() => setCredsModalBranch(branch)}>
+                        View Credentials
+                      </Button>
                       <Button variant="ghost" size="icon-sm" onClick={() => openEdit(branch)}>
                         <Edit3 size={14} />
                       </Button>
@@ -207,6 +342,14 @@ export default function BranchesPage() {
           </div>
         )}
       </div>
+
+      {credsModalBranch && (
+        <CredentialsModal
+          branch={credsModalBranch}
+          tenantId={tenantId}
+          onClose={() => setCredsModalBranch(null)}
+        />
+      )}
     </div>
   );
 }

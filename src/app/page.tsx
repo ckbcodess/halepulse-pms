@@ -3,9 +3,11 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 
 const ROLE_DASHBOARD: Record<string, string> = {
-  MANAGER: '/dashboard/manager',
-  MCA:     '/dashboard/mca',
-  NES:     '/dashboard/nes',
+  MANAGER:    '/dashboard/manager',
+  PHARMACIST: '/dashboard/pharmacist',
+  MCA:        '/dashboard/mca',
+  AUDIT:      '/dashboard/audit',
+  NES:        '/dashboard/audit',
 };
 
 export default async function RootPage() {

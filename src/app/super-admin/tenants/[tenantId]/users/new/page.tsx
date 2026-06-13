@@ -1,49 +1,92 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Copy, Check } from 'lucide-react';
-import Link from 'next/link';
+import { ArrowLeft, Copy, Check, Loader2 } from 'lucide-react';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
+type Branch = { id: string; name: string };
+
+const emptyForm = {
+  firstName: '', lastName: '', email: '',
+  contact: '', dob: '', ghanaCard: '', residence: '',
+  branchId: '', role: 'PHARMACIST', canCreateUsers: false,
+};
+
 export default function CreateUserPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
   const router = useRouter();
 
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('MCA');
+  const [form, setForm] = useState(emptyForm);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState<{ email: string; tempPassword: string } | null>(null);
+  const [result, setResult] = useState<{ email: string; tempPassword: string; firstName: string; lastName: string } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!tenantId) return;
+    fetch(`/api/super-admin/tenants/${tenantId}/branches`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => setBranches(data.branches ?? []))
+      .catch(() => {});
+  }, [tenantId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!tenantId) {
+      setError('Missing tenant ID — please reload the page.');
+      return;
+    }
+
+    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
+      setError('First name, last name and email are required.');
+      return;
+    }
+
     setSaving(true);
     setError('');
 
-    const res = await fetch(`/api/super-admin/tenants/${tenantId}/users`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, role }),
-    });
+    try {
+      const res = await fetch(`/api/super-admin/tenants/${tenantId}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
 
-    if (res.ok) {
-      const data = await res.json();
-      setResult({ email: data.user.email, tempPassword: data.tempPassword });
-    } else {
-      const data = await res.json();
-      setError(data.error || 'Failed to create user');
+      let data: Record<string, unknown> = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error('Server returned an unexpected response. Please try again.');
+      }
+
+      if (res.ok) {
+        setResult({
+          email: (data.user as { email: string }).email,
+          tempPassword: data.tempPassword as string,
+          firstName: form.firstName,
+          lastName: form.lastName,
+        });
+      } else {
+        setError((data.error as string) || `Error ${res.status}: Failed to create user`);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const copyCredentials = () => {
     if (!result) return;
-    navigator.clipboard.writeText(`Email: ${result.email}\nPassword: ${result.tempPassword}`);
+    navigator.clipboard.writeText(
+      `Name: ${result.firstName} ${result.lastName}\nEmail: ${result.email}\nPassword: ${result.tempPassword}`
+    );
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -51,36 +94,38 @@ export default function CreateUserPage() {
   if (result) {
     return (
       <div className="max-w-lg mx-auto space-y-6">
-        <div className="bg-muted/40 border border-border rounded-2xl p-8 text-center">
-          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-            <Check size={24} className="text-muted-foreground" />
+        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl p-8 text-center">
+          <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Check size={24} className="text-emerald-600 dark:text-emerald-400" />
           </div>
-          <h2 className="text-xl font-bold text-foreground mb-2">User Created</h2>
-          <p className="text-sm text-muted-foreground mb-6">Share these credentials with the user. The password is shown only once.</p>
-
-          <div className="bg-muted rounded-xl p-4 text-left space-y-2 mb-4">
+          <h2 className="text-xl font-bold text-foreground mb-1">User Created</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            Share these login credentials with {result.firstName}. The password is shown only once.
+          </p>
+          <div className="bg-card rounded-xl p-4 text-left space-y-3 border border-border mb-4">
             <div>
-              <p className="text-[10px] font-bold uppercase text-muted-foreground">Email</p>
+              <p className="text-[10px] font-bold uppercase text-muted-foreground">Name</p>
+              <p className="text-sm font-semibold text-foreground">{result.firstName} {result.lastName}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase text-muted-foreground">Email / Username</p>
               <p className="text-sm font-mono font-semibold text-foreground">{result.email}</p>
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase text-muted-foreground">Temporary Password</p>
-              <p className="text-sm font-mono font-semibold text-primary">{result.tempPassword}</p>
+              <p className="text-sm font-mono font-bold text-primary">{result.tempPassword}</p>
             </div>
           </div>
-
-          <Button variant="secondary" onClick={copyCredentials} className="mx-auto">
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-            {copied ? 'Copied!' : 'Copy Credentials'}
+          <Button variant="secondary" onClick={copyCredentials} className="w-full mb-3">
+            {copied ? <><Check size={14} /> Copied!</> : <><Copy size={14} /> Copy Credentials</>}
           </Button>
         </div>
-
         <div className="flex gap-3">
-          <Button variant="outline" className="flex-1" nativeButton={false} render={<Link href={`/super-admin/tenants/${tenantId}`} />}>
-            Back to Tenant
+          <Button variant="outline" className="flex-1" onClick={() => router.push(`/super-admin/tenants/${tenantId}`)}>
+            Back to Business
           </Button>
-          <Button className="flex-1" onClick={() => { setResult(null); setEmail(''); }}>
-            Create Another
+          <Button className="flex-1" onClick={() => { setResult(null); setForm(emptyForm); }}>
+            Add Another User
           </Button>
         </div>
       </div>
@@ -88,14 +133,14 @@ export default function CreateUserPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
+    <div className="max-w-xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" nativeButton={false} render={<Link href={`/super-admin/tenants/${tenantId}`} />}>
+        <Button variant="ghost" size="icon" onClick={() => router.push(`/super-admin/tenants/${tenantId}`)}>
           <ArrowLeft size={20} />
         </Button>
         <div>
           <h1 className="text-xl font-bold text-foreground">Create User</h1>
-          <p className="text-sm text-muted-foreground">Add a new user to this tenant.</p>
+          <p className="text-sm text-muted-foreground">Fill in the user's details and assign them a branch and role.</p>
         </div>
       </div>
 
@@ -106,34 +151,101 @@ export default function CreateUserPage() {
       )}
 
       <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 space-y-5">
-        <div className="space-y-1.5">
-          <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Email</label>
-          <Input
-            type="email"
-            required
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            className="h-11"
-            placeholder="user@example.com"
-          />
+
+        {/* Personal details */}
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Personal Details</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">First Name *</label>
+              <Input required placeholder="e.g. Kofi" value={form.firstName}
+                onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Last Name *</label>
+              <Input required placeholder="e.g. Mensah" value={form.lastName}
+                onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Email Address *</label>
+              <Input required type="email" placeholder="kofi@pharmacy.com" value={form.email}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Contact Number</label>
+              <Input placeholder="+233 XX XXX XXXX" value={form.contact}
+                onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Date of Birth</label>
+              <Input type="date" value={form.dob}
+                onChange={e => setForm(f => ({ ...f, dob: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Ghana Card Number</label>
+              <Input placeholder="GHA-XXXXXXXXX-X" value={form.ghanaCard}
+                onChange={e => setForm(f => ({ ...f, ghanaCard: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-xs font-semibold text-muted-foreground">Residence</label>
+              <Input placeholder="Residential address" value={form.residence}
+                onChange={e => setForm(f => ({ ...f, residence: e.target.value }))} />
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Role</label>
-          <Select value={role} onValueChange={v => v && setRole(v)}>
-            <SelectTrigger className="w-full h-11"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="MANAGER">Manager</SelectItem>
-              <SelectItem value="MCA">MCA</SelectItem>
-              <SelectItem value="NES">NES</SelectItem>
-            </SelectContent>
-          </Select>
+        <hr className="border-border" />
+
+        {/* Assignment */}
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Assignment</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Branch *</label>
+              <Select value={form.branchId} onValueChange={v => setForm(f => ({ ...f, branchId: v ?? '' }))}>
+                <SelectTrigger className="h-10"><SelectValue placeholder="Select branch" /></SelectTrigger>
+                <SelectContent>
+                  {branches.length === 0
+                    ? <SelectItem value="none" disabled>No branches available</SelectItem>
+                    : branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)
+                  }
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Role *</label>
+              <Select value={form.role} onValueChange={v => setForm(f => ({ ...f, role: v ?? 'PHARMACIST', canCreateUsers: false }))}>
+                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MANAGER">Manager</SelectItem>
+                  <SelectItem value="PHARMACIST">Pharmacist</SelectItem>
+                  <SelectItem value="MCA">MCA</SelectItem>
+                  <SelectItem value="AUDIT">Audit</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {form.role === 'MANAGER' && (
+            <label className="flex items-center gap-2.5 mt-4 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.canCreateUsers}
+                onChange={e => setForm(f => ({ ...f, canCreateUsers: e.target.checked }))}
+                className="w-4 h-4 accent-primary"
+              />
+              <span className="text-sm text-foreground font-medium">Allow this manager to create users</span>
+              <span className="text-xs text-muted-foreground">(Pharmacist, MCA, Audit only)</span>
+            </label>
+          )}
         </div>
 
-        <p className="text-xs text-muted-foreground">A temporary password will be auto-generated and shown once after creation.</p>
+        <p className="text-xs text-muted-foreground">
+          A temporary password will be generated. The user must change it on first login.
+        </p>
 
-        <Button type="submit" disabled={saving} size="lg" className="w-full">
-          {saving ? 'Creating...' : 'Create User'}
+        <Button type="submit" disabled={saving} className="w-full h-11">
+          {saving ? <><Loader2 size={14} className="animate-spin" /> Creating...</> : 'Create User'}
         </Button>
       </form>
     </div>

@@ -60,3 +60,7 @@ scripts/check-*.js
 
 # Migration data snapshots (contain real records — never commit)
 scripts/backups/
+
+# Playwright test artifacts
+/test-results/
+/playwright-report/

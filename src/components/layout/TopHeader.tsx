@@ -38,6 +38,7 @@ const ROUTE_META: Record<string, { title: string; icon: LucideIcon }> = {
   '/inventory/import': { title: 'Import Products', icon: Package },
   '/customers':        { title: 'Customers',       icon: Users },
   '/customers/new':    { title: 'Add Customer',    icon: Users },
+  '/purchases':        { title: 'Expenses',        icon: FileText },
   '/reports':          { title: 'Reports',         icon: FileText },
   '/settings':         { title: 'Settings',        icon: Settings },
   '/users':            { title: 'Team',            icon: UserCog },
@@ -53,8 +54,10 @@ function getPageMeta(pathname: string): { title: string; icon: LucideIcon } {
 const ROLE_LABEL: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
   MANAGER:     'Manager',
+  PHARMACIST:  'Pharmacist',
   MCA:         'MCA',
-  NES:         'NES',
+  AUDIT:       'Audit',
+  NES:         'Audit',
 };
 
 function ThemeToggleButton() {

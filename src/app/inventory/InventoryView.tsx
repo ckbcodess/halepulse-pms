@@ -25,6 +25,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { exportToCsv } from '@/lib/utils/exportCsv';
+import { ADJUSTMENT_REASONS } from '@/lib/validation/schemas';
 import { StatusBadge } from '@/components/inventory/StatusBadge';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetDescription,
@@ -405,15 +407,8 @@ async function fetchProduct(id: number): Promise<ProductDetail> {
 
 // ── Stock Adjustment Inline Form ─────────────────────────────────────────────
 
-const ADJUSTMENT_REASONS = [
-  'Shelf Count Correction',
-  'Damaged / Spoiled',
-  'Expired',
-  'Theft / Loss',
-  'Returned to Supplier',
-  'Restock',
-  'Other',
-];
+// Canonical list lives in the validation schema — imported so UI and server
+// can never drift apart (that drift caused the "Restock" rejection bug).
 
 function StockAdjustForm({ productId, currentQty, onAdjusted }: {
   productId: number;
@@ -421,35 +416,50 @@ function StockAdjustForm({ productId, currentQty, onAdjusted }: {
   onAdjusted: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<'add' | 'set'>('add');
+  const [addQty, setAddQty] = useState('');
   const [newQty, setNewQty] = useState(currentQty.toString());
-  const [reason, setReason] = useState('Shelf Count Correction');
+  const [reason, setReason] = useState('Restock');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Reset when form opens
   const toggle = () => {
-    if (!open) { setNewQty(currentQty.toString()); setReason('Shelf Count Correction'); setNotes(''); }
+    if (!open) {
+      setMode('add');
+      setAddQty('');
+      setNewQty(currentQty.toString());
+      setReason('Restock');
+      setNotes('');
+    }
     setOpen(o => !o);
   };
 
-  const delta = parseInt(newQty || '0') - currentQty;
+  // Resulting absolute quantity depends on the mode.
+  const received = parseInt(addQty || '0');
+  const targetQty = mode === 'add' ? currentQty + (isNaN(received) ? 0 : received) : parseInt(newQty || '0');
+  const delta = targetQty - currentQty;
 
   const handleSubmit = async () => {
-    const qty = parseInt(newQty);
-    if (isNaN(qty) || qty < 0) { toast.error('Enter a valid quantity'); return; }
+    if (mode === 'add') {
+      if (isNaN(received) || received <= 0) { toast.error('Enter the quantity you received'); return; }
+    } else {
+      const qty = parseInt(newQty);
+      if (isNaN(qty) || qty < 0) { toast.error('Enter a valid quantity'); return; }
+    }
     if (reason === 'Other' && !notes.trim()) { toast.error('Notes are required for "Other" reason'); return; }
     setSaving(true);
     try {
       const res = await fetch('/api/inventory/adjustments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, newQuantity: qty, reason, notes: notes || undefined }),
+        body: JSON.stringify({ productId, newQuantity: targetQty, reason, notes: notes || undefined }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed');
       }
-      toast.success(`Stock adjusted: ${currentQty} → ${qty}`);
+      toast.success(`Stock updated: ${currentQty} → ${targetQty}`);
       setOpen(false);
       onAdjusted();
     } catch (err: any) {
@@ -473,14 +483,43 @@ function StockAdjustForm({ productId, currentQty, onAdjusted }: {
 
       {open && (
         <div className="px-4 py-4 flex flex-col gap-3 border-t border-border">
+          {/* Mode toggle */}
+          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5 w-fit">
+            <Button type="button" variant={mode === 'add' ? 'secondary' : 'ghost'} size="xs" onClick={() => setMode('add')}>
+              Add Stock
+            </Button>
+            <Button type="button" variant={mode === 'set' ? 'secondary' : 'ghost'} size="xs" onClick={() => setMode('set')}>
+              Set Count
+            </Button>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[12px] font-medium">New Quantity</Label>
-              <Input type="number" min="0" value={newQty} onChange={e => setNewQty(e.target.value)} />
-              {delta !== 0 && (
-                <p className={`text-[11px] font-medium ${delta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {delta > 0 ? '+' : ''}{delta} from current ({currentQty})
-                </p>
+              {mode === 'add' ? (
+                <>
+                  <Label className="text-[12px] font-medium">Quantity Received</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 50"
+                    value={addQty}
+                    onChange={e => setAddQty(e.target.value)}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Current: <strong>{currentQty}</strong>
+                    {received > 0 && <span className="text-emerald-600"> → New total: {targetQty}</span>}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Label className="text-[12px] font-medium">New Quantity</Label>
+                  <Input type="number" min="0" value={newQty} onChange={e => setNewQty(e.target.value)} />
+                  {delta !== 0 && (
+                    <p className={`text-[11px] font-medium ${delta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {delta > 0 ? '+' : ''}{delta} from current ({currentQty})
+                    </p>
+                  )}
+                </>
               )}
             </div>
             <div className="flex flex-col gap-1.5">
@@ -499,7 +538,10 @@ function StockAdjustForm({ productId, currentQty, onAdjusted }: {
           )}
           <Button onClick={handleSubmit} disabled={saving || delta === 0} className="w-full">
             <TrendingDown size={13} className="mr-1.5" />
-            {saving ? 'Saving…' : delta === 0 ? 'No Change' : `Apply Adjustment (${delta > 0 ? '+' : ''}${delta})`}
+            {saving ? 'Saving…'
+              : delta === 0 ? 'No Change'
+              : mode === 'add' ? `Add ${received} Unit${received === 1 ? '' : 's'}`
+              : `Apply Adjustment (${delta > 0 ? '+' : ''}${delta})`}
           </Button>
         </div>
       )}
@@ -902,6 +944,28 @@ export default function InventoryView() {
   const [activeSort, setActiveSort] = useState('name_asc');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showBulkMarkup, setShowBulkMarkup] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: { row: number; field: string; message: string }[] } | null>(null);
+
+  async function handleImportFile(file: File) {
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/import/products', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? 'Import failed'); return; }
+      setImportResult(data);
+      queryClient.invalidateQueries();
+      toast.success(`Imported ${data.imported}, skipped ${data.skipped}`);
+    } catch {
+      toast.error('Import failed');
+    } finally {
+      setImporting(false);
+    }
+  }
   const router = useRouter();
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -991,24 +1055,75 @@ export default function InventoryView() {
             <DropdownMenuItem onClick={() => router.push('/inventory/suppliers')}>
               <Truck size={14} className="mr-2" /> Suppliers
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/inventory/quick-restock')}>
+              <Plus size={14} className="mr-2" /> Quick Restock
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/inventory/restock')}>
-              <Package size={14} className="mr-2" /> Batch Restock
+              <Package size={14} className="mr-2" /> Batch Restock (CSV)
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/inventory/import')}>
               <Upload size={14} className="mr-2" /> Import CSV
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => {
-              const headers = ['ID','Name','SKU','Category','Cost Price','Markup %','Selling Price','Stock','Status'];
-              toast.info('Export coming soon');
+              if (products.length === 0) { toast.info('No products to export'); return; }
+              exportToCsv({
+                filename: 'inventory',
+                headers: ['ID','Name','SKU','Category','Cost Price','Markup %','Selling Price','Stock','Status'],
+                rows: products.map(p => [
+                  p.id, p.name, p.sku, p.category, p.costPrice ?? 0, p.markupPercent,
+                  ((p.costPrice ?? 0) * (1 + p.markupPercent / 100)).toFixed(2), p.stockQty,
+                  p.isActive ? 'Active' : 'Archived',
+                ]),
+              });
+              toast.success(`Exported ${products.length} product(s) as CSV`);
             }}>
               <Download size={14} className="mr-2" /> Export All
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <Button size="sm" variant="outline" onClick={() => { setShowImport(true); setImportResult(null); }}>
+          Import CSV
+        </Button>
         <Button size="sm" onClick={() => setShowAddProduct(true)}>
           <Plus size={14} /> Add Product
         </Button>
       </PageHeader>
+
+      {showImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowImport(false)}>
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold">Import Products (CSV)</h2>
+              <button onClick={() => setShowImport(false)} className="text-gray-400">✕</button>
+            </div>
+            <a href="/templates/products-import-template.csv" download className="text-sm text-indigo-600 underline">
+              Download Template
+            </a>
+            <div className="mt-3">
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                disabled={importing}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImportFile(f); }}
+                className="block w-full text-sm"
+              />
+            </div>
+            {importing && <p className="mt-3 text-sm text-gray-500">Importing…</p>}
+            {importResult && (
+              <div className="mt-3 text-sm">
+                <p className="font-medium">{importResult.imported} imported, {importResult.skipped} skipped</p>
+                {importResult.errors.length > 0 && (
+                  <ul className="mt-2 max-h-40 overflow-y-auto text-xs text-red-600">
+                    {importResult.errors.map((er, i) => (
+                      <li key={i}>Row {er.row} — {er.field}: {er.message}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Filter Pills — Figma style */}
       <div className="flex items-center gap-2 animate-in slide-in-from-bottom-2 fade-in duration-400">
@@ -1339,17 +1454,15 @@ export default function InventoryView() {
           <Button type="button" variant="ghost" size="sm"
             onClick={() => {
               const selected = products.filter(p => selectedIds.has(p.id));
-              const headers = ['ID','Name','SKU','Category','Cost Price','Markup %','Selling Price','Stock','Status'];
-              const rows = selected.map(p => [
-                p.id, `"${p.name}"`, p.sku, p.category, p.costPrice, p.markupPercent,
-                ((p.costPrice ?? 0) * (1 + p.markupPercent / 100)).toFixed(2), p.stockQty,
-                p.isActive ? 'Active' : 'Archived',
-              ]);
-              const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-              const blob = new Blob([csv], { type: 'text/csv' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a'); a.href = url; a.download = `inventory-export-${Date.now()}.csv`; a.click();
-              URL.revokeObjectURL(url);
+              exportToCsv({
+                filename: 'inventory-selected',
+                headers: ['ID','Name','SKU','Category','Cost Price','Markup %','Selling Price','Stock','Status'],
+                rows: selected.map(p => [
+                  p.id, p.name, p.sku, p.category, p.costPrice ?? 0, p.markupPercent,
+                  ((p.costPrice ?? 0) * (1 + p.markupPercent / 100)).toFixed(2), p.stockQty,
+                  p.isActive ? 'Active' : 'Archived',
+                ]),
+              });
               toast.success(`Exported ${selected.length} product(s) as CSV`);
             }}>
             Export <ChevronDown size={13} className="rotate-180" />

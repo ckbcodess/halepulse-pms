@@ -9,7 +9,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table';
 
-const ROLES = ['MANAGER', 'MCA', 'NES'] as const;
+const ROLES = ['MANAGER', 'PHARMACIST', 'MCA', 'AUDIT'] as const;
 type Role = typeof ROLES[number];
 
 interface Permission { id: string; key: string; label: string; category: string; }
@@ -18,7 +18,7 @@ interface RolePermission { role: Role; permissionKey: string; }
 export default function PermissionsMatrix() {
   const { tenantId } = useParams<{ tenantId: string }>();
   const [permissions,     setPermissions]     = useState<Permission[]>([]);
-  const [rolePerms,       setRolePerms]       = useState<Record<Role, Set<string>>>({ MANAGER: new Set(), MCA: new Set(), NES: new Set() });
+  const [rolePerms,       setRolePerms]       = useState<Record<Role, Set<string>>>({ MANAGER: new Set(), PHARMACIST: new Set(), MCA: new Set(), AUDIT: new Set() });
   const [loading,         setLoading]         = useState(true);
   const [saving,          setSaving]          = useState(false);
   const [savedMsg,        setSavedMsg]        = useState('');
@@ -28,7 +28,7 @@ export default function PermissionsMatrix() {
       .then(r => r.json())
       .then(({ permissions: perms, rolePermissions: rp }: { permissions: Permission[]; rolePermissions: RolePermission[] }) => {
         setPermissions(perms);
-        const map: Record<Role, Set<string>> = { MANAGER: new Set(), MCA: new Set(), NES: new Set() };
+        const map: Record<Role, Set<string>> = { MANAGER: new Set(), PHARMACIST: new Set(), MCA: new Set(), AUDIT: new Set() };
         rp.forEach(r => { if (r.role in map) map[r.role as Role].add(r.permissionKey); });
         setRolePerms(map);
         setLoading(false);

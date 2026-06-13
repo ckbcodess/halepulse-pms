@@ -83,6 +83,7 @@ export const ADJUSTMENT_REASONS = [
   'Expired',
   'Theft / Loss',
   'Returned to Supplier',
+  'Restock',
   'Other',
 ] as const;
 

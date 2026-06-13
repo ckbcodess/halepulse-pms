@@ -12,7 +12,13 @@ model User {
   username           String              @unique
   password           String
   role               String
+  firstName          String?
+  lastName           String?
   contact            String?
+  dob                DateTime?
+  ghanaCard          String?
+  residence          String?
+  canCreateUsers     Boolean             @default(false)
   createdAt          DateTime            @default(now())
   email              String?             @unique
   passwordHash       String?
@@ -27,6 +33,8 @@ model User {
   failedLoginCount   Int                 @default(0)
   lockedUntil        DateTime?
   lastPasswordChange DateTime?
+  credentialCode     String?             // e.g. HAL001-MGR — the role credential identifier
+  isRoleCredential   Boolean             @default(false) // true = auto-created role account
   branch             Branch?             @relation(fields: [branchId], references: [id])
   dynamicRole        DynamicRole?        @relation(fields: [dynamicRoleId], references: [id])
   tenant             Tenant?             @relation(fields: [tenantId], references: [id])
@@ -38,8 +46,47 @@ model User {
   stockMovements     StockMovement[]     @relation("MovementPerformer")
   stockTakesInitiated StockTakeSession[] @relation("StockTakeInitiator")
   stockTakesCompleted StockTakeSession[] @relation("StockTakeCompleter")
+  personAssignments  PersonAssignment[]
 
   @@index([tenantId])
+}
+
+model PersonAssignment {
+  id           String   @id @default(cuid())
+  userId       Int      // references the role-credential User
+  branchId     String
+  tenantId     String
+  personName   String
+  personPhone  String?
+  personNotes  String?
+  assignedAt   DateTime @default(now())
+  assignedBy   Int      // manager userId who made the assignment
+  isActive     Boolean  @default(true)
+  user         User     @relation(fields: [userId], references: [id])
+  branch       Branch   @relation(fields: [branchId], references: [id])
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([userId, isActive])
+  @@index([branchId])
+}
+
+model Expense {
+  id             String   @id @default(cuid())
+  date           DateTime @default(now())
+  category       String   // Rent, Fuel, Internet, Electricity, Repairs, Transport, Miscellaneous
+  amount         Float
+  description    String?
+  tenantId       String
+  branchId       String
+  roleAccount    String?  // e.g. HAL001-MGR
+  assignedPerson String?  // person name at time of entry
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  branch         Branch   @relation(fields: [branchId], references: [id])
+
+  @@index([tenantId, branchId])
+  @@index([tenantId, date])
 }
 
 model Product {
@@ -115,6 +162,8 @@ model StockAdjustment {
   notes       String?
   tenantId    String?
   branchId    String?  // branch where the adjustment was made
+  roleAccount    String?
+  assignedPerson String?
   adjustedAt  DateTime @default(now())
 
   product  Product @relation(fields: [productId], references: [id])
@@ -201,6 +250,8 @@ model Sale {
   voidReason  String? // mandatory when status = voided
   voidedBy    Int? // manager (branch_manager+) who voided
   voidedAt    DateTime?
+  roleAccount    String?  // e.g. HAL001-MCA
+  assignedPerson String?  // person name at time of sale
   prescriptionId Int? // linked prescription, if dispensed against one
   customer    Customer?     @relation(fields: [customerId], references: [id])
   prescription Prescription? @relation(fields: [prescriptionId], references: [id])
@@ -247,6 +298,12 @@ model Tenant {
   licenceNumber          String?
   taxVatNumber           String?
   subscriptionTier       String                  @default("basic")
+  subscriptionPlan       String                  @default("starter")
+  maxBranches            Int                     @default(1)
+  maxUsers               Int                     @default(5)
+  renewalDate            DateTime?
+  suspendedAt            DateTime?
+  suspendReason          String?
   primaryContact         String?
   primaryPhone           String?
   primaryEmail           String?
@@ -279,6 +336,8 @@ model Tenant {
   prescriptions          Prescription[]
   refillReminders        RefillReminder[]
   importJobs             ImportJob[]
+  expenses               Expense[]
+  personAssignments      PersonAssignment[]
 }
 
 model Branch {
@@ -289,6 +348,7 @@ model Branch {
   phone          String?
   isActive       Boolean  @default(true)
   isHeadquarters Boolean  @default(false) // tenant HQ — default branch for tenant-wide actors
+  businessId     String?  @unique // 6-char id: parent tenant's 4-char businessId + 2-char branch suffix
   createdAt      DateTime @default(now())
   tenant            Tenant              @relation(fields: [tenantId], references: [id])
   users             User[]
@@ -301,6 +361,8 @@ model Branch {
   salePayments      SalePayment[]
   eodReports        EodReport[]
   prescriptions     Prescription[]
+  expenses          Expense[]
+  personAssignments PersonAssignment[]
 
   @@index([tenantId, isActive])
 }
@@ -332,6 +394,19 @@ model MenuConfig {
   @@unique([tenantId, role])
 }
 
+// Super-Admin-controlled per-role dashboard widget visibility.
+// Absence of a row means the widget is visible (default-on).
+model DashboardVisibility {
+  id        String  @id @default(cuid())
+  tenantId  String
+  role      Role
+  widgetKey String
+  visible   Boolean @default(true)
+
+  @@unique([tenantId, role, widgetKey])
+  @@index([tenantId, role])
+}
+
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String
@@ -340,6 +415,8 @@ model AuditLog {
   metadata  String?
   createdAt DateTime @default(now())
   ipAddress String?
+  oldValue  Json?
+  newValue  Json?
   tenant    Tenant?  @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId, createdAt(sort: Desc)])
@@ -662,4 +739,6 @@ enum Role {
   MANAGER
   MCA
   NES
+  PHARMACIST
+  AUDIT
 }

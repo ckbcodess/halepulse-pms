@@ -1,22 +1,23 @@
 /**
- * Generates a unique, human-readable Business ID for new tenants.
- * Format: PH-XXXXX (e.g., PH-00001, PH-00042)
- * Auto-increments based on the highest existing Business ID in the database.
+ * Generates a unique HQ Business ID for a new tenant.
+ * Format: <3-letter prefix>000 (e.g. HAL000, MED000)
+ * The prefix must be exactly 3 uppercase alpha characters.
+ * Throws if the prefix is already taken.
  */
 import prisma from '@/lib/prisma';
 
-export async function generateBusinessId(): Promise<string> {
-  const lastTenant = await prisma.tenant.findFirst({
-    where: { businessId: { not: null } },
-    orderBy: { businessId: 'desc' },
-    select: { businessId: true },
-  });
-
-  let nextNum = 1;
-  if (lastTenant?.businessId) {
-    const match = lastTenant.businessId.match(/PH-(\d+)/);
-    if (match) nextNum = parseInt(match[1], 10) + 1;
+export async function generateBusinessId(prefix: string): Promise<string> {
+  if (!/^[A-Za-z]{3}$/.test(prefix)) {
+    throw new Error('Prefix must be exactly 3 alphabetic characters (e.g. HAL, MED).');
   }
 
-  return `PH-${String(nextNum).padStart(5, '0')}`;
+  const upper = prefix.toUpperCase();
+  const hqId = `${upper}000`;
+
+  const existing = await prisma.tenant.findUnique({ where: { businessId: hqId } });
+  if (existing) {
+    throw new Error(`Prefix ${upper} is already taken. Choose a different 3-letter prefix.`);
+  }
+
+  return hqId;
 }

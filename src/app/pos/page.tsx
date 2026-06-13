@@ -36,6 +36,7 @@ export default function POSPage() {
   // New dialog & checkout state
   const [activeDialog, setActiveDialog] = useState<ActiveDialog>(null);
   const [discountInput, setDiscountInput] = useState('');
+  const [discountMode, setDiscountMode] = useState<'amount' | 'percent'>('amount');
   const [miscName, setMiscName] = useState('');
   const [miscPrice, setMiscPrice] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
@@ -48,7 +49,11 @@ export default function POSPage() {
     addMiscItem, resetCheckout
   } = useCartStore();
 
-  const discountAmount = discount?.value ?? 0;
+  const discountAmount = !discount
+    ? 0
+    : discount.type === 'percent'
+      ? Math.min(total, (total * discount.value) / 100)
+      : Math.min(total, discount.value);
   const discountedTotal = Math.max(0, total - discountAmount);
 
   // Load tenant info once
@@ -88,11 +93,10 @@ export default function POSPage() {
       return;
     }
     if (product.stockQty <= 0) {
-      toast.error(`${product.name} is out of stock`);
-      return;
+      toast.warning(`${product.name} has no stock recorded — adding anyway`);
     }
     const existing = items.find(i => i.id === product.id);
-    if (existing && existing.quantity >= product.stockQty) {
+    if (existing && product.stockQty > 0 && existing.quantity >= product.stockQty) {
       toast.error(`Only ${product.stockQty} units of ${product.name} available`);
       return;
     }
@@ -104,7 +108,7 @@ export default function POSPage() {
     if (!item) return;
     if (item.isMisc) { updateQuantity(itemId, 1); return; }
     const product = products.find(p => p.id === itemId);
-    if (product && item.quantity >= product.stockQty) {
+    if (product && product.stockQty > 0 && item.quantity >= product.stockQty) {
       toast.error(`Only ${product.stockQty} units of ${product.name} available`);
       return;
     }
@@ -141,15 +145,19 @@ export default function POSPage() {
   const handleApplyDiscount = () => {
     const val = parseFloat(discountInput);
     if (isNaN(val) || val <= 0) {
-      toast.error('Enter a valid discount amount');
+      toast.error('Enter a valid discount');
       return;
     }
-    if (val > total) {
-      toast.error('Discount cannot exceed subtotal');
-      return;
+    if (discountMode === 'percent') {
+      if (val > 100) { toast.error('Percentage cannot exceed 100%'); return; }
+      const amt = (total * val) / 100;
+      setDiscount({ type: 'percent', value: val });
+      toast.success(`${val}% (₵${amt.toFixed(2)}) discount applied`);
+    } else {
+      if (val > total) { toast.error('Discount cannot exceed subtotal'); return; }
+      setDiscount({ type: 'fixed', value: val });
+      toast.success(`₵${val.toFixed(2)} discount applied`);
     }
-    setDiscount({ type: 'fixed', value: val });
-    toast.success(`₵${val.toFixed(2)} discount applied`);
     setDiscountInput('');
     setActiveDialog(null);
   };
@@ -710,17 +718,45 @@ export default function POSPage() {
               <span>Current Subtotal</span>
               <span className="font-bold text-foreground">₵{total.toFixed(2)}</span>
             </div>
+            {/* Mode toggle: amount vs percentage */}
+            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+              <Button
+                type="button"
+                variant={discountMode === 'amount' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="flex-1"
+                onClick={() => setDiscountMode('amount')}
+              >
+                Amount (₵)
+              </Button>
+              <Button
+                type="button"
+                variant={discountMode === 'percent' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="flex-1"
+                onClick={() => setDiscountMode('percent')}
+              >
+                Percent (%)
+              </Button>
+            </div>
             <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">Discount Amount (₵)</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">
+                {discountMode === 'percent' ? 'Discount Percentage (%)' : 'Discount Amount (₵)'}
+              </label>
               <Input
                 type="number"
                 className="h-14 text-2xl font-black text-center bg-muted/30"
                 value={discountInput}
                 onChange={(e) => setDiscountInput(e.target.value)}
-                placeholder="0.00"
+                placeholder={discountMode === 'percent' ? '0' : '0.00'}
                 autoFocus
                 onKeyDown={(e) => { if (e.key === 'Enter') handleApplyDiscount(); }}
               />
+              {discountMode === 'percent' && discountInput && !isNaN(parseFloat(discountInput)) && (
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  = ₵{((total * (parseFloat(discountInput) || 0)) / 100).toFixed(2)} off
+                </p>
+              )}
             </div>
           </div>
           <SheetFooter className="">

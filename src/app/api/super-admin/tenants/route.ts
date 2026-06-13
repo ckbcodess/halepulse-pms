@@ -3,19 +3,37 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { requireRole } from '@/lib/auth/requireRole';
 import { logAction } from '@/lib/audit/logAction';
+import { generateBusinessId } from '@/lib/utils/generateBusinessId';
 
-export async function GET() {
+
+export async function GET(req: NextRequest) {
   try {
     await requireRole(['SUPER_ADMIN']);
   } catch {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  const sp = req.nextUrl.searchParams;
+  const q = sp.get('q')?.trim() ?? '';
+  const statusFilter = sp.get('status') ?? 'all';
+
+  const where: Record<string, unknown> = {};
+  if (q) {
+    where.OR = [
+      { name: { contains: q, mode: 'insensitive' } },
+      { businessId: { contains: q, mode: 'insensitive' } },
+    ];
+  }
+  if (statusFilter === 'active') where.isActive = true;
+  else if (statusFilter === 'suspended') { where.isActive = false; where.NOT = { suspendedAt: null }; }
+  else if (statusFilter === 'inactive') { where.isActive = false; where.suspendedAt = null; }
+
   const tenants = await prisma.tenant.findMany({
+    where,
     orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { users: true } } },
+    include: { _count: { select: { users: true, branches: true } } },
   });
-  return NextResponse.json(tenants);
+  return NextResponse.json({ tenants });
 }
 
 export async function POST(req: NextRequest) {
@@ -27,10 +45,14 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, subdomain, primaryColor, secondaryColor, logoUrl } = body;
+  const { name, subdomain, primaryColor, secondaryColor, logoUrl, prefix } = body;
 
   if (!name || !subdomain) {
     return NextResponse.json({ error: 'name and subdomain are required' }, { status: 400 });
+  }
+
+  if (!prefix || !/^[A-Za-z]{3}$/.test(prefix)) {
+    return NextResponse.json({ error: 'prefix must be exactly 3 alphabetic characters (e.g. HAL, MED)' }, { status: 400 });
   }
 
   const existing = await prisma.tenant.findUnique({ where: { subdomain } });
@@ -38,50 +60,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Subdomain already taken' }, { status: 409 });
   }
 
-  const tempPassword  = `Mgr${Math.random().toString(36).slice(2, 8).toUpperCase()}!`;
-  const managerEmail  = `manager@${subdomain}.local`;
+  let businessId: string;
+  try {
+    businessId = await generateBusinessId(prefix);
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to generate business ID' }, { status: 409 });
+  }
 
   const tenant = await prisma.tenant.create({
-    data: { name, subdomain, primaryColor, secondaryColor, logoUrl: logoUrl || null },
+    data: { name, subdomain, primaryColor, secondaryColor, logoUrl: logoUrl || null, businessId },
   });
 
-  const passwordHash = await bcrypt.hash(tempPassword, 12);
-  await prisma.user.create({
+  // HQ branch shares the same businessId as the tenant
+  const hqBranch = await prisma.branch.create({
     data: {
-      username:     managerEmail,
-      password:     'NEXTAUTH_MANAGED',
-      role:         'MANAGER',
-      email:        managerEmail,
-      passwordHash,
-      saasRole:     'MANAGER',
-      tenantId:     tenant.id,
-      isActive:     true,
+      name: 'Head Office',
+      tenantId: tenant.id,
+      isHeadquarters: true,
+      businessId: businessId,
     },
   });
 
-  // Seed default permissions (new tenant — no duplicates possible)
-  const allPerms = await prisma.permission.findMany();
-  const mcaPerms = ['view_inventory', 'edit_inventory', 'view_orders', 'create_orders'];
-  const nesPerms = ['view_inventory', 'view_patients', 'view_orders', 'view_reports'];
+  await logAction(session.user.id, null, 'TENANT_CREATED', { tenantId: tenant.id, name, businessId });
 
-  const rolePermEntries = [
-    ...allPerms.map(p => ({ tenantId: tenant.id, role: 'MANAGER' as any, permissionKey: p.key })),
-    ...mcaPerms.map(k  => ({ tenantId: tenant.id, role: 'MCA'     as any, permissionKey: k })),
-    ...nesPerms.map(k  => ({ tenantId: tenant.id, role: 'NES'     as any, permissionKey: k })),
-  ];
-  await prisma.rolePermission.createMany({ data: rolePermEntries });
-
-  // Seed default menu configs — sourced from MASTER_MENU so new tenants are always in sync
-  const { MASTER_MENU } = await import('@/lib/menus/getMenuForUser');
-  await prisma.menuConfig.createMany({
-    data: [
-      { tenantId: tenant.id, role: 'MANAGER' as any, menuItems: JSON.stringify(MASTER_MENU.map(i => ({ key: i.key, label: i.label, path: i.path, visible: true }))) },
-      { tenantId: tenant.id, role: 'MCA'     as any, menuItems: JSON.stringify(MASTER_MENU.map(i => ({ key: i.key, label: i.label, path: i.path, visible: ['dashboard','pos','inventory','customers'].includes(i.key) }))) },
-      { tenantId: tenant.id, role: 'NES'     as any, menuItems: JSON.stringify(MASTER_MENU.map(i => ({ key: i.key, label: i.label, path: i.path, visible: ['dashboard','inventory','reports'].includes(i.key) }))) },
-    ],
-  });
-
-  await logAction(session.user.id, null, 'TENANT_CREATED', { tenantId: tenant.id, name });
-
-  return NextResponse.json({ tenant, managerEmail, tempPassword }, { status: 201 });
+  return NextResponse.json({ tenant, hqBranch }, { status: 201 });
 }

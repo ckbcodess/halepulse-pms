@@ -10,20 +10,16 @@ export interface MenuItem {
 // ── Master list — single source of truth for every possible sidebar item ──────
 // Add new pages here. defaultRoles sets visibility when no DB config exists yet.
 export const MASTER_MENU: (MenuItem & { defaultRoles: string[] })[] = [
-  { key: 'dashboard', label: 'Dashboard',    path: '/',          visible: true, defaultRoles: ['MANAGER','MCA','NES'] },
-  { key: 'pos',       label: 'Point of Sale', path: '/pos',       visible: true, defaultRoles: ['MANAGER','MCA']       },
-  { key: 'sales',     label: 'Sales',         path: '/pos/sales', visible: true, defaultRoles: ['MANAGER','MCA','NES'] },
-  { key: 'eod',       label: 'End of Day',    path: '/pos/eod',   visible: true, defaultRoles: ['MANAGER'] },
-  { key: 'inventory', label: 'Inventory',    path: '/inventory', visible: true, defaultRoles: ['MANAGER','MCA','NES'] },
-  { key: 'customers', label: 'Customers',    path: '/customers', visible: true, defaultRoles: ['MANAGER','MCA']       },
-  { key: 'prescriptions', label: 'Prescriptions', path: '/prescriptions', visible: true, defaultRoles: ['MANAGER','MCA'] },
-  { key: 'refills',   label: 'Refills',       path: '/refills',   visible: true, defaultRoles: ['MANAGER','MCA'] },
-  { key: 'reports',   label: 'Reports',      path: '/reports',   visible: true, defaultRoles: ['MANAGER','NES']       },
-  { key: 'stock-take', label: 'Stock Take',  path: '/inventory/stock-take', visible: true, defaultRoles: ['MANAGER','MCA'] },
-  { key: 'transfers', label: 'Transfers',     path: '/inventory/transfers', visible: true, defaultRoles: ['MANAGER'] },
-  { key: 'audit-log', label: 'Audit Log',    path: '/inventory/audit-log', visible: true, defaultRoles: ['MANAGER'] },
-  { key: 'settings',  label: 'Settings',     path: '/settings',  visible: true, defaultRoles: ['MANAGER']             },
-  { key: 'users',     label: 'Team',         path: '/users',     visible: true, defaultRoles: ['MANAGER']             },
+  { key: 'dashboard',   label: 'Dashboard',   path: '/',            visible: true, defaultRoles: ['MANAGER','PHARMACIST','MCA','AUDIT'] },
+  { key: 'pos',         label: 'POS',         path: '/pos',         visible: true, defaultRoles: ['PHARMACIST','MCA'] }, // MGR via toggle
+  { key: 'stock',       label: 'Stock',       path: '/inventory',   visible: true, defaultRoles: ['MANAGER','PHARMACIST'] },
+  { key: 'stock-value', label: 'Stock Value', path: '/stock-value', visible: true, defaultRoles: ['MANAGER','PHARMACIST'] },
+  { key: 'sales',       label: 'Sales',       path: '/sales',       visible: true, defaultRoles: ['MANAGER','PHARMACIST','MCA','AUDIT'] },
+  { key: 'customers',   label: 'Customers',   path: '/customers',   visible: true, defaultRoles: ['MANAGER','PHARMACIST','MCA'] },
+  { key: 'purchases',   label: 'Expenses',    path: '/purchases',   visible: true, defaultRoles: ['MANAGER'] },
+  { key: 'reports',     label: 'Reports',     path: '/reports',     visible: true, defaultRoles: ['MANAGER','PHARMACIST','AUDIT'] },
+  { key: 'team',        label: 'Team',        path: '/team',        visible: true, defaultRoles: ['MANAGER'] },
+  { key: 'settings',    label: 'Settings',    path: '/settings',    visible: true, defaultRoles: ['MANAGER'] },
 ];
 
 /**
@@ -45,9 +41,11 @@ function mergeWithMaster(stored: MenuItem[], role: string): MenuItem[] {
 }
 
 function dashboardPathForRole(role: string): string {
-  if (role === 'MANAGER') return '/dashboard/manager';
-  if (role === 'MCA')     return '/dashboard/mca';
-  if (role === 'NES')     return '/dashboard/nes';
+  if (role === 'MANAGER')    return '/dashboard/manager';
+  if (role === 'PHARMACIST') return '/dashboard/pharmacist';
+  if (role === 'MCA')        return '/dashboard/mca';
+  if (role === 'AUDIT')      return '/dashboard/audit';
+  if (role === 'NES')        return '/dashboard/audit'; // legacy alias
   return '/';
 }
 

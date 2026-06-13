@@ -1,17 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getTenantContext } from '@/lib/auth/getTenantContext';
-import prisma from '@/lib/prisma';
+import { getScopedPrisma } from '@/lib/tenantPrisma';
 
 // ── GET /api/customers ────────────────────────────────────────────────────────
 // Returns all tenant customers ordered by loyalty points (descending).
-// Used by React Query for client-side caching — re-navigation is instant
-// within the 5-minute stale window.
+// Uses the tenant-scoped client — tenantId is injected automatically, so it
+// can never be forgotten.
 export async function GET() {
   try {
-    const { tenantId } = await getTenantContext();
+    const { db } = await getScopedPrisma();
 
-    const customers = await prisma.customer.findMany({
-      where:   { tenantId },
+    const customers = await db.customer.findMany({
       orderBy: { loyaltyPoints: 'desc' },
     });
 
