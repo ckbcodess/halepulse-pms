@@ -6,6 +6,7 @@ import { getTenantContext } from '@/lib/auth/getTenantContext';
 import { branchWhere } from '@/lib/auth/branchScope';
 import prisma from '@/lib/prisma';
 import DashboardView from '../manager/DashboardView';
+import { getHiddenWidgets } from '@/lib/dashboard/widgets';
 
 export default async function McaDashboard() {
   const session = await getServerSession(authOptions);
@@ -19,6 +20,7 @@ export default async function McaDashboard() {
   const tenantId = isImpersonating ? impersonation.tenantId : session.user.tenantId!;
 
   const ctx = await getTenantContext();
+  const hiddenWidgets = Array.from(await getHiddenWidgets(tenantId, isImpersonating ? impersonation.role : session.user.role));
   const branchFilter = await branchWhere(ctx); // pharmacist is locked to their branch
 
   // ── Date boundaries ──
@@ -125,6 +127,7 @@ export default async function McaDashboard() {
         lowStockCount: lowStock,
         expiringCount: expiringSoon,
       }}
+      hiddenWidgets={hiddenWidgets}
     />
   );
 }

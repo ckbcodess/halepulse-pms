@@ -40,10 +40,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const effectiveTenantId = impersonation?.tenantId ?? session?.user?.tenantId ?? null;
   const effectiveRole     = impersonation?.role     ?? session?.user?.role     ?? '';
 
+  // The Super Admin console must ALWAYS use the default HalePulse palette —
+  // tenant branding must never leak into it. Branding only applies when the
+  // user is acting within a tenant (a tenant user, or an admin impersonating one).
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN' && !impersonation;
+
   // Read brand color from cookie written by the branding API when admin saves.
   // No DB query — zero latency, no Prisma errors on cold starts.
   let baseColor = '#6366f1|stone';
-  if (effectiveTenantId) {
+  if (effectiveTenantId && !isSuperAdmin) {
     const cookieStore = await cookies();
     const brandCookie = cookieStore.get(`hp_brand_${effectiveTenantId}`);
     if (brandCookie?.value) {
@@ -61,10 +66,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   //   1. Super-admins don't share dark/light with tenant users
   //   2. Different tenants on the same browser don't share dark/light
   //   3. Impersonation uses the impersonated tenant's preference
-  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN' && !impersonation;
   const themeStorageKey = isSuperAdmin
     ? 'theme_admin'
     : `theme_${effectiveTenantId ?? 'default'}`;
+
+  // Brand-color storage key — separate per role/tenant so a tenant's brand
+  // colour stored in localStorage never bleeds into the admin console.
+  const brandStorageKey = isSuperAdmin
+    ? 'brand_admin'
+    : `brand_${effectiveTenantId ?? 'default'}`;
 
   return (
     <html
@@ -80,7 +90,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ReactQueryProvider>
           <SessionProvider session={session}>
             <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange storageKey={themeStorageKey}>
-              <DynamicThemeProvider initialBaseColor={baseColor}>
+              <DynamicThemeProvider initialBaseColor={baseColor} storageKey={brandStorageKey}>
                 <Toaster position="top-right" richColors />
                 <HeartbeatProvider>
                   <AppShell session={session} menuItems={menuItems}>

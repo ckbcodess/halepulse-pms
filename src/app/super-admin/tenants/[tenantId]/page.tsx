@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Users, Package, ShoppingBag, GitBranch, Paintbrush, Shield, Menu,
-  UserPlus, Eye, EyeOff, ChevronRight, Circle,
+  UserPlus, Eye, EyeOff, ChevronRight, Circle, ShieldOff, ShieldCheck, Key, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,11 +45,20 @@ export default function TenantDetailPage() {
   const [tenant, setTenant] = useState<TenantDetail | null>(null);
   const [users, setUsers] = useState<TenantUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [suspending, setSuspending] = useState(false);
+  const [resetResult, setResetResult] = useState<{ userId: number; tempPassword: string } | null>(null);
 
   useEffect(() => {
+    const safeFetch = async (url: string) => {
+      const r = await fetch(url);
+      if (!r.ok) return null;
+      const text = await r.text();
+      if (!text) return null;
+      try { return JSON.parse(text); } catch { return null; }
+    };
     Promise.all([
-      fetch(`/api/super-admin/tenants/${tenantId}/detail`).then(r => r.json()),
-      fetch(`/api/super-admin/tenants/${tenantId}/users`).then(r => r.json()),
+      safeFetch(`/api/super-admin/tenants/${tenantId}/detail`),
+      safeFetch(`/api/super-admin/tenants/${tenantId}/users`),
     ]).then(([t, u]) => {
       setTenant(t);
       setUsers(Array.isArray(u) ? u : []);
@@ -64,6 +73,43 @@ export default function TenantDetailPage() {
       body: JSON.stringify({ isActive: !isActive }),
     });
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, isActive: !isActive } : u));
+  };
+
+  const handleSuspend = async () => {
+    if (!tenant) return;
+    setSuspending(true);
+    const action = tenant.isActive ? 'suspend' : 'reactivate';
+    const res = await fetch(`/api/super-admin/tenants/${tenantId}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setTenant(prev => prev ? { ...prev, isActive: data.isActive } : prev);
+    }
+    setSuspending(false);
+  };
+
+  const deleteUser = async (userId: number, label: string) => {
+    if (!confirm(`Delete user ${label}? This cannot be undone.`)) return;
+    const res = await fetch(`/api/super-admin/tenants/${tenantId}/users/${userId}`, { method: 'DELETE' });
+    if (res.ok) {
+      setUsers(prev => prev.filter(u => u.id !== userId));
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || 'Failed to delete user');
+    }
+  };
+
+  const handleResetPassword = async (userId: number) => {
+    const res = await fetch(`/api/super-admin/tenants/${tenantId}/users/${userId}/reset-password`, {
+      method: 'POST',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setResetResult({ userId, tempPassword: data.tempPassword });
+    }
   };
 
   if (loading) {
@@ -107,7 +153,26 @@ export default function TenantDetailPage() {
             </p>
           </div>
         </div>
+        <Button
+          variant={tenant.isActive ? 'destructive' : 'default'}
+          size="sm"
+          disabled={suspending}
+          onClick={handleSuspend}
+        >
+          {tenant.isActive ? <ShieldOff size={14} /> : <ShieldCheck size={14} />}
+          {suspending ? 'Processing…' : tenant.isActive ? 'Suspend' : 'Reactivate'}
+        </Button>
       </div>
+
+      {/* Password reset result */}
+      {resetResult && (
+        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300 p-4 rounded-xl text-sm">
+          Password reset for user #{resetResult.userId}. Temp password:{' '}
+          <code className="font-mono font-bold">{resetResult.tempPassword}</code>
+          {' '}— user must change on next login.
+          <button className="ml-3 text-xs underline" onClick={() => setResetResult(null)}>Dismiss</button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -126,7 +191,6 @@ export default function TenantDetailPage() {
           { label: 'Branding', href: `/super-admin/tenants/${tenantId}/branding`, icon: Paintbrush, bg: 'bg-muted text-muted-foreground' },
           { label: 'Permissions', href: `/super-admin/tenants/${tenantId}/permissions`, icon: Shield, bg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
           { label: 'Menus', href: `/super-admin/tenants/${tenantId}/menus`, icon: Menu, bg: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300' },
-          { label: 'Create User', href: `/super-admin/tenants/${tenantId}/users/new`, icon: UserPlus, bg: 'bg-destructive/10 text-destructive' },
         ].map(a => (
           <Link key={a.href} href={a.href} className={`${a.bg} rounded-xl p-4 flex items-center gap-3 hover:opacity-80 transition-opacity`}>
             <a.icon size={18} />
@@ -141,7 +205,7 @@ export default function TenantDetailPage() {
         <h3 className="text-sm font-bold text-foreground mb-3">View Dashboard As</h3>
         <p className="text-xs text-muted-foreground mb-4">Preview what each role sees in this tenant&apos;s dashboard.</p>
         <div className="flex flex-wrap gap-3">
-          {(['MANAGER', 'MCA', 'NES'] as const).map(role => (
+          {(['MANAGER', 'PHARMACIST', 'MCA', 'AUDIT'] as const).map(role => (
             <Button
               key={role}
               variant="secondary"
@@ -203,14 +267,32 @@ export default function TenantDetailPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => toggleUser(user.id, user.isActive)}
-                      title={user.isActive ? 'Disable user' : 'Enable user'}
-                    >
-                      {user.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => toggleUser(user.id, user.isActive)}
+                        title={user.isActive ? 'Disable user' : 'Enable user'}
+                      >
+                        {user.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleResetPassword(user.id)}
+                        title="Reset password"
+                      >
+                        <Key size={14} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => deleteUser(user.id, user.email || user.username)}
+                        title="Delete user"
+                      >
+                        <Trash2 size={14} className="text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               );

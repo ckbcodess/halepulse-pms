@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const tenantId = searchParams.get('tenantId');
   const role     = searchParams.get('role');
 
-  if (!tenantId || !role || !['MANAGER', 'MCA', 'NES'].includes(role)) {
+  if (!tenantId || !role || !['MANAGER', 'PHARMACIST', 'MCA', 'AUDIT', 'NES'].includes(role)) {
     return NextResponse.redirect(new URL('/super-admin', req.url));
   }
 

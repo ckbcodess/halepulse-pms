@@ -12,75 +12,144 @@ import { Badge } from '@/components/ui/badge';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table';
-import { ReportsTabs } from './ReportsTabs';
 import MonthlyAiSummary from './MonthlyAiSummary';
+import ReportControls from './ReportControls';
 
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; range?: string }>;
+  searchParams: Promise<{
+    tab?: string; range?: string;
+    from?: string; to?: string;
+    product?: string; paymentMethod?: string; status?: string;
+    minAmount?: string; maxAmount?: string;
+    branchId?: string; category?: string; supplier?: string;
+    minStock?: string; maxStock?: string;
+    expiryDays?: string; sortBy?: string;
+    month?: string; year?: string;
+  }>;
 }) {
   const ctx = await getTenantContext();
   const { tenantId } = ctx;
   const branchFilter = await branchWhere(ctx);
 
   const params = await searchParams;
-  const tab = params.tab || 'sales';
-  const range = params.range || '30';
+  const tab    = params.tab    || 'sales';
+  const range  = params.range  || '30';
 
-  // ── Date range ──────────────────────────────────────────────────────────────
-  const days = parseInt(range, 10) || 30;
-  const rangeStart = new Date();
-  rangeStart.setDate(rangeStart.getDate() - days);
-  rangeStart.setHours(0, 0, 0, 0);
+  // Date range — from/to override the range quick buttons
+  let rangeStart: Date;
+  if (params.from) {
+    rangeStart = new Date(params.from);
+    rangeStart.setHours(0, 0, 0, 0);
+  } else {
+    const days = parseInt(range, 10) || 30;
+    rangeStart = new Date();
+    rangeStart.setDate(rangeStart.getDate() - days);
+    rangeStart.setHours(0, 0, 0, 0);
+  }
+  const rangeEnd = params.to ? new Date(params.to + 'T23:59:59') : new Date();
 
-  const tenantFilter = { tenantId };              // products are tenant-wide
-  const saleFilter = { tenantId, ...branchFilter }; // sales are branch-scoped
+  const tenantFilter  = { tenantId };
+  const baseBranchFilter = params.branchId
+    ? { branchId: params.branchId }
+    : branchFilter;
+  const saleFilter = { tenantId, ...baseBranchFilter };
+
+  // Build dynamic where clauses from filters
+  const dateRangeFilter = { gte: rangeStart, lte: rangeEnd };
+
+  const saleWhereBase: Record<string, unknown> = {
+    ...saleFilter,
+    createdAt: dateRangeFilter,
+  };
+  if (params.status)        saleWhereBase.status = params.status;
+  if (params.minAmount || params.maxAmount) {
+    saleWhereBase.totalAmount = {
+      ...(params.minAmount ? { gte: parseFloat(params.minAmount) } : {}),
+      ...(params.maxAmount ? { lte: parseFloat(params.maxAmount) } : {}),
+    };
+  }
+  if (params.product) {
+    saleWhereBase.items = {
+      some: { product: { name: { contains: params.product, mode: 'insensitive' } } },
+    };
+  }
+  if (params.paymentMethod) {
+    saleWhereBase.payments = {
+      some: { paymentMethod: params.paymentMethod },
+    };
+  }
+
+  // Product filters for inventory / expiry / top products
+  const productWhereBase: Record<string, unknown> = { ...tenantFilter };
+  if (params.category) productWhereBase.category = { contains: params.category, mode: 'insensitive' };
+  if (params.product)  productWhereBase.name = { contains: params.product, mode: 'insensitive' };
+  if (params.supplier) {
+    productWhereBase.supplier = { name: { contains: params.supplier, mode: 'insensitive' } };
+  }
+  if (params.minStock || params.maxStock) {
+    productWhereBase.stockQty = {
+      ...(params.minStock ? { gte: parseInt(params.minStock) } : {}),
+      ...(params.maxStock ? { lte: parseInt(params.maxStock) } : {}),
+    };
+  }
+
+  // Sale item base filter for top products / frequency
+  const saleItemSaleFilter: Record<string, unknown> = { ...saleFilter, createdAt: dateRangeFilter };
+  if (params.status) saleItemSaleFilter.status = params.status;
+  const saleItemProductFilter: Record<string, unknown> = {};
+  if (params.product)  saleItemProductFilter.name = { contains: params.product, mode: 'insensitive' };
+  if (params.category) saleItemProductFilter.category = { contains: params.category, mode: 'insensitive' };
+
+  const topProductsOrderBy = params.sortBy === 'revenue'
+    ? { _sum: { price: 'desc' as const } }
+    : { _sum: { quantity: 'desc' as const } };
 
   // ── Sales data ───────────────────────────────────────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [salesSummary, totalRevenue, recentSales, topProducts, lowStockProducts, expiringProducts] =
     await Promise.all([
-      // Daily sales for the range (grouped manually)
       prisma.sale.findMany({
-        where: { ...saleFilter, createdAt: { gte: rangeStart } },
+        where: saleWhereBase as any,
         orderBy: { createdAt: 'asc' },
         include: { customer: true, items: { include: { product: true } } },
       }),
-      // Total revenue in range
       prisma.sale.aggregate({
         _sum: { totalAmount: true },
         _count: true,
-        where: { ...saleFilter, createdAt: { gte: rangeStart } },
+        where: saleWhereBase as any,
       }),
-      // Last 10 sales
       prisma.sale.findMany({
         where: saleFilter,
         take: 10,
         orderBy: { createdAt: 'desc' },
         include: { customer: true, items: true },
       }),
-      // Top selling products via SaleItems
       prisma.saleItem.groupBy({
         by: ['productId'],
         _sum: { quantity: true, price: true },
-        orderBy: { _sum: { quantity: 'desc' } },
+        orderBy: topProductsOrderBy,
         take: 10,
         where: {
-          sale: { ...saleFilter, createdAt: { gte: rangeStart } },
+          sale: saleItemSaleFilter as any,
+          ...(Object.keys(saleItemProductFilter).length > 0 ? { product: saleItemProductFilter as any } : {}),
         },
       }),
-      // Low stock
       prisma.product.findMany({
-        where: { ...tenantFilter, stockQty: { lte: 10 } },
+        where: { ...tenantFilter, ...productWhereBase, stockQty: { lte: 10 } } as any,
         orderBy: { stockQty: 'asc' },
         take: 20,
       }),
-      // Expiring within 90 days
       prisma.product.findMany({
         where: {
           ...tenantFilter,
-          expiryDate: { lte: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), gt: new Date() },
-        },
+          ...productWhereBase,
+          expiryDate: {
+            lte: new Date(Date.now() + (parseInt(params.expiryDays ?? '90', 10)) * 24 * 60 * 60 * 1000),
+            gt: new Date(),
+          },
+        } as any,
         orderBy: { expiryDate: 'asc' },
         take: 20,
       }),
@@ -94,9 +163,9 @@ export default async function ReportsPage({
   });
   const productMap = new Map(productNames.map(p => [p.id, p]));
 
-  const revenue = totalRevenue._sum.totalAmount ?? 0;
-  const txCount = totalRevenue._count ?? 0;
-  const avgSale = txCount > 0 ? revenue / txCount : 0;
+  const revenue  = totalRevenue._sum.totalAmount ?? 0;
+  const txCount  = totalRevenue._count ?? 0;
+  const avgSale  = txCount > 0 ? revenue / txCount : 0;
 
   // Group sales by day
   const salesByDay = new Map<string, number>();
@@ -104,22 +173,35 @@ export default async function ReportsPage({
     const day = new Date(sale.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
     salesByDay.set(day, (salesByDay.get(day) ?? 0) + sale.totalAmount);
   }
-  // Use `days` (from the selected range param) so 7/30/90-day selector is respected
+  const days = parseInt(range, 10) || 30;
   const dailyData = Array.from(salesByDay.entries()).slice(-days);
   const maxDay = Math.max(...dailyData.map(d => d[1]), 1);
 
-  // ── Payments tab: revenue by payment method over the range ───────────────────
+  // ── Payments tab ─────────────────────────────────────────────────────────────
+  const paymentWhereBase: Record<string, unknown> = {
+    ...saleFilter,
+    createdAt: dateRangeFilter,
+    sale: { status: { not: 'voided' } },
+  };
+  if (params.paymentMethod) paymentWhereBase.paymentMethod = params.paymentMethod;
+
   const paymentBreakdown = tab === 'payments'
     ? await prisma.salePayment.groupBy({
         by: ['paymentMethod'],
         _sum: { amount: true },
         _count: true,
-        where: { ...saleFilter, createdAt: { gte: rangeStart }, sale: { status: { not: 'voided' } } },
+        where: paymentWhereBase as any,
       })
     : [];
   const paymentTotal = paymentBreakdown.reduce((s, p) => s + (p._sum.amount ?? 0), 0);
 
-  // ── Frequency tab: products ranked by number of sale lines (transactions) ────
+  // ── Frequency tab ─────────────────────────────────────────────────────────────
+  const frequencyWhere: Record<string, unknown> = {
+    sale: { ...saleFilter, status: { not: 'voided' }, createdAt: dateRangeFilter },
+  };
+  if (Object.keys(saleItemProductFilter).length > 0) {
+    frequencyWhere.product = saleItemProductFilter;
+  }
   const frequency = tab === 'frequency'
     ? await prisma.saleItem.groupBy({
         by: ['productId'],
@@ -127,20 +209,28 @@ export default async function ReportsPage({
         _sum: { quantity: true },
         orderBy: { _count: { productId: 'desc' } },
         take: 25,
-        where: { sale: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: rangeStart } } },
+        where: frequencyWhere as any,
       })
     : [];
   const freqNames = frequency.length
-    ? await prisma.product.findMany({ where: { id: { in: frequency.map(f => f.productId) } }, select: { id: true, name: true, category: true } })
+    ? await prisma.product.findMany({
+        where: { id: { in: frequency.map(f => f.productId) } },
+        select: { id: true, name: true, category: true },
+      })
     : [];
   const freqMap = new Map(freqNames.map(p => [p.id, p]));
 
   const PAYMENT_LABEL: Record<string, string> = { cash: 'Cash', mobile_money: 'Mobile Money', card: 'Card', credit: 'Credit' };
 
-  // ── Monthly tab: month-over-month statistical summary ────────────────────────
+  // ── Monthly tab ──────────────────────────────────────────────────────────────
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const selMonth = params.month ? parseInt(params.month, 10) - 1 : now.getMonth();
+  const selYear  = params.year  ? parseInt(params.year, 10)  : now.getFullYear();
+  const monthStart = new Date(selYear, selMonth, 1);
+  const monthEnd   = new Date(selYear, selMonth + 1, 0, 23, 59, 59);
+  const prevMonthStart = new Date(selYear, selMonth - 1, 1);
+  const prevMonthEnd   = new Date(selYear, selMonth, 0, 23, 59, 59);
+
   let monthly: null | {
     thisRevenue: number; lastRevenue: number; changePct: number | null; saleCount: number;
     topProducts: { name: string; quantity: number; revenue: number }[];
@@ -151,12 +241,12 @@ export default async function ReportsPage({
 
   if (tab === 'monthly') {
     const [thisRev, lastRev, topQty, topCust, methodRev, stockItems] = await Promise.all([
-      prisma.sale.aggregate({ _sum: { totalAmount: true }, _count: true, where: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: monthStart } } }),
-      prisma.sale.aggregate({ _sum: { totalAmount: true }, where: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: prevMonthStart, lt: monthStart } } }),
-      prisma.saleItem.groupBy({ by: ['productId'], _sum: { quantity: true, price: true }, orderBy: { _sum: { quantity: 'desc' } }, take: 10, where: { sale: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: monthStart } } } }),
-      prisma.sale.groupBy({ by: ['customerId'], _count: true, _sum: { totalAmount: true }, orderBy: { _count: { customerId: 'desc' } }, take: 10, where: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: monthStart }, customerId: { not: null } } }),
-      prisma.salePayment.groupBy({ by: ['paymentMethod'], _sum: { amount: true }, where: { ...saleFilter, createdAt: { gte: monthStart }, sale: { status: { not: 'voided' } } } }),
-      prisma.stockItem.findMany({ where: { tenantId, ...branchFilter }, select: { quantity: true, costPrice: true, sellingPrice: true } }),
+      prisma.sale.aggregate({ _sum: { totalAmount: true }, _count: true, where: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: monthStart, lte: monthEnd } } }),
+      prisma.sale.aggregate({ _sum: { totalAmount: true }, where: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: prevMonthStart, lte: prevMonthEnd } } }),
+      prisma.saleItem.groupBy({ by: ['productId'], _sum: { quantity: true, price: true }, orderBy: { _sum: { quantity: 'desc' } }, take: 10, where: { sale: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: monthStart, lte: monthEnd } } } }),
+      prisma.sale.groupBy({ by: ['customerId'], _count: true, _sum: { totalAmount: true }, orderBy: { _count: { customerId: 'desc' } }, take: 10, where: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: monthStart, lte: monthEnd }, customerId: { not: null } } }),
+      prisma.salePayment.groupBy({ by: ['paymentMethod'], _sum: { amount: true }, where: { ...saleFilter, createdAt: { gte: monthStart, lte: monthEnd }, sale: { status: { not: 'voided' } } } }),
+      prisma.stockItem.findMany({ where: { tenantId, ...baseBranchFilter }, select: { quantity: true, costPrice: true, sellingPrice: true } }),
     ]);
 
     const [prodNames, custNames] = await Promise.all([
@@ -182,43 +272,41 @@ export default async function ReportsPage({
     };
   }
 
+  // Branches for filter panel
+  const branches = await prisma.branch.findMany({
+    where: { tenantId },
+    select: { id: true, name: true, businessId: true },
+    orderBy: { name: 'asc' },
+  });
+
   const ranges = [
     { value: '7', label: '7 days' },
     { value: '30', label: '30 days' },
     { value: '90', label: '90 days' },
   ];
 
+  const currentParamsObj: Record<string, string> = {};
+  for (const [k, v] of Object.entries(params)) {
+    if (v) currentParamsObj[k] = v;
+  }
+  if (!currentParamsObj.tab) currentParamsObj.tab = tab;
+  if (!currentParamsObj.range) currentParamsObj.range = range;
+
+  const expiryDays = parseInt(params.expiryDays ?? '90', 10);
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Reports"
-        description="Analytics and insights across your pharmacy."
-      >
-        {ranges.map(r => (
-          <Button
-            key={r.value}
-            variant={range === r.value ? 'default' : 'outline'}
-            size="sm"
-            nativeButton={false}
-            render={<Link href={`/reports?tab=${tab}&range=${r.value}`} />}
-          >
-            {r.label}
-          </Button>
-        ))}
-        {['sales', 'frequency', 'inventory'].includes(tab) && (
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<a href={`/api/reports/export?type=${tab}&range=${range}`} />}
-          >
-            <Download size={14} /> Export CSV
-          </Button>
-        )}
-      </PageHeader>
+        description="Pick a report type and date range, view the details, then export."
+      />
 
-      {/* Tabs */}
-      <ReportsTabs tab={tab} range={range} />
+      {/* Simple controls: report type + date range + export */}
+      <ReportControls
+        type={tab}
+        from={params.from ?? rangeStart.toISOString().slice(0, 10)}
+        to={params.to ?? rangeEnd.toISOString().slice(0, 10)}
+      />
 
       {/* ── SALES SUMMARY ──────────────────────────────────────────────────────── */}
       {tab === 'sales' && (
@@ -456,7 +544,7 @@ export default async function ReportsPage({
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b border-border">
             <h3 className="text-base font-semibold text-foreground">Top Selling Products</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Ranked by units sold in the last {range} days</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Ranked by {params.sortBy === 'revenue' ? 'revenue' : 'units sold'} in the last {range} days</p>
           </div>
           {topProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
@@ -467,8 +555,8 @@ export default async function ReportsPage({
             <div className="divide-y divide-border">
               {topProducts.map((tp, i) => {
                 const product = productMap.get(tp.productId);
-                const maxQty = topProducts[0]._sum.quantity ?? 1;
-                const pct = ((tp._sum.quantity ?? 0) / maxQty) * 100;
+                const maxQty = (topProducts[0]?._sum?.quantity ?? 1) || 1;
+                const pct = (((tp._sum?.quantity ?? 0) as number) / maxQty) * 100;
                 return (
                   <div key={tp.productId} className="px-6 py-4">
                     <div className="flex items-center gap-4">
@@ -480,8 +568,8 @@ export default async function ReportsPage({
                             <p className="text-xs text-muted-foreground">{product?.category ?? '—'}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm font-bold text-foreground">{tp._sum.quantity ?? 0} units</p>
-                            <p className="text-xs text-muted-foreground">₵{(tp._sum.price ?? 0).toFixed(2)} revenue</p>
+                            <p className="text-sm font-bold text-foreground">{(tp._sum?.quantity ?? 0) as number} units</p>
+                            <p className="text-xs text-muted-foreground">₵{((tp._sum?.price ?? 0) as number).toFixed(2)} revenue</p>
                           </div>
                         </div>
                         <div className="h-1.5 bg-muted dark:bg-sidebar rounded-full overflow-hidden">
@@ -505,13 +593,13 @@ export default async function ReportsPage({
               <AlertCircle size={20} className="text-amber-600 dark:text-amber-400 mb-3" />
               <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Low Stock</p>
               <p className="text-3xl font-bold text-amber-900 dark:text-amber-300">{lowStockProducts.length}</p>
-              <p className="text-xs text-amber-600/70 dark:text-amber-400/60 mt-1">Products at or below 10 units</p>
+              <p className="text-xs text-amber-600/70 dark:text-amber-400/60 mt-1">Products at or below threshold</p>
             </div>
             <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-2xl p-6">
               <Calendar size={20} className="text-rose-600 dark:text-rose-400 mb-3" />
               <p className="text-xs font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wider mb-1">Expiring Soon</p>
               <p className="text-3xl font-bold text-rose-900 dark:text-rose-300">{expiringProducts.length}</p>
-              <p className="text-xs text-rose-600/70 dark:text-rose-400/60 mt-1">Products expiring within 90 days</p>
+              <p className="text-xs text-rose-600/70 dark:text-rose-400/60 mt-1">Products expiring within {expiryDays} days</p>
             </div>
           </div>
 
@@ -553,13 +641,13 @@ export default async function ReportsPage({
       {tab === 'expiry' && (
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b border-border">
-            <h3 className="text-base font-semibold text-foreground">Expiring Within 90 Days</h3>
+            <h3 className="text-base font-semibold text-foreground">Expiring Within {expiryDays} Days</h3>
             <p className="text-xs text-muted-foreground mt-0.5">{expiringProducts.length} products require attention</p>
           </div>
           {expiringProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
               <Package size={32} className="mb-2 opacity-30" />
-              <p className="text-sm">No products expiring in the next 90 days</p>
+              <p className="text-sm">No products expiring in the next {expiryDays} days</p>
             </div>
           ) : (
             <Table>

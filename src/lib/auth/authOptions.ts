@@ -57,15 +57,27 @@ export const authOptions: NextAuthOptions = {
         });
         if (!tenant) return null;
 
-        // 2. Find user by businessUsername + tenantId (or fallback to email)
+        // 2. Normalise the username — accept either the role slug (MGR) or the
+        //    full credential code (HAL001-MGR). Strip the businessId prefix.
+        const rawUsername = credentials.username.trim();
+        const prefix = `${credentials.businessId}-`;
+        const strippedUsername = rawUsername.toUpperCase().startsWith(prefix.toUpperCase())
+          ? rawUsername.slice(prefix.length)
+          : rawUsername;
+        const fullCredentialCode = `${credentials.businessId}-${strippedUsername}`;
+
+        // 3. Find user — match role credentials (by credentialCode / businessUsername)
+        //    or fall back to legacy individual accounts.
         const user = await prisma.user.findFirst({
           where: {
             tenantId: tenant.id,
             isActive: true,
             OR: [
-              { businessUsername: credentials.username },
-              { email: credentials.username },           // Allow email as username fallback
-              { username: credentials.username },         // Legacy username fallback
+              { credentialCode: fullCredentialCode },
+              { businessUsername: strippedUsername },
+              { businessUsername: rawUsername },
+              { email: rawUsername },           // Allow email as username fallback
+              { username: rawUsername },         // Legacy username fallback
             ],
           },
           include: {
@@ -105,18 +117,44 @@ export const authOptions: NextAuthOptions = {
           success:  true,
         });
 
-        // 6. Return user object with dynamic role info
+        // 6. Resolve active person assignment for role credentials
+        let assignedPerson: string | null = null;
+        if (user.isRoleCredential) {
+          const assignment = await prisma.personAssignment.findFirst({
+            where: { userId: user.id, isActive: true },
+            orderBy: { assignedAt: 'desc' },
+            select: { personName: true },
+          });
+          assignedPerson = assignment?.personName ?? null;
+        }
+
+        // Branch credentials use the app-role level so branch scoping locks them
+        // to their home branch (level >= 2). MANAGER→2, PHARMACIST→3, MCA/AUDIT→4.
+        const APP_LEVEL: Record<string, number> = {
+          MANAGER: 2, PHARMACIST: 3, MCA: 4, AUDIT: 4, NES: 4,
+        };
+        const roleLevel = user.isRoleCredential
+          ? (APP_LEVEL[user.role] ?? 4)
+          : (user.dynamicRole?.level ?? 3);
+
+        // 7. Return user object with role + credential info
         return {
           id:                 String(user.id),
           email:              user.email ?? user.username,
-          role:               user.saasRole ?? user.dynamicRole?.slug ?? 'viewer',
+          role:               user.saasRole ?? (user.isRoleCredential ? user.role : user.dynamicRole?.slug) ?? 'viewer',
           tenantId:           user.tenantId,
           branchId:           user.branchId ?? null,
           dynamicRoleId:      user.dynamicRoleId ?? null,
           dynamicRoleSlug:    user.dynamicRole?.slug ?? null,
-          roleLevel:          user.dynamicRole?.level ?? 3,
+          roleLevel,
           mustChangePassword: user.mustChangePassword,
           businessId:         tenant.businessId ?? null,
+          credentialCode:     user.credentialCode ?? null,
+          assignedPerson,
+          firstName:          user.firstName ?? null,
+          lastName:           user.lastName ?? null,
+          canCreateUsers:     user.canCreateUsers ?? false,
+          primaryColor:       tenant.primaryColor ?? null,
         };
       },
     }),
@@ -236,6 +274,10 @@ export const authOptions: NextAuthOptions = {
           roleLevel:          user.dynamicRole?.level ?? 3,
           mustChangePassword: user.mustChangePassword,
           businessId:         user.tenant?.businessId ?? null,
+          firstName:          user.firstName ?? null,
+          lastName:           user.lastName ?? null,
+          canCreateUsers:     user.canCreateUsers ?? false,
+          primaryColor:       user.tenant?.primaryColor ?? null,
         };
       },
     }),
@@ -305,6 +347,12 @@ export const authOptions: NextAuthOptions = {
         token.roleLevel          = (user as any).roleLevel ?? 3;
         token.mustChangePassword = (user as any).mustChangePassword ?? false;
         token.businessId         = (user as any).businessId ?? null;
+        token.credentialCode     = (user as any).credentialCode ?? null;
+        token.assignedPerson     = (user as any).assignedPerson ?? null;
+        token.firstName          = (user as any).firstName ?? null;
+        token.lastName           = (user as any).lastName ?? null;
+        token.canCreateUsers     = (user as any).canCreateUsers ?? false;
+        token.primaryColor       = (user as any).primaryColor ?? null;
       }
       return token;
     },
@@ -319,6 +367,12 @@ export const authOptions: NextAuthOptions = {
       session.user.roleLevel          = token.roleLevel as number;
       session.user.mustChangePassword = token.mustChangePassword as boolean;
       session.user.businessId         = token.businessId as string | null;
+      session.user.credentialCode     = (token.credentialCode as string | null) ?? null;
+      session.user.assignedPerson     = (token.assignedPerson as string | null) ?? null;
+      session.user.firstName          = (token.firstName as string | null) ?? null;
+      session.user.lastName           = (token.lastName as string | null) ?? null;
+      session.user.canCreateUsers     = (token.canCreateUsers as boolean) ?? false;
+      session.user.primaryColor       = (token.primaryColor as string | null) ?? null;
       return session;
     },
   },

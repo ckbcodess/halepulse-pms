@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma';
 // ── GET /api/inventory/audit-log ──────────────────────────────────────────────
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId } = await checkRole('MANAGER', 'MCA', 'NES');
+    const { tenantId } = await checkRole('MANAGER', 'PHARMACIST', 'MCA', 'AUDIT', 'NES');
     const params = request.nextUrl.searchParams;
 
     const page       = Math.max(1, parseInt(params.get('page') ?? '1', 10));

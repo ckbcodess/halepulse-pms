@@ -6,6 +6,7 @@ import { getTenantContext } from '@/lib/auth/getTenantContext';
 import { branchWhere } from '@/lib/auth/branchScope';
 import prisma from '@/lib/prisma';
 import DashboardView from './DashboardView';
+import { getHiddenWidgets } from '@/lib/dashboard/widgets';
 
 export default async function ManagerDashboard() {
   const session = await getServerSession(authOptions);
@@ -20,6 +21,8 @@ export default async function ManagerDashboard() {
 
   const ctx = await getTenantContext();
   const branchFilter = await branchWhere(ctx); // {} for tenant-wide, { branchId } when scoped
+  const effectiveRole = isImpersonating ? impersonation.role : session.user.role;
+  const hiddenWidgets = Array.from(await getHiddenWidgets(tenantId, effectiveRole));
 
   // ── Date boundaries ──
   const todayStart = new Date();
@@ -118,6 +121,7 @@ export default async function ManagerDashboard() {
   return (
     <DashboardView
       userName={session.user.email}
+      firstName={session.user.firstName}
       stats={{
         totalProducts,
         lowStock,
@@ -132,6 +136,7 @@ export default async function ManagerDashboard() {
         lowStockCount: lowStock,
         expiringCount: expiringSoon,
       }}
+      hiddenWidgets={hiddenWidgets}
     />
   );
 }

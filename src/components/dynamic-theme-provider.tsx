@@ -40,7 +40,7 @@ export function useDynamicTheme() {
 // Storage key
 // ---------------------------------------------------------------------------
 
-const STORAGE_KEY = 'theme-base-color';
+const DEFAULT_STORAGE_KEY = 'theme-base-color';
 
 // Use useLayoutEffect on the client, useEffect on the server (avoids SSR warnings)
 const useIsomorphicLayoutEffect =
@@ -54,6 +54,8 @@ interface DynamicThemeProviderProps {
   children: ReactNode;
   /** Base color injected by the server (from tenant branding). */
   initialBaseColor?: string;
+  /** Per-role/tenant storage key so branding never leaks across sessions in one browser. */
+  storageKey?: string;
 }
 
 const hexRegex = /^#[0-9a-fA-F]{6}$/;
@@ -62,8 +64,10 @@ const combinedRegex = /^#[0-9a-fA-F]{6}\|[a-z]+$/;
 export function DynamicThemeProvider({
   children,
   initialBaseColor = '#6366f1',
+  storageKey = DEFAULT_STORAGE_KEY,
 }: DynamicThemeProviderProps) {
   const { resolvedTheme } = useTheme();
+  const STORAGE_KEY = storageKey;
   const [baseColor, setBaseColorState] = useState(initialBaseColor);
   const [palette, setPalette] = useState<ThemePalette | null>(null);
   const [isReady, setIsReady] = useState(false);

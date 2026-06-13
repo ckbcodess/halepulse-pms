@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTenantContext } from '@/lib/auth/getTenantContext';
 import { checkRole } from '@/lib/auth/checkRole';
+import { roundMoney } from '@/lib/money';
 import prisma from '@/lib/prisma';
 import { createProductFullSchema } from '@/lib/validation/schemas';
 import { ZodError } from 'zod';
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
     const parsed = createProductFullSchema.parse(body);
 
     // Compute selling price
-    const sellingPrice = parsed.costPrice * (1 + parsed.markupPercent / 100);
+    const sellingPrice = roundMoney(parsed.costPrice * (1 + parsed.markupPercent / 100));
 
     // Auto-generate SKU if not provided
     let sku = parsed.sku;

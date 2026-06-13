@@ -124,7 +124,7 @@ async function main() {
   const tenant = await prisma.tenant.upsert({
     where:  { subdomain: 'demo' },
     update: {
-      businessId:       '0721',
+      businessId:       'DEM000',
       legalName:        'Demo Pharmacy (Pty) Ltd',
       address:          '123 Health Street, Harare, Zimbabwe',
       licenceNumber:    'PHARM-2026-001',
@@ -139,7 +139,7 @@ async function main() {
       subdomain:        'demo',
       primaryColor:     '#6366f1',
       secondaryColor:   '#8b5cf6',
-      businessId:       '0721',
+      businessId:       'DEM000',
       legalName:        'Demo Pharmacy (Pty) Ltd',
       address:          '123 Health Street, Harare, Zimbabwe',
       licenceNumber:    'PHARM-2026-001',
@@ -151,6 +151,36 @@ async function main() {
     },
   });
   console.log(`  ✓ Tenant: ${tenant.name} (${tenant.id}) — Business ID: ${tenant.businessId}`);
+
+  // Upsert HQ branch — try old ID first, then new ID
+  let hqBranch;
+  try {
+    hqBranch = await prisma.branch.upsert({
+      where:  { businessId: 'DEM000' },
+      update: { tenantId: tenant.id, isHeadquarters: true },
+      create: {
+        name:           'Head Office',
+        tenantId:       tenant.id,
+        isHeadquarters: true,
+        businessId:     'DEM000',
+        address:        '123 Health Street, Harare, Zimbabwe',
+      },
+    });
+  } catch {
+    // fallback: might have old ID '072101', update it
+    hqBranch = await prisma.branch.upsert({
+      where:  { businessId: '072101' },
+      update: { tenantId: tenant.id, isHeadquarters: true, businessId: 'DEM000' },
+      create: {
+        name:           'Head Office',
+        tenantId:       tenant.id,
+        isHeadquarters: true,
+        businessId:     'DEM000',
+        address:        '123 Health Street, Harare, Zimbabwe',
+      },
+    });
+  }
+  console.log(`  ✓ Branch: ${hqBranch.name} (HQ) — Business ID: ${hqBranch.businessId}`);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 3. DYNAMIC ROLES — system roles (isSystem: true)
@@ -366,6 +396,7 @@ async function main() {
         isActive:         true,
         dynamicRoleId:    u.dynamicRoleId,
         businessUsername: u.businessUsername,
+        ...(u.email === 'manager@demo.com' ? { firstName: 'Demo', lastName: 'Manager' } : {}),
       },
       create: {
         username:         u.username,
@@ -378,6 +409,7 @@ async function main() {
         isActive:         true,
         dynamicRoleId:    u.dynamicRoleId,
         businessUsername: u.businessUsername,
+        ...(u.email === 'manager@demo.com' ? { firstName: 'Demo', lastName: 'Manager' } : {}),
       },
     });
     console.log(`  ✓ User: ${u.email} (${u.saasRole} → ${u.businessUsername})`);

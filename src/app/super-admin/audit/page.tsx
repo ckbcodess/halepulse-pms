@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table';
+import AuditLogDiff from './AuditLogDiff';
 
 export default async function AuditLogPage() {
   const logs = await prisma.auditLog.findMany({
@@ -34,7 +35,7 @@ export default async function AuditLogPage() {
         <Table className="min-w-[720px]">
           <TableHeader>
             <TableRow>
-              {['Action', 'User', 'Tenant', 'IP', 'Time'].map(h => (
+              {['Action', 'User', 'Business', 'IP', 'Changes', 'Time'].map(h => (
                 <TableHead key={h}>{h}</TableHead>
               ))}
             </TableRow>
@@ -53,6 +54,16 @@ export default async function AuditLogPage() {
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground font-mono">
                   {log.ipAddress || '-'}
+                </TableCell>
+                <TableCell>
+                  {(log.oldValue || log.newValue) ? (
+                    <AuditLogDiff
+                      oldValue={log.oldValue as Record<string, unknown> | null}
+                      newValue={log.newValue as Record<string, unknown> | null}
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {new Date(log.createdAt).toLocaleString()}

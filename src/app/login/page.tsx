@@ -72,8 +72,9 @@ function LoginContent() {
           const role = session?.user?.role;
           if (role === 'SUPER_ADMIN') router.push('/super-admin');
           else if (role === 'MANAGER') router.push('/dashboard/manager');
+          else if (role === 'PHARMACIST') router.push('/dashboard/pharmacist');
           else if (role === 'MCA') router.push('/dashboard/mca');
-          else if (role === 'NES') router.push('/dashboard/nes');
+          else if (role === 'AUDIT' || role === 'NES') router.push('/dashboard/audit');
           else router.push('/');
         }
         router.refresh();
@@ -188,12 +189,12 @@ function LoginContent() {
                 id="businessId"
                 type="text"
                 required
-                placeholder="0000"
-                maxLength={4}
+                placeholder="HAL000"
+                maxLength={6}
                 autoComplete="organization"
-                className="h-10 font-mono font-medium tracking-wider text-[13px]"
+                className="h-10 font-mono font-medium tracking-wider text-[13px] uppercase"
                 value={businessId}
-                onChange={(e) => setBusinessId(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                onChange={(e) => setBusinessId(e.target.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 6).toUpperCase())}
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -250,7 +251,7 @@ function LoginContent() {
           {process.env.NODE_ENV === 'development' && (
             <div className="mt-8 flex flex-col gap-1 text-[12px] text-muted-foreground font-medium border-t border-border pt-5">
               <p className="font-medium text-foreground/70 mb-1.5">Dev accounts:</p>
-              <p className="font-medium text-[var(--active-border)] mb-1">Business ID: <code className="bg-[var(--active-bg)] px-1.5 py-0.5 rounded text-[11px]">0721</code></p>
+              <p className="font-medium text-[var(--active-border)] mb-1">Business ID: <code className="bg-[var(--active-bg)] px-1.5 py-0.5 rounded text-[11px]">DEM000</code></p>
               <p><code className="bg-[var(--surface)] border border-border px-1 py-0.5 rounded text-[11px]">manager</code> / <code className="bg-[var(--surface)] border border-border px-1 py-0.5 rounded text-[11px]">Manager@1234</code></p>
               <p><code className="bg-[var(--surface)] border border-border px-1 py-0.5 rounded text-[11px]">pharmacist</code> / <code className="bg-[var(--surface)] border border-border px-1 py-0.5 rounded text-[11px]">Mca@1234</code></p>
               <p><code className="bg-[var(--surface)] border border-border px-1 py-0.5 rounded text-[11px]">viewer</code> / <code className="bg-[var(--surface)] border border-border px-1 py-0.5 rounded text-[11px]">Nes@1234</code></p>

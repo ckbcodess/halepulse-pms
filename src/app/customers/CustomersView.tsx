@@ -11,25 +11,34 @@
  * - Client-side state — instant filtering by name or phone, no network.
  */
 
-import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Phone, Award, Search, ArrowRight, Plus, X } from 'lucide-react';
+import { useState, useMemo, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Phone, Award, Search, ArrowRight, Plus, X, Download, Upload } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/layout/PageHeader';
+import { exportToCsv } from '@/lib/utils/exportCsv';
+import { parseCsv } from '@/lib/utils/parseCsv';
+import { bulkImportCustomers } from '@/app/actions';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Customer = {
-  id:            number;
-  name:          string;
-  phone:         string | null;
-  loyaltyPoints: number;
-  createdAt:     string;
-  tenantId:      string | null;
+  id:                number;
+  name:              string;
+  phone:             string | null;
+  loyaltyPoints:     number;
+  createdAt:         string;
+  tenantId:          string | null;
+  dateOfBirth?:      string | null;
+  gender?:           string | null;
+  address?:          string | null;
+  knownAllergies?:   string | null;
+  chronicConditions?: string | null;
 };
 
 // ── Fetcher ───────────────────────────────────────────────────────────────────
@@ -66,9 +75,72 @@ export default function CustomersView() {
     queryKey: ['customers'],
     queryFn:  fetchCustomers,
     staleTime: 5 * 60 * 1000,
+    // Always revalidate in the background when returning to this page so
+    // customers added elsewhere (e.g. at the POS) show up immediately.
+    refetchOnMount: 'always',
   });
 
   const [search, setSearch] = useState('');
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+
+  const handleExport = () => {
+    if (customers.length === 0) { toast.info('No customers to export'); return; }
+    exportToCsv({
+      filename: 'customers',
+      headers: ['Name', 'Phone', 'Date of Birth', 'Gender', 'Address', 'Known Allergies', 'Chronic Conditions', 'Loyalty Points'],
+      rows: customers.map((c) => [
+        c.name,
+        c.phone ?? '',
+        c.dateOfBirth ? new Date(c.dateOfBirth).toISOString().slice(0, 10) : '',
+        c.gender ?? '',
+        c.address ?? '',
+        c.knownAllergies ?? '',
+        c.chronicConditions ?? '',
+        c.loyaltyPoints,
+      ]),
+    });
+    toast.success(`Exported ${customers.length} customer(s)`);
+  };
+
+  const pick = (obj: Record<string, string>, ...keys: string[]) => {
+    for (const k of keys) {
+      const hit = Object.keys(obj).find((h) => h.toLowerCase() === k.toLowerCase());
+      if (hit && obj[hit]) return obj[hit];
+    }
+    return '';
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const parsed = parseCsv(text);
+      const rows = parsed.map((r) => ({
+        name:              pick(r, 'Name', 'Full Name', 'Customer Name'),
+        phone:             pick(r, 'Phone', 'Contact', 'Phone Number'),
+        dateOfBirth:       pick(r, 'Date of Birth', 'DOB', 'dateOfBirth'),
+        gender:            pick(r, 'Gender'),
+        address:           pick(r, 'Address', 'Residence'),
+        knownAllergies:    pick(r, 'Known Allergies', 'Allergies'),
+        chronicConditions: pick(r, 'Chronic Conditions', 'Conditions'),
+      })).filter((r) => r.name);
+
+      if (rows.length === 0) { toast.error('No valid customer rows found in file'); return; }
+
+      const result = await bulkImportCustomers(rows, file.name);
+      toast.success(`Imported ${result.created} customer(s)${result.skipped ? `, ${result.skipped} skipped` : ''}`);
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    } catch (err: any) {
+      toast.error(err?.message || 'Import failed');
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const filteredCustomers = useMemo(() => {
     if (!search.trim()) return customers;
@@ -84,9 +156,24 @@ export default function CustomersView() {
         title="Customers"
         description="Track customer purchases and award loyalty points."
       >
-        <Button nativeButton={false} render={<Link href="/customers/new" />}>
-          <Plus size={14} /> Add Customer
-        </Button>
+        <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleImportFile}
+            className="hidden"
+          />
+          <Button variant="outline" size="sm" disabled={importing} onClick={() => fileInputRef.current?.click()}>
+            <Upload size={14} /> {importing ? 'Importing…' : 'Import'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download size={14} /> Export
+          </Button>
+          <Button nativeButton={false} render={<Link href="/customers/new" />}>
+            <Plus size={14} /> Add Customer
+          </Button>
+        </div>
       </PageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

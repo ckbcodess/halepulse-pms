@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 // ── POST /api/inventory/adjustments ───────────────────────────────────────────
 export async function POST(request: Request) {
   try {
-    const ctx = await checkRole('MANAGER', 'NES');
+    const ctx = await checkRole('MANAGER', 'PHARMACIST', 'AUDIT', 'NES');
     const { tenantId, userId } = ctx;
     const branchId = await resolveBranchId(ctx);
     const body = await request.json();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTenantContext } from '@/lib/auth/getTenantContext';
 import { checkRole } from '@/lib/auth/checkRole';
+import { roundMoney } from '@/lib/money';
 import prisma from '@/lib/prisma';
 import { updateProductFullSchema } from '@/lib/validation/schemas';
 import { ZodError } from 'zod';
@@ -87,7 +88,7 @@ export async function PATCH(
     // Compute selling price if cost or markup changed
     const costPrice    = parsed.costPrice    ?? current.costPrice ?? 0;
     const markupPercent = parsed.markupPercent ?? current.markupPercent;
-    const sellingPrice = costPrice * (1 + markupPercent / 100);
+    const sellingPrice = roundMoney(costPrice * (1 + markupPercent / 100));
 
     const updateData: any = { ...parsed };
     delete updateData.supplierId; // handle separately

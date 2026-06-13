@@ -5,7 +5,7 @@ import { Save, Eye, EyeOff } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 
-const ROLES = ['MANAGER', 'MCA', 'NES'] as const;
+const ROLES = ['MANAGER', 'PHARMACIST', 'MCA', 'AUDIT'] as const;
 type Role = typeof ROLES[number];
 
 interface MenuItem { key: string; label: string; path: string; visible: boolean; }
