@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 
 type Branch = { id: string; name: string };
 
@@ -139,7 +140,7 @@ export default function CreateUserPage() {
           <ArrowLeft size={20} />
         </Button>
         <div>
-          <h1 className="text-xl font-bold text-foreground">Create User</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Create User</h1>
           <p className="text-sm text-muted-foreground">Fill in the user's details and assign them a branch and role.</p>
         </div>
       </div>
@@ -178,8 +179,8 @@ export default function CreateUserPage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground">Date of Birth</label>
-              <Input type="date" value={form.dob}
-                onChange={e => setForm(f => ({ ...f, dob: e.target.value }))} />
+              <DatePicker value={form.dob}
+                onChange={v => setForm(f => ({ ...f, dob: v }))} placeholder="Select date" />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground">Ghana Card Number</label>

@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const CATEGORIES = [
   'Analgesics', 'Antibiotics', 'Antihistamines', 'Antifungals', 'Antivirals',
@@ -206,12 +207,11 @@ export default function NewProductPage() {
                 <Label htmlFor="expiryDate" className="text-xs font-semibold text-muted-foreground">
                   Expiry Date
                 </Label>
-                <Input
+                <DatePicker
                   id="expiryDate"
-                  type="date"
                   value={form.expiryDate}
-                  onChange={e => set('expiryDate', e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
+                  onChange={v => set('expiryDate', v)}
+                  placeholder="No expiry"
                 />
               </div>
             </div>

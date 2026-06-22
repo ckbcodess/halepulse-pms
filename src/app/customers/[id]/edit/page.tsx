@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export default function EditCustomerPage() {
   const { id } = useParams<{ id: string }>();
@@ -71,7 +72,7 @@ export default function EditCustomerPage() {
       </Link>
 
       <Card className="p-6">
-        <h1 className="text-lg font-bold text-foreground mb-1">Edit Customer</h1>
+        <h1 className="text-lg font-semibold text-foreground mb-1">Edit Customer</h1>
         <p className="text-sm text-muted-foreground mb-6">Update contact and clinical details.</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -86,7 +87,7 @@ export default function EditCustomerPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Date of Birth</Label>
-              <Input type="date" value={form.dateOfBirth} onChange={set('dateOfBirth')} />
+              <DatePicker value={form.dateOfBirth} onChange={(v) => setForm((f) => ({ ...f, dateOfBirth: v }))} placeholder="Select date" />
             </div>
             <div className="space-y-1.5">
               <Label>Gender</Label>

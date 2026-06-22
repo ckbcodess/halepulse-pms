@@ -28,6 +28,8 @@ import { cn } from '@/lib/utils';
 import { exportToCsv } from '@/lib/utils/exportCsv';
 import { ADJUSTMENT_REASONS } from '@/lib/validation/schemas';
 import { StatusBadge } from '@/components/inventory/StatusBadge';
+import { DatePicker } from '@/components/ui/date-picker';
+import InventoryTabs from '@/components/inventory/InventoryTabs';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetDescription,
 } from '@/components/ui/sheet';
@@ -345,7 +347,7 @@ function AddProductSheet({ open, onClose, onSuccess }: { open: boolean; onClose:
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label className="text-[12px] font-medium">Expiry Date</Label>
-                <Input type="date" value={form.expiryDate} onChange={e => update('expiryDate', e.target.value)} />
+                <DatePicker value={form.expiryDate} onChange={v => update('expiryDate', v)} placeholder="No expiry" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label className="text-[12px] font-medium">Notes</Label>
@@ -776,7 +778,7 @@ function ProductDetailSheet({ productId, open, onClose, onUpdated }: {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex flex-col gap-1.5">
                         <Label className="text-[12px] font-medium">Expiry Date</Label>
-                        <Input type="date" value={form.expiryDate} onChange={e => update('expiryDate', e.target.value)} />
+                        <DatePicker value={form.expiryDate} onChange={v => update('expiryDate', v)} placeholder="No expiry" />
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <Label className="text-[12px] font-medium">Notes</Label>
@@ -1041,20 +1043,17 @@ export default function InventoryView() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col">
       <PageHeader
         title="Inventory"
         description="Manage stock levels and pricing records across your pharmacy."
       >
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+          <DropdownMenuTrigger render={<Button variant="outline" />}>
             More Actions
             <ChevronDown size={13} className="text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => router.push('/inventory/suppliers')}>
-              <Truck size={14} className="mr-2" /> Suppliers
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/inventory/quick-restock')}>
               <Plus size={14} className="mr-2" /> Quick Restock
             </DropdownMenuItem>
@@ -1081,22 +1080,27 @@ export default function InventoryView() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button size="sm" variant="outline" onClick={() => { setShowImport(true); setImportResult(null); }}>
+        <Button variant="outline" onClick={() => { setShowImport(true); setImportResult(null); }}>
           Import CSV
         </Button>
-        <Button size="sm" onClick={() => setShowAddProduct(true)}>
+        <Button onClick={() => setShowAddProduct(true)}>
           <Plus size={14} /> Add Product
         </Button>
       </PageHeader>
 
+      {/* 32px below the page header */}
+      <div className="mt-8">
+        <InventoryTabs />
+      </div>
+
       {showImport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowImport(false)}>
-          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-lg bg-card border border-border p-5 shadow-lg" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold">Import Products (CSV)</h2>
-              <button onClick={() => setShowImport(false)} className="text-gray-400">✕</button>
+              <button onClick={() => setShowImport(false)} className="text-muted-foreground hover:text-foreground">✕</button>
             </div>
-            <a href="/templates/products-import-template.csv" download className="text-sm text-indigo-600 underline">
+            <a href="/templates/products-import-template.csv" download className="text-sm text-primary underline">
               Download Template
             </a>
             <div className="mt-3">
@@ -1108,7 +1112,7 @@ export default function InventoryView() {
                 className="block w-full text-sm"
               />
             </div>
-            {importing && <p className="mt-3 text-sm text-gray-500">Importing…</p>}
+            {importing && <p className="mt-3 text-sm text-muted-foreground">Importing…</p>}
             {importResult && (
               <div className="mt-3 text-sm">
                 <p className="font-medium">{importResult.imported} imported, {importResult.skipped} skipped</p>
@@ -1125,8 +1129,8 @@ export default function InventoryView() {
         </div>
       )}
 
-      {/* Filter Pills — Figma style */}
-      <div className="flex items-center gap-2 animate-in slide-in-from-bottom-2 fade-in duration-400">
+      {/* Filter Pills — Figma style; 48px section break below the tabs */}
+      <div className="mt-12 flex items-center gap-2">
         {[
           { key: 'all' as ActiveFilter, label: 'All Data', count: summary?.totalProducts ?? 0, countBg: 'bg-[#f2f2f2]', countText: 'text-[#1b1b1b]' },
           { key: 'low' as ActiveFilter, label: 'Low Stock', count: summary?.lowStockCount ?? 0, countBg: 'bg-[#fff6dc]', countText: 'text-[#d34600]' },
@@ -1148,10 +1152,10 @@ export default function InventoryView() {
         ))}
       </div>
 
-      {/* Search + Sort + Filter Toolbar */}
-      <div className="flex items-center gap-6 animate-in slide-in-from-bottom-3 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '100ms' }}>
+      {/* Search + Sort + Filter Toolbar; 28px below the filter pills */}
+      <div className="mt-7 flex items-center gap-6">
         {/* Search */}
-        <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors w-[342px]">
+        <div className="flex items-center gap-[5px] h-10 px-[13px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors w-[342px]">
           <Search size={16} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
           <input
             value={searchInput}
@@ -1169,7 +1173,7 @@ export default function InventoryView() {
         <div className="flex items-center gap-4">
           {/* Sort dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" className="h-[36px] w-[115px] justify-between font-normal" />}>
+            <DropdownMenuTrigger render={<Button variant="outline" className="h-10 w-[115px] justify-between font-normal" />}>
               <span className="truncate">{SORT_OPTIONS.find(o => o.value === activeSort)?.label ?? 'Name A→Z'}</span>
               <ChevronDown size={13} className="shrink-0 text-muted-foreground" />
             </DropdownMenuTrigger>
@@ -1187,7 +1191,7 @@ export default function InventoryView() {
 
           {/* Category dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" className={cn('h-[36px] w-[115px] justify-between font-normal', activeCategories.length > 0 && 'border-primary/40')} />}>
+            <DropdownMenuTrigger render={<Button variant="outline" className={cn('h-10 w-[115px] justify-between font-normal', activeCategories.length > 0 && 'border-primary/40')} />}>
               <span className="truncate">Category{activeCategories.length > 0 ? ` (${activeCategories.length})` : ''}</span>
               <ChevronDown size={13} className="shrink-0 text-muted-foreground" />
             </DropdownMenuTrigger>
@@ -1216,7 +1220,7 @@ export default function InventoryView() {
 
           {/* Stock level dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" className="h-[36px] w-[115px] justify-between font-normal" />}>
+            <DropdownMenuTrigger render={<Button variant="outline" className="h-10 w-[115px] justify-between font-normal" />}>
               <span className="truncate">Stock Level</span>
               <ChevronDown size={13} className="shrink-0 text-muted-foreground" />
             </DropdownMenuTrigger>
@@ -1237,8 +1241,8 @@ export default function InventoryView() {
         </div>
       </div>
 
-      {/* Product Table — Figma design */}
-      <div className="border border-[#f1f1f1] dark:border-border rounded-[8px] overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-500 ease-out-expo fill-mode-both" style={{ animationDelay: '200ms' }}>
+      {/* Product Table — Figma design; 28px below the search toolbar */}
+      <div className="mt-7 border border-[#f1f1f1] dark:border-border rounded-[8px] overflow-hidden">
         <div className="overflow-x-auto">
           <Table className="min-w-[900px]">
             <TableHeader>

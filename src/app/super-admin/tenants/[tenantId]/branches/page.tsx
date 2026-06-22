@@ -5,6 +5,9 @@ import { useParams } from 'next/navigation';
 import { Building2, Plus, Edit3, Check, Loader2, Phone, MapPin, Power, Key } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import PageHeader from '@/components/layout/PageHeader';
 
@@ -127,37 +130,35 @@ const CredentialsModal = ({
             <Loader2 size={20} className="animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground border-b border-border">
-                <tr>
-                  <th className="py-2 pr-4">User ID</th>
-                  <th className="py-2 pr-4">Username</th>
-                  <th className="py-2 pr-4">Role</th>
-                  <th className="py-2 pr-4">Password</th>
-                  <th className="py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {creds.map(c => (
-                  <tr key={c.userId} className="border-t border-border">
-                    <td className="py-2 pr-4 font-mono text-xs">{c.userId}</td>
-                    <td className="py-2 pr-4 font-mono text-xs">{c.credentialCode}</td>
-                    <td className="py-2 pr-4">{c.roleName}</td>
-                    <td className="py-2 pr-4 font-mono text-xs">{c.password ?? '••••••'}</td>
-                    <td className="py-2 text-right">
-                      <Button variant="ghost" size="sm" onClick={() => resetCred(c.userId)}>
-                        <Key size={12} /> Reset
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {creds.length === 0 && (
-                  <tr><td colSpan={5} className="py-4 text-muted-foreground">No credentials found.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User ID</TableHead>
+                <TableHead>Username</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Password</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {creds.map(c => (
+                <TableRow key={c.userId}>
+                  <TableCell className="font-mono text-xs">{c.userId}</TableCell>
+                  <TableCell className="font-mono text-xs">{c.credentialCode}</TableCell>
+                  <TableCell>{c.roleName}</TableCell>
+                  <TableCell className="font-mono text-xs">{c.password ?? '••••••'}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" onClick={() => resetCred(c.userId)}>
+                      <Key size={12} /> Reset
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {creds.length === 0 && (
+                <TableRow><TableCell colSpan={5} className="text-muted-foreground">No credentials found.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
         )}
       </div>
     </div>

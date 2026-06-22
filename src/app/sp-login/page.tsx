@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -13,7 +12,6 @@ export default function SPLoginPage() {
   const [password, setPassword]       = useState('');
   const [error, setError]             = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,8 +36,9 @@ export default function SPLoginPage() {
       }
 
       if (result?.ok) {
-        router.push('/super-admin');
-        router.refresh();
+        // Full-page navigation so the theme provider mounts fresh as the admin
+        // identity (avoids a client remount of next-themes).
+        window.location.assign('/super-admin');
       } else {
         setError('Invalid credentials or insufficient privileges.');
         setIsSubmitting(false);

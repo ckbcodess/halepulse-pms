@@ -3,6 +3,10 @@ import { authOptions } from '@/lib/auth/authOptions';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/auth/getTenantContext';
+import PageHeader from '@/components/layout/PageHeader';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
 
 function money(n: number): string {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -57,49 +61,49 @@ export default async function StockValuePage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Stock Value</h1>
+      <PageHeader title="Stock Value" description="Inventory valued at cost and selling price." />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
         {cards.map((c) => (
-          <div key={c.label} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="text-xs text-gray-500">{c.label}</div>
+          <div key={c.label} className="rounded-lg border border-border bg-card p-4 shadow-sm">
+            <div className="text-xs text-muted-foreground">{c.label}</div>
             <div className="text-xl font-semibold mt-1">{c.value}</div>
           </div>
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50 text-left text-gray-600">
-            <tr>
-              <th className="px-3 py-2">Product</th>
-              <th className="px-3 py-2">Category</th>
-              <th className="px-3 py-2 text-right">Qty</th>
-              <th className="px-3 py-2 text-right">Cost Price</th>
-              <th className="px-3 py-2 text-right">Selling Price</th>
-              <th className="px-3 py-2 text-right">Cost Value</th>
-              <th className="px-3 py-2 text-right">Selling Value</th>
-              <th className="px-3 py-2 text-right">Profit</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Product</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead className="text-right">Qty</TableHead>
+              <TableHead className="text-right">Cost Price</TableHead>
+              <TableHead className="text-right">Selling Price</TableHead>
+              <TableHead className="text-right">Cost Value</TableHead>
+              <TableHead className="text-right">Selling Value</TableHead>
+              <TableHead className="text-right">Profit</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-t border-gray-100">
-                <td className="px-3 py-2">{r.name}</td>
-                <td className="px-3 py-2 text-gray-500">{r.category}</td>
-                <td className="px-3 py-2 text-right">{r.quantity}</td>
-                <td className="px-3 py-2 text-right">{money(r.costPrice)}</td>
-                <td className="px-3 py-2 text-right">{money(r.sellingPrice)}</td>
-                <td className="px-3 py-2 text-right">{money(r.costValue)}</td>
-                <td className="px-3 py-2 text-right">{money(r.sellingValue)}</td>
-                <td className="px-3 py-2 text-right">{money(r.profit)}</td>
-              </tr>
+              <TableRow key={r.id}>
+                <TableCell>{r.name}</TableCell>
+                <TableCell className="text-muted-foreground">{r.category}</TableCell>
+                <TableCell className="text-right">{r.quantity}</TableCell>
+                <TableCell className="text-right">{money(r.costPrice)}</TableCell>
+                <TableCell className="text-right">{money(r.sellingPrice)}</TableCell>
+                <TableCell className="text-right">{money(r.costValue)}</TableCell>
+                <TableCell className="text-right">{money(r.sellingValue)}</TableCell>
+                <TableCell className="text-right">{money(r.profit)}</TableCell>
+              </TableRow>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">No stock items</td></tr>
+              <TableRow><TableCell colSpan={8} className="py-6 text-center text-muted-foreground">No stock items</TableCell></TableRow>
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

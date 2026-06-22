@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { generateTheme, PRESET_COLORS, NEUTRAL_PALETTES, type NeutralType, unpackTheme, packTheme, type ThemePalette } from '@/lib/theme/theme-utils';
+import { previewPalette, BRAND_PRESETS, sanitizeBrand, type ThemeTokens } from '@/lib/theme/accent';
 
 // ---------------------------------------------------------------------------
 // Component preview rendered inside a scoped CSS-var container
@@ -30,7 +30,7 @@ function ThemePreview({
   mode,
   label,
 }: {
-  palette: ThemePalette;
+  palette: ThemeTokens;
   mode: 'light' | 'dark';
   label: string;
 }) {
@@ -190,8 +190,7 @@ export default function BrandingPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
   const [form, setForm] = useState({
     name: '',
-    baseColor: '#6366f1',
-    baseNeutral: 'stone' as NeutralType,
+    brandColor: '#6366f1',
     logoUrl: '',
   });
   const [loading, setLoading] = useState(true);
@@ -243,35 +242,30 @@ export default function BrandingPage() {
       .then((r) => r.json())
       .then((t: any) => {
         if (!t || t.error) return;
-        const rawColor = t.baseColor ?? t.primaryColor ?? '#6366f1';
-        const { hex, neutral } = unpackTheme(rawColor);
         setForm({
           name: t.name,
-          baseColor: hex,
-          baseNeutral: neutral,
+          brandColor: sanitizeBrand(t.baseColor ?? t.primaryColor),
           logoUrl: t.logoUrl ?? '',
         });
         setLoading(false);
       });
   }, [tenantId]);
 
-  // Generate palette from current base color (memoised)
-  const palette = useMemo(() => generateTheme(form.baseColor, form.baseNeutral), [form.baseColor, form.baseNeutral]);
+  // Generate the full preview palette from the single brand color (memoised)
+  const palette = useMemo(() => previewPalette(form.brandColor), [form.brandColor]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError('');
-    const packedColor = packTheme(form.baseColor, form.baseNeutral);
     try {
       const res = await fetch(`/api/super-admin/tenants/${tenantId}/branding`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name,
-          baseColor: packedColor,
-          primaryColor: form.baseColor,
-          secondaryColor: form.baseNeutral,
+          baseColor: form.brandColor,
+          primaryColor: form.brandColor,
           logoUrl: form.logoUrl,
         }),
       });
@@ -281,10 +275,9 @@ export default function BrandingPage() {
         return;
       }
 
-      // We do NOT refresh the page or update the DynamicThemeProvider here.
-      // The super-admin should keep their own theme while editing tenants.
-      // Tenant users will see the new branding on their next page load
-      // (the cookie was set by the API response).
+      // We do NOT refresh the super-admin's own view here — the admin console
+      // always keeps the default HalePulse brand. Tenant users pick up the new
+      // branding on their next page load (the cookie was set by the API response).
 
       setSavedMsg('Saved!');
       setTimeout(() => setSavedMsg(''), 2000);
@@ -307,7 +300,7 @@ export default function BrandingPage() {
     <div className="flex flex-col gap-6 max-w-6xl">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+        <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
           <Palette size={20} /> Tenant Branding
         </h1>
         <p className="text-sm text-muted-foreground mt-0.5">
@@ -336,21 +329,21 @@ export default function BrandingPage() {
                 <label className="relative cursor-pointer group">
                   <input
                     type="color"
-                    value={form.baseColor}
-                    onChange={(e) => setForm((p) => ({ ...p, baseColor: e.target.value }))}
+                    value={form.brandColor}
+                    onChange={(e) => setForm((p) => ({ ...p, brandColor: e.target.value }))}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   <div
                     className="w-12 h-12 rounded-xl border-2 border-border shadow-sm transition-transform group-hover:scale-105"
-                    style={{ backgroundColor: form.baseColor }}
+                    style={{ backgroundColor: form.brandColor }}
                   />
                 </label>
                 <Input
-                  value={form.baseColor}
+                  value={form.brandColor}
                   onChange={(e) => {
                     let v = e.target.value;
                     if (!v.startsWith('#')) v = '#' + v;
-                    setForm((p) => ({ ...p, baseColor: v }));
+                    setForm((p) => ({ ...p, brandColor: v }));
                   }}
                   className="font-mono text-sm uppercase w-32"
                   maxLength={7}
@@ -361,18 +354,18 @@ export default function BrandingPage() {
               {/* Preset swatches */}
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                  Primary Themes
+                  Presets
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {PRESET_COLORS.map((preset) => {
+                  {BRAND_PRESETS.map((preset) => {
                     const isActive =
-                      form.baseColor.toLowerCase() === preset.hex.toLowerCase();
+                      form.brandColor.toLowerCase() === preset.hex.toLowerCase();
                     return (
                       <button
                         key={preset.hex}
                         type="button"
                         onClick={() =>
-                          setForm((p) => ({ ...p, baseColor: preset.hex }))
+                          setForm((p) => ({ ...p, brandColor: preset.hex }))
                         }
                         className={`group relative w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 active:scale-95 ${
                           isActive
@@ -388,32 +381,6 @@ export default function BrandingPage() {
                             className="absolute inset-0 m-auto text-white drop-shadow-md"
                           />
                         )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Neutral Base selection */}
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                  Neutral Backdrop (Base)
-                </p>
-                <div className="flex gap-2">
-                  {NEUTRAL_PALETTES.map((key) => {
-                    const isActive = form.baseNeutral === key;
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setForm((p) => ({ ...p, baseNeutral: key }))}
-                        className={`flex-1 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all ${
-                          isActive
-                            ? 'bg-foreground text-background border-foreground shadow-sm'
-                            : 'bg-background text-muted-foreground border-border hover:border-foreground/30'
-                        }`}
-                      >
-                        {key}
                       </button>
                     );
                   })}

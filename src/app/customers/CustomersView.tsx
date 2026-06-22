@@ -164,10 +164,10 @@ export default function CustomersView() {
             onChange={handleImportFile}
             className="hidden"
           />
-          <Button variant="outline" size="sm" disabled={importing} onClick={() => fileInputRef.current?.click()}>
+          <Button variant="outline" disabled={importing} onClick={() => fileInputRef.current?.click()}>
             <Upload size={14} /> {importing ? 'Importing…' : 'Import'}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button variant="outline" onClick={handleExport}>
             <Download size={14} /> Export
           </Button>
           <Button nativeButton={false} render={<Link href="/customers/new" />}>

@@ -10,6 +10,10 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -95,17 +99,18 @@ export default function NewCustomerPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="dob" className="text-xs font-semibold text-muted-foreground">Date of Birth</Label>
-                <Input id="dob" type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+                <DatePicker id="dob" value={dateOfBirth} onChange={setDateOfBirth} placeholder="Select date" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="gender" className="text-xs font-semibold text-muted-foreground">Gender</Label>
-                <select id="gender" value={gender} onChange={(e) => setGender(e.target.value)}
-                  className="h-9 px-3 rounded-lg border border-border bg-background text-sm">
-                  <option value="">—</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
+                <Select value={gender} onValueChange={(v) => v && setGender(v)}>
+                  <SelectTrigger id="gender" className="w-full h-9"><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="flex flex-col gap-1.5 mt-4">

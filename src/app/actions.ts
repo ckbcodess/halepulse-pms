@@ -109,8 +109,8 @@ export async function getCustomers(search?: string) {
       tenantId,
       ...(search ? {
         OR: [
-          { name:  { contains: search } },
-          { phone: { contains: search } },
+          { name:  { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
         ],
       } : {}),
     },

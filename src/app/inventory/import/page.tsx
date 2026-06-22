@@ -1,10 +1,11 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, ArrowLeft, Download, Clock } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Download, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { bulkImportProducts, type ImportRow } from '@/app/actions';
 import { Button } from '@/components/ui/button';
+import PageHeader from '@/components/layout/PageHeader';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table';
@@ -113,12 +114,7 @@ export default function ImportPage() {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Button variant="outline" size="icon" onClick={() => router.push('/inventory')}>
-          <ArrowLeft size={18} />
-        </Button>
-        <p className="text-sm text-muted-foreground">Upload a CSV file to bulk-add products to your inventory</p>
-      </div>
+      <PageHeader title="Import Products" description="Upload a CSV file to bulk-add products to your inventory." />
 
       {/* Upload Step */}
       {step === 'upload' && (

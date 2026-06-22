@@ -12,11 +12,19 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import {
-  Info, AlertTriangle, Clock, Calendar, ChevronDown, CircleAlert, TrendingUp,
+  Info, AlertTriangle, Clock, Calendar, ChevronDown, GitCompareArrows, TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
+import { Calligraph } from 'calligraph';
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tooltip, TooltipTrigger, TooltipContent,
+} from '@/components/ui/tooltip';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -47,7 +55,20 @@ export interface DashboardProps {
   };
   /** Widget keys hidden for this user's role (set by Super Admin). */
   hiddenWidgets?: string[];
+  /** Period filter — only the manager dashboard wires these. When `range`
+   *  is omitted the filter bar is hidden. */
+  range?: string;
+  compare?: boolean;
+  salesLabel?: string;
 }
+
+const PERIOD_OPTIONS: { value: string; label: string; compareLabel: string }[] = [
+  { value: 'today', label: 'Today',         compareLabel: 'yesterday' },
+  { value: '7',     label: 'Last 7 days',   compareLabel: 'previous 7 days' },
+  { value: '30',    label: 'Last 30 days',  compareLabel: 'previous 30 days' },
+  { value: '90',    label: 'Last 90 days',  compareLabel: 'previous 90 days' },
+  { value: '365',   label: 'Last 12 months', compareLabel: 'previous year' },
+];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -69,7 +90,22 @@ function getFormattedDate() {
   });
 }
 
-const DONUT_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+// Fixed per-payment-method colors (light/dark handled by the CSS vars in globals.css).
+// Any other payment type falls back to the secondary chart palette.
+const PAYMENT_COLORS: Record<string, string> = {
+  Cash: 'var(--pay-cash)',
+  MoMo: 'var(--pay-momo)',
+  Split: 'var(--pay-split)',
+};
+const DONUT_FALLBACK = [
+  'var(--chart-secondary-1)',
+  'var(--chart-secondary-2)',
+  'var(--chart-secondary-3)',
+  'var(--chart-secondary-4)',
+  'var(--chart-secondary-5)',
+];
+const paymentColor = (name: string, index: number): string =>
+  PAYMENT_COLORS[name] ?? DONUT_FALLBACK[index % DONUT_FALLBACK.length];
 
 const salesChartConfig = {
   amount: {
@@ -87,21 +123,38 @@ function StatCard({
   value,
   change,
   indicator,
+  hint,
 }: {
   label: string;
   value: string;
   change?: number | null;
   indicator?: 'warning';
+  hint?: string;
 }) {
   return (
     <Card className="p-6 py-6 gap-0">
       <div className="flex items-center gap-1.5 mb-4">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <Info className="size-4 text-muted-foreground/40" />
+        {hint && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  aria-label={`About ${label}`}
+                  className="inline-flex text-muted-foreground/40 transition-colors hover:text-muted-foreground focus-visible:outline-none focus-visible:text-muted-foreground"
+                />
+              }
+            >
+              <Info className="size-4" />
+            </TooltipTrigger>
+            <TooltipContent>{hint}</TooltipContent>
+          </Tooltip>
+        )}
       </div>
       <div className="flex items-end gap-2">
         <p className="text-3xl font-medium text-card-foreground leading-none tracking-tight">
-          {value}
+          <Calligraph variant="number" animation="snappy" initial>{value}</Calligraph>
         </p>
         {indicator === 'warning' && (
           <span className="w-2.5 h-2.5 rounded-full bg-rose-500 mb-1.5" />
@@ -138,7 +191,20 @@ export default function DashboardView({
   recentSales,
   alerts,
   hiddenWidgets = [],
+  range,
+  compare = true,
+  salesLabel,
 }: DashboardProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const goFilter = (next: { range?: string; compare?: boolean }) => {
+    const params = new URLSearchParams();
+    params.set('range', next.range ?? range ?? '30');
+    params.set('compare', (next.compare ?? compare) ? '1' : '0');
+    router.push(`${pathname}?${params.toString()}`);
+  };
+  const compareLabel =
+    (PERIOD_OPTIONS.find((o) => o.value === range) ?? PERIOD_OPTIONS[2]).compareLabel;
   const firstName = firstNameProp
     ? firstNameProp
     : userName.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -154,39 +220,75 @@ export default function DashboardView({
       />
 
       {/* ── Filter bar ── */}
-      <div className="flex gap-3">
-        <Button type="button" variant="outline">
-          <Calendar className="size-4" />
-          Last 30 days
-          <ChevronDown className="size-3 text-muted-foreground" />
-        </Button>
-        <Button type="button" variant="outline">
-          <CircleAlert className="size-4" />
-          Compare: Previous period
-          <ChevronDown className="size-3 text-muted-foreground" />
-        </Button>
-      </div>
+      {range && (
+        <div className="flex gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button type="button" variant="outline" />}>
+              <Calendar className="size-4" />
+              {salesLabel ?? 'Last 30 days'}
+              <ChevronDown className="size-3 text-muted-foreground" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {PERIOD_OPTIONS.map((opt) => (
+                <DropdownMenuItem key={opt.value} onClick={() => goFilter({ range: opt.value })}>
+                  {opt.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button type="button" variant="outline" />}>
+              <GitCompareArrows className="size-4" />
+              {compare ? `vs ${compareLabel}` : 'No comparison'}
+              <ChevronDown className="size-3 text-muted-foreground" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => goFilter({ compare: true })}>
+                Compare vs {compareLabel}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => goFilter({ compare: false })}>
+                No comparison
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
 
       {/* ── KPI Stats ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {show('kpi_total_inventory') && (
-          <StatCard label="Total Inventory" value={stats.totalProducts.toLocaleString()} />
+          <StatCard
+            label="Total Inventory"
+            value={stats.totalProducts.toLocaleString()}
+            hint="The total number of distinct products currently tracked in your inventory."
+          />
         )}
         {show('kpi_low_stock') && (
           <StatCard
             label="Low Stock Alerts"
             value={stats.lowStock.toLocaleString()}
             indicator={stats.lowStock > 0 ? 'warning' : undefined}
+            hint="Products that have dropped below the minimum stock threshold of 5 units."
           />
         )}
         {show('kpi_expiring') && (
-          <StatCard label="Expiring Soon" value={stats.expiringSoon.toLocaleString()} />
+          <StatCard
+            label="Expiring Soon"
+            value={stats.expiringSoon.toLocaleString()}
+            hint="Products with a batch expiring within the next 30 days."
+          />
         )}
         {show('kpi_sales_today') && (
           <StatCard
-            label="Sales Today"
+            label={salesLabel ? `Sales · ${salesLabel}` : 'Sales Today'}
             value={`₵${stats.salesToday.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             change={stats.salesChange}
+            hint={
+              salesLabel
+                ? `Total revenue for ${salesLabel}${compare ? `, compared with the ${compareLabel}.` : '.'}`
+                : `Total revenue from sales completed today${compare ? ', compared with yesterday.' : '.'}`
+            }
           />
         )}
       </div>
@@ -257,12 +359,12 @@ export default function DashboardView({
                       outerRadius={80}
                       dataKey="value"
                       strokeWidth={2}
-                      stroke="hsl(var(--card))"
+                      stroke="var(--card)"
                     >
-                      {todayByPayment.map((_entry, index) => (
+                      {todayByPayment.map((entry, index) => (
                         <Cell
                           key={index}
-                          fill={DONUT_COLORS[index % DONUT_COLORS.length]}
+                          fill={paymentColor(entry.name, index)}
                         />
                       ))}
                     </Pie>
@@ -272,21 +374,30 @@ export default function DashboardView({
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <p className="text-xs text-muted-foreground">Total Earning</p>
                   <p className="text-xl font-medium text-card-foreground">
-                    ₵{totalEarning.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <Calligraph variant="number" animation="snappy" initial>
+                      {`₵${totalEarning.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    </Calligraph>
                   </p>
                 </div>
               </div>
-              {/* Legend */}
-              <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-2">
-                {todayByPayment.map((item, i) => (
-                  <div key={item.name} className="flex items-center gap-1.5">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }}
-                    />
-                    <span className="text-xs text-muted-foreground">{item.name}</span>
-                  </div>
-                ))}
+              {/* Per-payment breakdown */}
+              <div className="mt-3 flex flex-col gap-1.5 w-full max-w-[240px] mx-auto">
+                {todayByPayment.map((item, i) => {
+                  const pct = totalEarning > 0 ? (item.value / totalEarning) * 100 : 0;
+                  return (
+                    <div key={item.name} className="flex items-center gap-2 text-xs">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ background: paymentColor(item.name, i) }}
+                      />
+                      <span className="text-muted-foreground">{item.name}</span>
+                      <span className="text-muted-foreground/60 tabular-nums">{pct.toFixed(0)}%</span>
+                      <span className="ml-auto font-medium text-foreground tabular-nums">
+                        ₵{item.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

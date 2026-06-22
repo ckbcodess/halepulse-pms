@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const REPORT_TYPES = [
   { key: 'sales',     label: 'Sales Summary' },
@@ -58,20 +59,20 @@ export default function ReportControls({
       {/* Date range */}
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-semibold text-muted-foreground">From</label>
-        <input
-          type="date"
+        <DatePicker
           value={localFrom}
-          onChange={(e) => setLocalFrom(e.target.value)}
-          className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
+          onChange={setLocalFrom}
+          placeholder="From"
+          className="h-10"
         />
       </div>
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-semibold text-muted-foreground">To</label>
-        <input
-          type="date"
+        <DatePicker
           value={localTo}
-          onChange={(e) => setLocalTo(e.target.value)}
-          className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
+          onChange={setLocalTo}
+          placeholder="To"
+          className="h-10"
         />
       </div>
 

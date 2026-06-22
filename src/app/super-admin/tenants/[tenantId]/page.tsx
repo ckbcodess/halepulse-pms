@@ -143,7 +143,7 @@ export default function TenantDetailPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-foreground">{tenant.name}</h1>
+              <h1 className="text-2xl font-semibold text-foreground">{tenant.name}</h1>
               <Badge variant={tenant.isActive ? 'success' : 'destructive'}>
                 {tenant.isActive ? 'Active' : 'Disabled'}
               </Badge>
@@ -155,7 +155,6 @@ export default function TenantDetailPage() {
         </div>
         <Button
           variant={tenant.isActive ? 'destructive' : 'default'}
-          size="sm"
           disabled={suspending}
           onClick={handleSuspend}
         >

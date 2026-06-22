@@ -5,6 +5,9 @@ import { useParams } from 'next/navigation';
 import { LayoutDashboard, Loader2, Check, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/layout/PageHeader';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
 import { DASHBOARD_WIDGETS } from '@/lib/dashboard/widgets';
 
 const ROLES = ['MANAGER', 'PHARMACIST', 'MCA', 'AUDIT', 'NES'] as const;
@@ -64,27 +67,27 @@ export default function DashboardVisibilityPage() {
         </Button>
       </PageHeader>
 
-      <div className="bg-card border border-border rounded-2xl overflow-x-auto">
-        <table className="min-w-[640px] w-full text-sm">
-          <thead className="bg-muted/50 text-muted-foreground">
-            <tr>
-              <th className="text-left px-4 py-3 font-semibold">Widget</th>
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <Table className="min-w-[640px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="px-4 font-semibold">Widget</TableHead>
               {ROLES.map(r => (
-                <th key={r} className="px-4 py-3 text-center font-semibold">{r}</th>
+                <TableHead key={r} className="px-4 text-center font-semibold">{r}</TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {DASHBOARD_WIDGETS.map(w => (
-              <tr key={w.key} className="border-t border-border">
-                <td className="px-4 py-3">
+              <TableRow key={w.key}>
+                <TableCell className="px-4 py-3">
                   <span className="font-medium text-foreground">{w.label}</span>
                   {w.sensitive && <span className="ml-2 text-[10px] font-bold uppercase text-amber-600">Sensitive</span>}
-                </td>
+                </TableCell>
                 {ROLES.map(role => {
                   const visible = isVisible(role, w.key);
                   return (
-                    <td key={role} className="px-4 py-3 text-center">
+                    <TableCell key={role} className="px-4 py-3 text-center">
                       <button
                         onClick={() => toggle(role, w.key)}
                         title={visible ? 'Visible — click to hide' : 'Hidden — click to show'}
@@ -96,13 +99,13 @@ export default function DashboardVisibilityPage() {
                       >
                         {visible ? <Eye size={15} /> : <EyeOff size={15} />}
                       </button>
-                    </td>
+                    </TableCell>
                   );
                 })}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       <p className="text-xs text-muted-foreground flex items-center gap-2">

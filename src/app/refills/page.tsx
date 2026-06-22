@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
 
 interface Reminder {
   id: number;
@@ -108,11 +111,12 @@ export default function RefillsPage() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="patient">Patient *</Label>
-              <select id="patient" value={patientId} onChange={(e) => setPatientId(e.target.value)}
-                className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm">
-                <option value="">Select patient…</option>
-                {customers.map((c) => <option key={c.id} value={c.id}>{c.name}{c.phone ? ` · ${c.phone}` : ''}</option>)}
-              </select>
+              <Select value={patientId} onValueChange={(v) => v && setPatientId(v)}>
+                <SelectTrigger id="patient" className="w-full h-10"><SelectValue placeholder="Select patient…" /></SelectTrigger>
+                <SelectContent>
+                  {customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}{c.phone ? ` · ${c.phone}` : ''}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="interval">Refill interval (days) *</Label>

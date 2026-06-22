@@ -4,12 +4,13 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Upload, FileSpreadsheet, ArrowLeft, CheckCircle2, AlertTriangle,
+  Upload, FileSpreadsheet, CheckCircle2, AlertTriangle,
   Search, ChevronDown, X, Package, Settings2, ChevronRight,
   Loader2, Download, Link2, Link2Off, Pencil, Check, Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import PageHeader from '@/components/layout/PageHeader';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -559,20 +560,11 @@ export default function BatchRestockPage() {
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => router.push('/inventory')}>
-            <ArrowLeft size={18} />
-          </Button>
-          <div>
-            <h1 className="text-lg font-bold text-foreground">Batch Restock</h1>
-            <p className="text-xs text-muted-foreground">Import a supplier invoice CSV to restock multiple products at once</p>
-          </div>
-        </div>
+      <PageHeader title="Batch Restock" description="Import a supplier invoice CSV to restock multiple products at once.">
         <Button variant="outline" size="sm" onClick={() => setShowMarkupSettings(true)}>
           <Settings2 size={14} className="mr-1.5" /> Markup Settings
         </Button>
-      </div>
+      </PageHeader>
 
       {/* ── Step: Upload ── */}
       {step === 'upload' && (

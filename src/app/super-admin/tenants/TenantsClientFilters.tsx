@@ -3,6 +3,9 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All' },
@@ -41,15 +44,14 @@ export default function TenantsClientFilters({
           className="h-9 pl-8 text-sm"
         />
       </div>
-      <select
-        value={status}
-        onChange={e => { setStatus(e.target.value); apply(q, e.target.value); }}
-        className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-      >
-        {STATUS_OPTIONS.map(o => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
+      <Select value={status} onValueChange={v => { if (v) { setStatus(v); apply(q, v); } }}>
+        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {STATUS_OPTIONS.map(o => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <button
         onClick={() => apply(q)}
         className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"

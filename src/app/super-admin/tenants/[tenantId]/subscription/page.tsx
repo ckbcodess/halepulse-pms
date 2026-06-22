@@ -9,6 +9,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 interface SubscriptionData {
   subscriptionPlan: string;
@@ -195,10 +196,10 @@ export default function SubscriptionPage() {
 
         <div className="space-y-1.5">
           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Renewal Date</label>
-          <Input
-            type="date"
+          <DatePicker
             value={form.renewalDate}
-            onChange={e => setForm(p => ({ ...p, renewalDate: e.target.value }))}
+            onChange={v => setForm(p => ({ ...p, renewalDate: v }))}
+            placeholder="Select date"
             className="h-10"
           />
         </div>

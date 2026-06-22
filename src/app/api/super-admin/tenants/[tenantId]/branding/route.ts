@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/auth/requireRole';
 import { logAction } from '@/lib/audit/logAction';
+import { sanitizeBrand } from '@/lib/theme/accent';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ tenantId: string }> }) {
   let session: Awaited<ReturnType<typeof requireRole>>;
@@ -18,8 +19,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ tena
 
   const { name, primaryColor, secondaryColor, baseColor, logoUrl } = body;
 
-  // When baseColor is provided, sync it to primaryColor for backward compat
-  const effectivePrimary = baseColor || primaryColor;
+  // The brand is a single hex. Normalise it (also strips any legacy "|neutral"
+  // suffix) and store the same value in both columns for backward compat.
+  const color = sanitizeBrand(baseColor || primaryColor);
 
   let tenant;
   try {
@@ -27,9 +29,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ tena
       where: { id: tenantId },
       data:  {
         name,
-        primaryColor: effectivePrimary,
+        primaryColor: color,
         secondaryColor,
-        baseColor: baseColor || null,
+        baseColor: color,
         logoUrl: logoUrl || null,
       },
     });
@@ -42,15 +44,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ tena
   }
 
   await logAction(session.user.id, tenantId, 'BRANDING_UPDATED', {
-    baseColor: baseColor || effectivePrimary,
-    primaryColor: effectivePrimary,
-    secondaryColor,
+    baseColor: color,
+    primaryColor: color,
   });
 
   // Write a long-lived cookie so the root layout can inject the brand color
   // without hitting the DB on every request. Cookie is per-tenant so multiple
   // tenant previews don't conflict.
-  const color = baseColor || effectivePrimary || '#6366f1';
   const res = NextResponse.json(tenant);
   res.cookies.set(`hp_brand_${tenantId}`, color, {
     path:     '/',

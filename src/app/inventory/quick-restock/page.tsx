@@ -3,10 +3,14 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Search, Plus, Trash2, Package, Loader2, CheckCircle2 } from 'lucide-react';
+import { Search, Plus, Trash2, Package, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
+import PageHeader from '@/components/layout/PageHeader';
 
 type DBProduct = {
   id: number; name: string; sku: string | null; category: string;
@@ -132,13 +136,7 @@ export default function QuickRestockPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => router.push('/inventory')}><ArrowLeft size={18} /></Button>
-        <div>
-          <h1 className="text-lg font-bold text-foreground">Quick Restock</h1>
-          <p className="text-xs text-muted-foreground">Add everything you bought in one go — set quantities and prices, then save all at once.</p>
-        </div>
-      </div>
+      <PageHeader title="Quick Restock" description="Add everything you bought in one go — set quantities and prices, then save all at once." />
 
       {/* Add product */}
       <div className="relative">
@@ -180,53 +178,51 @@ export default function QuickRestockPage() {
             <p className="text-sm">No items yet — click “Add Item” to start keying in your restock.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-[720px] w-full text-sm">
-              <thead className="bg-muted/50 text-muted-foreground text-left text-xs">
-                <tr>
-                  <th className="px-4 py-2.5">Product</th>
-                  <th className="px-4 py-2.5 text-center w-24">Current</th>
-                  <th className="px-4 py-2.5 text-center w-28">Qty Received</th>
-                  <th className="px-4 py-2.5 text-right w-28">Cost (₵)</th>
-                  <th className="px-4 py-2.5 text-center w-24">Markup %</th>
-                  <th className="px-4 py-2.5 text-right w-28">Selling (₵)</th>
-                  <th className="px-4 py-2.5 w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r, idx) => (
-                  <tr key={r.product.id} className="border-t border-border">
-                    <td className="px-4 py-2.5">
-                      <p className="font-medium text-foreground">{r.product.name}</p>
-                      <p className="text-[11px] text-muted-foreground">{r.product.category}</p>
-                    </td>
-                    <td className="px-4 py-2.5 text-center text-muted-foreground">{r.product.stockQty}</td>
-                    <td className="px-4 py-2.5">
-                      <Input type="number" min="1" placeholder="0" value={r.quantity}
-                        onChange={e => updateRow(idx, { quantity: e.target.value })}
-                        className="h-8 text-center" />
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Input type="number" min="0" step="0.01" value={r.costPrice}
-                        onChange={e => updateRow(idx, { costPrice: e.target.value })}
-                        className="h-8 text-right" />
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Input type="number" min="0" value={r.markupPercent}
-                        onChange={e => updateRow(idx, { markupPercent: e.target.value })}
-                        className="h-8 text-center" />
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-foreground">{money(sellingOf(r))}</td>
-                    <td className="px-4 py-2.5">
-                      <Button variant="ghost" size="icon-sm" onClick={() => removeRow(idx)}>
-                        <Trash2 size={14} className="text-destructive" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table className="min-w-[720px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-4">Product</TableHead>
+                <TableHead className="px-4 text-center w-24">Current</TableHead>
+                <TableHead className="px-4 text-center w-28">Qty Received</TableHead>
+                <TableHead className="px-4 text-right w-28">Cost (₵)</TableHead>
+                <TableHead className="px-4 text-center w-24">Markup %</TableHead>
+                <TableHead className="px-4 text-right w-28">Selling (₵)</TableHead>
+                <TableHead className="px-4 w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r, idx) => (
+                <TableRow key={r.product.id}>
+                  <TableCell className="px-4 py-2.5">
+                    <p className="font-medium text-foreground">{r.product.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{r.product.category}</p>
+                  </TableCell>
+                  <TableCell className="px-4 py-2.5 text-center text-muted-foreground">{r.product.stockQty}</TableCell>
+                  <TableCell className="px-4 py-2.5">
+                    <Input type="number" min="1" placeholder="0" value={r.quantity}
+                      onChange={e => updateRow(idx, { quantity: e.target.value })}
+                      className="h-8 text-center" />
+                  </TableCell>
+                  <TableCell className="px-4 py-2.5">
+                    <Input type="number" min="0" step="0.01" value={r.costPrice}
+                      onChange={e => updateRow(idx, { costPrice: e.target.value })}
+                      className="h-8 text-right" />
+                  </TableCell>
+                  <TableCell className="px-4 py-2.5">
+                    <Input type="number" min="0" value={r.markupPercent}
+                      onChange={e => updateRow(idx, { markupPercent: e.target.value })}
+                      className="h-8 text-center" />
+                  </TableCell>
+                  <TableCell className="px-4 py-2.5 text-right font-semibold text-foreground">{money(sellingOf(r))}</TableCell>
+                  <TableCell className="px-4 py-2.5">
+                    <Button variant="ghost" size="icon-sm" onClick={() => removeRow(idx)}>
+                      <Trash2 size={14} className="text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </div>
 

@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import InventoryTabs from '@/components/inventory/InventoryTabs';
 
 type Supplier = {
   id: number;
@@ -175,11 +176,13 @@ export default function SuppliersPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Suppliers" description="Manage your wholesale suppliers and contacts.">
+      <PageHeader title="Inventory" description="Manage stock levels and pricing records across your pharmacy.">
         <Button onClick={() => setShowAdd(true)}>
           <Plus size={14} /> Add Supplier
         </Button>
       </PageHeader>
+
+      <InventoryTabs />
 
       {/* Search */}
       <div className="flex items-center gap-4">

@@ -4,6 +4,15 @@ import { useEffect, useState, useCallback, Fragment } from 'react';
 import { toast } from 'sonner';
 import { ChevronDown, ChevronRight, Printer, Loader2 } from 'lucide-react';
 import { exportToCsv } from '@/lib/utils/exportCsv';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
+import PageHeader from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/button';
 
 interface SaleRow {
   id: number;
@@ -138,66 +147,67 @@ export default function SalesView() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">Sales</h1>
-        <button onClick={exportCsv} className="rounded border px-3 py-1.5 text-sm hover:bg-muted">Export CSV</button>
-      </div>
+      <PageHeader title="Sales" description="Browse and reprint completed transactions.">
+        <Button variant="outline" onClick={exportCsv}>Export CSV</Button>
+      </PageHeader>
 
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
-        <input type="date" className="rounded border px-2 py-1" value={filters.from}
-          onChange={(e) => setFilters({ ...filters, from: e.target.value })} />
-        <input type="date" className="rounded border px-2 py-1" value={filters.to}
-          onChange={(e) => setFilters({ ...filters, to: e.target.value })} />
-        <select className="rounded border px-2 py-1" value={filters.paymentType}
-          onChange={(e) => setFilters({ ...filters, paymentType: e.target.value })}>
-          <option value="all">All methods</option>
-          {PAYMENT_TYPES.map((p) => <option key={p}>{p}</option>)}
-        </select>
+        <DatePicker className="h-8 w-auto" value={filters.from}
+          onChange={(v) => setFilters({ ...filters, from: v })} placeholder="From" />
+        <DatePicker className="h-8 w-auto" value={filters.to}
+          onChange={(v) => setFilters({ ...filters, to: v })} placeholder="To" />
+        <Select value={filters.paymentType} onValueChange={(v) => v && setFilters({ ...filters, paymentType: v })}>
+          <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All methods</SelectItem>
+            {PAYMENT_TYPES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <input placeholder="Receipt no or customer" className="rounded border px-2 py-1" value={filters.search}
           onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-border bg-white dark:bg-card">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-muted text-left text-gray-600 dark:text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2 w-8"></th>
-              <th className="px-3 py-2">Receipt No</th>
-              <th className="px-3 py-2">Date</th>
-              <th className="px-3 py-2">Items</th>
-              <th className="px-3 py-2">Customer</th>
-              <th className="px-3 py-2">Payment</th>
-              <th className="px-3 py-2 text-center">Qty</th>
-              <th className="px-3 py-2 text-right">Amount</th>
-              <th className="px-3 py-2">Served By</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-8"></TableHead>
+              <TableHead>Receipt No</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Items</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Payment</TableHead>
+              <TableHead className="text-center">Qty</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>Served By</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {loading ? (
-              <tr><td colSpan={9} className="px-3 py-6 text-center text-gray-400">Loading…</td></tr>
+              <TableRow><TableCell colSpan={9} className="py-6 text-center text-muted-foreground">Loading…</TableCell></TableRow>
             ) : sales.length === 0 ? (
-              <tr><td colSpan={9} className="px-3 py-6 text-center text-gray-400">No sales</td></tr>
+              <TableRow><TableCell colSpan={9} className="py-6 text-center text-muted-foreground">No sales</TableCell></TableRow>
             ) : sales.map((s) => (
               <Fragment key={s.id}>
-                <tr
-                  className="border-t border-gray-100 dark:border-border hover:bg-muted/40 cursor-pointer"
+                <TableRow
+                  className="cursor-pointer"
                   onClick={() => toggleRow(s.id)}
                 >
-                  <td className="px-3 py-2 text-muted-foreground">
+                  <TableCell className="text-muted-foreground">
                     {expandedId === s.id ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs">{s.receiptNo ?? '—'}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{new Date(s.createdAt).toLocaleString()}</td>
-                  <td className="px-3 py-2 max-w-[220px] truncate" title={s.itemsSummary}>{s.itemsSummary}</td>
-                  <td className="px-3 py-2">{s.customerName ?? '—'}</td>
-                  <td className="px-3 py-2">{s.paymentType}</td>
-                  <td className="px-3 py-2 text-center">{s.itemCount}</td>
-                  <td className="px-3 py-2 text-right">{money(s.totalAmount)}</td>
-                  <td className="px-3 py-2 text-xs text-gray-500">{s.assignedPerson ?? s.roleAccount ?? '—'}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{s.receiptNo ?? '—'}</TableCell>
+                  <TableCell>{new Date(s.createdAt).toLocaleString()}</TableCell>
+                  <TableCell className="max-w-[220px] truncate" title={s.itemsSummary}>{s.itemsSummary}</TableCell>
+                  <TableCell>{s.customerName ?? '—'}</TableCell>
+                  <TableCell>{s.paymentType}</TableCell>
+                  <TableCell className="text-center">{s.itemCount}</TableCell>
+                  <TableCell className="text-right">{money(s.totalAmount)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{s.assignedPerson ?? s.roleAccount ?? '—'}</TableCell>
+                </TableRow>
                 {expandedId === s.id && (
-                  <tr className="bg-muted/30">
-                    <td colSpan={9} className="px-6 py-4">
+                  <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <TableCell colSpan={9} className="px-6 py-4 whitespace-normal">
                       {detailLoading || !detail ? (
                         <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
                           <Loader2 size={14} className="animate-spin" /> Loading transaction…
@@ -255,13 +265,13 @@ export default function SalesView() {
                           </div>
                         </div>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
               </Fragment>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

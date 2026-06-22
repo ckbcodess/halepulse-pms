@@ -144,23 +144,23 @@ export default function SupplierProfilePage() {
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => router.push('/inventory/suppliers')} className="text-muted-foreground hover:text-foreground">
+        <Button variant="ghost" onClick={() => router.push('/inventory/suppliers')} className="text-muted-foreground hover:text-foreground">
           <ArrowLeft size={16} /> Back to Suppliers
         </Button>
         <div className="flex items-center gap-2">
           {editing ? (
             <>
-              <Button variant="outline" size="sm" onClick={() => { setEditing(false); setForm({}); }}><X size={14} className="mr-1" /> Cancel</Button>
-              <Button size="sm" onClick={handleSave} disabled={submitting}><Save size={14} className="mr-1" /> {submitting ? 'Saving...' : 'Save'}</Button>
+              <Button variant="outline" onClick={() => { setEditing(false); setForm({}); }}><X size={14} className="mr-1" /> Cancel</Button>
+              <Button onClick={handleSave} disabled={submitting}><Save size={14} className="mr-1" /> {submitting ? 'Saving...' : 'Save'}</Button>
             </>
           ) : (
             <>
-              <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Pencil size={14} className="mr-1" /> Edit</Button>
-              <Button variant="outline" size="sm" onClick={handleArchive} className={supplier.isActive ? 'text-rose-600' : 'text-emerald-600'}>
+              <Button variant="outline" onClick={() => setEditing(true)}><Pencil size={14} className="mr-1" /> Edit</Button>
+              <Button variant="outline" onClick={handleArchive} className={supplier.isActive ? 'text-rose-600' : 'text-emerald-600'}>
                 <Archive size={14} className="mr-1" /> {supplier.isActive ? 'Archive' : 'Restore'}
               </Button>
               <Link href={`/inventory/receive?supplier=${supplier.id}`}>
-                <Button size="sm"><Truck size={14} className="mr-1" /> Receive Stock</Button>
+                <Button><Truck size={14} className="mr-1" /> Receive Stock</Button>
               </Link>
             </>
           )}
@@ -189,7 +189,7 @@ export default function SupplierProfilePage() {
                 <Truck size={24} className="text-muted-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">{supplier.name}</h1>
+                <h1 className="text-2xl font-semibold text-foreground">{supplier.name}</h1>
                 {supplier.contactName && <p className="text-sm text-muted-foreground">{supplier.contactName}</p>}
               </div>
               {!supplier.isActive && <StatusBadge status="ARCHIVED" />}
