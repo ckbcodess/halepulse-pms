@@ -8,6 +8,8 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { SearchBar } from '@/components/ui/search-bar';
+import { FilterDropdown } from '@/components/ui/filter-dropdown';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 
@@ -128,20 +130,26 @@ export default function PurchasesView() {
         </div>
       )}
 
-      <div className="mb-4 flex flex-wrap gap-2 text-sm">
-        <DatePicker className="h-8 w-auto" value={filters.from}
-          onChange={(v) => setFilters({ ...filters, from: v })} placeholder="From" />
-        <DatePicker className="h-8 w-auto" value={filters.to}
-          onChange={(v) => setFilters({ ...filters, to: v })} placeholder="To" />
-        <Select value={filters.category} onValueChange={(v) => v && setFilters({ ...filters, category: v })}>
-          <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <input placeholder="Search description" className="rounded border px-2 py-1" value={filters.search}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
+      <div className="mb-4 flex flex-wrap items-center gap-6">
+        <SearchBar
+          value={filters.search}
+          onChange={(v) => setFilters({ ...filters, search: v })}
+          placeholder="Search description..."
+        />
+        <div className="flex flex-wrap items-center gap-4">
+          <DatePicker className="h-10 w-auto" value={filters.from}
+            onChange={(v) => setFilters({ ...filters, from: v })} placeholder="From" />
+          <DatePicker className="h-10 w-auto" value={filters.to}
+            onChange={(v) => setFilters({ ...filters, to: v })} placeholder="To" />
+          <FilterDropdown
+            value={filters.category}
+            onChange={(v) => setFilters({ ...filters, category: v })}
+            options={[
+              { value: 'all', label: 'All categories' },
+              ...CATEGORIES.map((c) => ({ value: c, label: c })),
+            ]}
+          />
+        </div>
       </div>
 
       <div className="rounded-lg border border-border bg-card overflow-hidden">

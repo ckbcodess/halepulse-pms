@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/date-picker';
 
 const REPORT_TYPES = [
   { key: 'sales',     label: 'Sales Summary' },
@@ -17,6 +16,7 @@ const REPORT_TYPES = [
   { key: 'inventory', label: 'Inventory / Low Stock' },
   { key: 'expiry',    label: 'Expiring Soon' },
   { key: 'monthly',   label: 'Monthly Summary' },
+  { key: 'valuation', label: 'Stock Valuation' },
 ];
 
 // Export is available for the types the export API can produce.
@@ -43,6 +43,9 @@ export default function ReportControls({
     (localFrom ? `&from=${localFrom}` : '') +
     (localTo ? `&to=${localTo}` : '');
 
+  // Stock Valuation is a point-in-time snapshot, so the date range is meaningless.
+  const isSnapshot = type === 'valuation';
+
   return (
     <div className="bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-end gap-3">
       {/* Report type */}
@@ -56,27 +59,31 @@ export default function ReportControls({
         </Select>
       </div>
 
-      {/* Date range */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-muted-foreground">From</label>
-        <DatePicker
-          value={localFrom}
-          onChange={setLocalFrom}
-          placeholder="From"
-          className="h-10"
-        />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-muted-foreground">To</label>
-        <DatePicker
-          value={localTo}
-          onChange={setLocalTo}
-          placeholder="To"
-          className="h-10"
-        />
-      </div>
+      {/* Date range — hidden for point-in-time snapshot reports */}
+      {!isSnapshot && (
+        <>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-muted-foreground">From</label>
+            <input
+              type="date"
+              value={localFrom}
+              onChange={(e) => setLocalFrom(e.target.value)}
+              className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-muted-foreground">To</label>
+            <input
+              type="date"
+              value={localTo}
+              onChange={(e) => setLocalTo(e.target.value)}
+              className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
+            />
+          </div>
 
-      <Button onClick={() => apply({})} className="h-10">Apply</Button>
+          <Button onClick={() => apply({})} className="h-10">Apply</Button>
+        </>
+      )}
 
       {EXPORTABLE.includes(type) && (
         <Button variant="outline" className="h-10 sm:ml-auto" nativeButton={false} render={<a href={exportHref} />}>

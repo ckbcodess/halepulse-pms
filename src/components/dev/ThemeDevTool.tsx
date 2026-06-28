@@ -152,7 +152,7 @@ export default function ThemeDevTool() {
               }}
               placeholder="#6366f1"
               maxLength={7}
-              className="h-9 flex-1 rounded-lg border border-input bg-background px-2.5 font-mono text-[13px] uppercase outline-none focus:ring-1 focus:ring-primary"
+              className="h-9 flex-1 rounded-lg border border-input bg-background px-2.5 font-mono text-[13px] uppercase outline-none focus:ring-1 focus:ring-foreground/15"
             />
           </div>
         </div>

@@ -3,7 +3,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   Menu, ChevronDown, Sun, Moon, LogOut, ArrowLeft,
-  LayoutDashboard, ShoppingCart, Package, Users,
+  LayoutDashboard, ShoppingCart, Package, Truck, Users,
   Settings, UserCog, KeyRound, Receipt, Coins, Wallet,
   BarChart3, type LucideIcon,
 } from 'lucide-react';
@@ -36,10 +36,10 @@ interface TopHeaderProps {
 const ROUTE_META: Record<string, { title: string; icon: LucideIcon }> = {
   '/':                 { title: 'Dashboard',       icon: LayoutDashboard },
   '/pos':              { title: 'Point of Sale',   icon: ShoppingCart },
-  '/inventory':        { title: 'Inventory',       icon: Package },
-  '/inventory/new':    { title: 'Add Product',     icon: Package },
-  '/inventory/import': { title: 'Import Products', icon: Package },
-  '/stock-value':      { title: 'Stock Value',     icon: Coins },
+  '/inventory':           { title: 'Stock',        icon: Package },
+  '/inventory/new':       { title: 'Add Product',  icon: Package },
+  '/inventory/suppliers': { title: 'Suppliers',    icon: Truck },
+  '/stock-value':         { title: 'Stock Value',  icon: Coins },
   '/sales':            { title: 'Sales',           icon: Receipt },
   '/customers':        { title: 'Customers',       icon: Users },
   '/customers/new':    { title: 'Add Customer',    icon: Users },
@@ -54,9 +54,10 @@ const ROUTE_META: Record<string, { title: string; icon: LucideIcon }> = {
 // Prefix fallbacks for sub-routes (e.g. /inventory/suppliers, /dashboard/manager)
 // so deeper pages still resolve to their section instead of defaulting to "Dashboard".
 const PREFIX_META: { prefix: string; title: string; icon: LucideIcon }[] = [
-  { prefix: '/dashboard',   title: 'Dashboard',     icon: LayoutDashboard },
-  { prefix: '/pos',         title: 'Point of Sale', icon: ShoppingCart },
-  { prefix: '/inventory',   title: 'Inventory',     icon: Package },
+  { prefix: '/dashboard',          title: 'Dashboard',     icon: LayoutDashboard },
+  { prefix: '/pos',                title: 'Point of Sale', icon: ShoppingCart },
+  { prefix: '/inventory/suppliers', title: 'Suppliers',    icon: Truck },
+  { prefix: '/inventory',          title: 'Stock',         icon: Package },
   { prefix: '/stock-value', title: 'Stock Value',   icon: Coins },
   { prefix: '/sales',       title: 'Sales',         icon: Receipt },
   { prefix: '/customers',   title: 'Customers',     icon: Users },
@@ -78,12 +79,10 @@ function getPageMeta(pathname: string): { title: string; icon: LucideIcon } {
 // Operational / bulk-task screens show a "Back to {parent}" breadcrumb in the
 // header instead of the page title + branch switcher.
 const BACK_ROUTES: Record<string, { href: string; label: string; current: string }> = {
-  '/inventory/quick-restock': { href: '/inventory', label: 'Inventory', current: 'Quick Restock' },
-  '/inventory/restock':       { href: '/inventory', label: 'Inventory', current: 'Batch Restock' },
-  '/inventory/stock-take':    { href: '/inventory', label: 'Inventory', current: 'Stock Take' },
-  '/inventory/transfers':     { href: '/inventory', label: 'Inventory', current: 'Stock Transfer' },
-  '/inventory/import':        { href: '/inventory', label: 'Inventory', current: 'Import Products' },
-  '/pos/eod':                 { href: '/pos',       label: 'POS',       current: 'End of Day' },
+  '/inventory/restock':       { href: '/inventory', label: 'Stock', current: 'Restock' },
+  '/inventory/stock-take':    { href: '/inventory', label: 'Stock', current: 'Stock Take' },
+  '/inventory/transfers':     { href: '/inventory', label: 'Stock', current: 'Stock Transfer' },
+  '/pos/eod':                 { href: '/pos',       label: 'POS',   current: 'End of Day' },
 };
 
 const ROLE_LABEL: Record<string, string> = {

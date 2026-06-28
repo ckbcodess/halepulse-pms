@@ -7,10 +7,9 @@ import { exportToCsv } from '@/lib/utils/exportCsv';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table';
-import {
-  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-} from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { SearchBar } from '@/components/ui/search-bar';
+import { FilterDropdown } from '@/components/ui/filter-dropdown';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 
@@ -151,20 +150,26 @@ export default function SalesView() {
         <Button variant="outline" onClick={exportCsv}>Export CSV</Button>
       </PageHeader>
 
-      <div className="mb-4 flex flex-wrap gap-2 text-sm">
-        <DatePicker className="h-8 w-auto" value={filters.from}
-          onChange={(v) => setFilters({ ...filters, from: v })} placeholder="From" />
-        <DatePicker className="h-8 w-auto" value={filters.to}
-          onChange={(v) => setFilters({ ...filters, to: v })} placeholder="To" />
-        <Select value={filters.paymentType} onValueChange={(v) => v && setFilters({ ...filters, paymentType: v })}>
-          <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All methods</SelectItem>
-            {PAYMENT_TYPES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <input placeholder="Receipt no or customer" className="rounded border px-2 py-1" value={filters.search}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
+      <div className="mb-4 flex flex-wrap items-center gap-6">
+        <SearchBar
+          value={filters.search}
+          onChange={(v) => setFilters({ ...filters, search: v })}
+          placeholder="Receipt no or customer..."
+        />
+        <div className="flex flex-wrap items-center gap-4">
+          <DatePicker className="h-10 w-auto" value={filters.from}
+            onChange={(v) => setFilters({ ...filters, from: v })} placeholder="From" />
+          <DatePicker className="h-10 w-auto" value={filters.to}
+            onChange={(v) => setFilters({ ...filters, to: v })} placeholder="To" />
+          <FilterDropdown
+            value={filters.paymentType}
+            onChange={(v) => setFilters({ ...filters, paymentType: v })}
+            options={[
+              { value: 'all', label: 'All methods' },
+              ...PAYMENT_TYPES.map((p) => ({ value: p, label: p })),
+            ]}
+          />
+        </div>
       </div>
 
       <div className="rounded-lg border border-border bg-card overflow-hidden">

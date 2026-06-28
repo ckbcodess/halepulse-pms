@@ -5,21 +5,30 @@ export interface MenuItem {
   label:   string;
   path:    string;
   visible: boolean;
+  // Optional section the item belongs to (rendered as a group header in the
+  // sidebar). Items without a group still render — backward compatible.
+  group?:  string;
 }
 
 // ── Master list — single source of truth for every possible sidebar item ──────
 // Add new pages here. defaultRoles sets visibility when no DB config exists yet.
+// `group` buckets items into sidebar sections (OPERATE / INVENTORY / INSIGHTS / ADMIN).
 export const MASTER_MENU: (MenuItem & { defaultRoles: string[] })[] = [
-  { key: 'dashboard',   label: 'Dashboard',   path: '/',            visible: true, defaultRoles: ['MANAGER','PHARMACIST','MCA','AUDIT'] },
-  { key: 'pos',         label: 'POS',         path: '/pos',         visible: true, defaultRoles: ['PHARMACIST','MCA'] }, // MGR via toggle
-  { key: 'stock',       label: 'Stock',       path: '/inventory',   visible: true, defaultRoles: ['MANAGER','PHARMACIST'] },
-  { key: 'stock-value', label: 'Stock Value', path: '/stock-value', visible: true, defaultRoles: ['MANAGER','PHARMACIST'] },
-  { key: 'sales',       label: 'Sales',       path: '/sales',       visible: true, defaultRoles: ['MANAGER','PHARMACIST','MCA','AUDIT'] },
-  { key: 'customers',   label: 'Customers',   path: '/customers',   visible: true, defaultRoles: ['MANAGER','PHARMACIST','MCA'] },
-  { key: 'purchases',   label: 'Expenses',    path: '/purchases',   visible: true, defaultRoles: ['MANAGER'] },
-  { key: 'reports',     label: 'Reports',     path: '/reports',     visible: true, defaultRoles: ['MANAGER','PHARMACIST','AUDIT'] },
-  { key: 'team',        label: 'Team',        path: '/team',        visible: true, defaultRoles: ['MANAGER'] },
-  { key: 'settings',    label: 'Settings',    path: '/settings',    visible: true, defaultRoles: ['MANAGER'] },
+  { key: 'dashboard',   label: 'Dashboard',   path: '/',                     visible: true, group: 'OPERATE',   defaultRoles: ['MANAGER','PHARMACIST','MCA','AUDIT'] },
+  { key: 'pos',         label: 'POS',         path: '/pos',                  visible: true, group: 'OPERATE',   defaultRoles: ['PHARMACIST','MCA'] }, // MGR via toggle
+  { key: 'sales',       label: 'Sales',       path: '/sales',                visible: true, group: 'OPERATE',   defaultRoles: ['MANAGER','PHARMACIST','MCA','AUDIT'] },
+  { key: 'customers',   label: 'Customers',   path: '/customers',            visible: true, group: 'OPERATE',   defaultRoles: ['MANAGER','PHARMACIST','MCA'] },
+  { key: 'purchases',   label: 'Expenses',    path: '/purchases',            visible: true, group: 'OPERATE',   defaultRoles: ['MANAGER'] },
+
+  { key: 'stock',       label: 'Stock',       path: '/inventory',            visible: true, group: 'INVENTORY', defaultRoles: ['MANAGER','PHARMACIST'] },
+  { key: 'restock',     label: 'Restock',     path: '/inventory/restock',    visible: true, group: 'INVENTORY', defaultRoles: ['MANAGER','PHARMACIST'] },
+  { key: 'suppliers',   label: 'Suppliers',   path: '/inventory/suppliers',  visible: true, group: 'INVENTORY', defaultRoles: ['MANAGER','PHARMACIST'] },
+  { key: 'transfers',   label: 'Transfers',   path: '/inventory/transfers',  visible: true, group: 'INVENTORY', defaultRoles: ['MANAGER'] },
+
+  { key: 'reports',     label: 'Reports',     path: '/reports',              visible: true, group: 'INSIGHTS',  defaultRoles: ['MANAGER','PHARMACIST','AUDIT'] },
+
+  { key: 'team',        label: 'Team',        path: '/team',                 visible: true, group: 'ADMIN',     defaultRoles: ['MANAGER'] },
+  { key: 'settings',    label: 'Settings',    path: '/settings',             visible: true, group: 'ADMIN',     defaultRoles: ['MANAGER'] },
 ];
 
 /**
@@ -34,9 +43,9 @@ function mergeWithMaster(stored: MenuItem[], role: string): MenuItem[] {
     const path = master.key === 'dashboard' ? dashboardPathForRole(role) : master.path;
     if (storedMap.has(master.key)) {
       const s = storedMap.get(master.key)!;
-      return { key: master.key, label: master.label, path, visible: s.visible };
+      return { key: master.key, label: master.label, path, visible: s.visible, group: master.group };
     }
-    return { key: master.key, label: master.label, path, visible: master.defaultRoles.includes(role) };
+    return { key: master.key, label: master.label, path, visible: master.defaultRoles.includes(role), group: master.group };
   });
 }
 
@@ -55,6 +64,7 @@ function defaultsForRole(role: string): MenuItem[] {
     label:   m.label,
     path:    m.key === 'dashboard' ? dashboardPathForRole(role) : m.path,
     visible: m.defaultRoles.includes(role),
+    group:   m.group,
   }));
 }
 

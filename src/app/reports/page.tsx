@@ -240,13 +240,16 @@ export default async function ReportsPage({
   } = null;
 
   if (tab === 'monthly') {
-    const [thisRev, lastRev, topQty, topCust, methodRev, stockItems] = await Promise.all([
+    const [thisRev, lastRev, topQty, topCust, methodRev, stockProducts] = await Promise.all([
       prisma.sale.aggregate({ _sum: { totalAmount: true }, _count: true, where: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: monthStart, lte: monthEnd } } }),
       prisma.sale.aggregate({ _sum: { totalAmount: true }, where: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: prevMonthStart, lte: prevMonthEnd } } }),
       prisma.saleItem.groupBy({ by: ['productId'], _sum: { quantity: true, price: true }, orderBy: { _sum: { quantity: 'desc' } }, take: 10, where: { sale: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: monthStart, lte: monthEnd } } } }),
       prisma.sale.groupBy({ by: ['customerId'], _count: true, _sum: { totalAmount: true }, orderBy: { _count: { customerId: 'desc' } }, take: 10, where: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: monthStart, lte: monthEnd }, customerId: { not: null } } }),
       prisma.salePayment.groupBy({ by: ['paymentMethod'], _sum: { amount: true }, where: { ...saleFilter, createdAt: { gte: monthStart, lte: monthEnd }, sale: { status: { not: 'voided' } } } }),
-      prisma.stockItem.findMany({ where: { tenantId, ...baseBranchFilter }, select: { quantity: true, costPrice: true, sellingPrice: true } }),
+      // Stock value is sourced from the Product table (same as the Stock Valuation
+      // report) — the old StockItem ledger was only partially populated and badly
+      // under-reported. Keep this in sync with the `valuation` tab below.
+      prisma.product.findMany({ where: { tenantId, isActive: true }, select: { stockQty: true, costPrice: true, price: true } }),
     ]);
 
     const [prodNames, custNames] = await Promise.all([
@@ -267,8 +270,45 @@ export default async function ReportsPage({
       topProducts: topQty.map(t => ({ name: pMap.get(t.productId) ?? `#${t.productId}`, quantity: t._sum.quantity ?? 0, revenue: t._sum.price ?? 0 })),
       topCustomers: topCust.map(c => ({ name: cMap.get(c.customerId!) ?? 'Unknown', visits: c._count, spent: c._sum.totalAmount ?? 0 })),
       byMethod: methodRev.map(m => ({ method: m.paymentMethod, amount: m._sum.amount ?? 0 })),
-      stockCost: stockItems.reduce((s, i) => s + i.quantity * i.costPrice, 0),
-      stockSelling: stockItems.reduce((s, i) => s + i.quantity * i.sellingPrice, 0),
+      stockCost: stockProducts.reduce((s, i) => s + (i.costPrice ?? 0) * i.stockQty, 0),
+      stockSelling: stockProducts.reduce((s, i) => s + i.price * i.stockQty, 0),
+    };
+  }
+
+  // ── Stock Valuation tab ──────────────────────────────────────────────────────
+  // Point-in-time snapshot. Sourced from the Product table (same as the dashboard,
+  // inventory and POS) — the old StockItem ledger under-reported, so we deliberately
+  // ignore the date range here. Kept consistent with the Monthly tab's stock value.
+  let valuation: null | {
+    rows: { id: number; name: string; category: string; quantity: number; costPrice: number; sellingPrice: number; costValue: number; sellingValue: number; profit: number }[];
+    totalProducts: number; totalQty: number; totalCost: number; totalSelling: number; totalProfit: number;
+  } = null;
+
+  if (tab === 'valuation') {
+    const valProducts = await prisma.product.findMany({
+      where: { tenantId, isActive: true },
+      select: { id: true, name: true, category: true, stockQty: true, costPrice: true, price: true },
+    });
+    const valRows = valProducts.map((p) => {
+      const costPrice = p.costPrice ?? 0;
+      const sellingPrice = p.price;
+      const costValue = costPrice * p.stockQty;
+      const sellingValue = sellingPrice * p.stockQty;
+      return {
+        id: p.id, name: p.name, category: p.category, quantity: p.stockQty,
+        costPrice, sellingPrice, costValue, sellingValue, profit: sellingValue - costValue,
+      };
+    });
+    valRows.sort((a, b) => b.sellingValue - a.sellingValue);
+    const totalCost = valRows.reduce((a, r) => a + r.costValue, 0);
+    const totalSelling = valRows.reduce((a, r) => a + r.sellingValue, 0);
+    valuation = {
+      rows: valRows,
+      totalProducts: valProducts.length,
+      totalQty: valRows.reduce((a, r) => a + r.quantity, 0),
+      totalCost,
+      totalSelling,
+      totalProfit: totalSelling - totalCost,
     };
   }
 
@@ -680,6 +720,70 @@ export default async function ReportsPage({
               </TableBody>
             </Table>
           )}
+        </div>
+      )}
+
+      {/* ── STOCK VALUATION ────────────────────────────────────────────────────── */}
+      {tab === 'valuation' && valuation && (
+        <div className="space-y-6">
+          {/* KPI cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              { label: 'Total Products', value: valuation.totalProducts.toLocaleString() },
+              { label: 'Total Quantity', value: valuation.totalQty.toLocaleString() },
+              { label: 'Total Cost Value', value: `₵${valuation.totalCost.toFixed(2)}` },
+              { label: 'Total Selling Value', value: `₵${valuation.totalSelling.toFixed(2)}` },
+              { label: 'Potential Profit', value: `₵${valuation.totalProfit.toFixed(2)}` },
+            ].map((kpi, i) => (
+              <div key={i} className="bg-card border border-border rounded-2xl p-6">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{kpi.label}</p>
+                <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Valuation table */}
+          <div className="bg-card border border-border rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="text-base font-semibold text-foreground">Stock Valuation</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Point-in-time snapshot of active products · sorted by selling value</p>
+            </div>
+            {valuation.rows.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <Package size={32} className="mb-2 opacity-30" />
+                <p className="text-sm">No stock items</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead className="text-right">Qty</TableHead>
+                    <TableHead className="text-right">Cost Price</TableHead>
+                    <TableHead className="text-right">Selling Price</TableHead>
+                    <TableHead className="text-right">Cost Value</TableHead>
+                    <TableHead className="text-right">Selling Value</TableHead>
+                    <TableHead className="text-right">Profit</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {valuation.rows.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-medium text-foreground">{r.name}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{r.category || '—'}</TableCell>
+                      <TableCell className="text-right">{r.quantity}</TableCell>
+                      <TableCell className="text-right">₵{r.costPrice.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">₵{r.sellingPrice.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">₵{r.costValue.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">₵{r.sellingValue.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-semibold">₵{r.profit.toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -66,7 +66,7 @@ export default function SuperAdminShell({
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search businesses, users, products…"
-                className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-input bg-muted/50 focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-input bg-muted/50 focus:outline-none focus:ring-1 focus:ring-foreground/15"
               />
             </div>
           </form>

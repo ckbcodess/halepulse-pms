@@ -8,8 +8,8 @@ import { useCartStore } from '@/lib/store';
 import type { CartItem } from '@/lib/store';
 import {
   Search, X, Plus, Minus, Trash2, UserCheck,
-  Printer, AlertTriangle, CheckCircle2, Percent, Tag,
-  PauseCircle, PlayCircle, CornerDownLeft, ChevronRight,
+  Printer, AlertTriangle, CheckCircle2, Check, Percent, Tag,
+  PauseCircle, PlayCircle, CornerDownLeft, ChevronRight, ArrowRight,
   Wallet, CreditCard, Package, Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -428,9 +428,32 @@ export default function POSPage() {
 
             {miscMode ? (
               /* ── Misc mode ── */
-              <div className="rounded-xl p-2 flex flex-col gap-2" style={{ backgroundColor: 'color-mix(in oklch, var(--primary) 12%, transparent)' }}>
-                <div className="bg-card rounded-xl border border-border/60 px-[17.5px] pt-[11.3px] pb-[17.5px] flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
+              <div className="relative">
+                {/* spacer keeps the input zone the same height as the search row → no layout shift */}
+                <div aria-hidden className="h-[44px]" />
+
+                {/* floating group over the input row */}
+                <div className="absolute inset-x-0 -top-2 z-30 flex flex-col gap-2 origin-top animate-misc-flap">
+                  {/* tinted flap: header + input bar only */}
+                  <div
+                    className="flex flex-col gap-2 rounded-xl border border-primary/20 p-2.5 shadow-lg"
+                    style={{ backgroundColor: 'color-mix(in oklch, var(--primary) 7%, var(--card))' }}
+                  >
+                  {/* Header strip */}
+                  <div className="flex items-center gap-2 px-0.5">
+                    <button
+                      onClick={() => { setMiscMode(false); setMiscName(''); setMiscPrice(''); }}
+                      className="text-primary hover:opacity-70 transition-opacity"
+                      aria-label="Close misc item"
+                    >
+                      <X size={15} strokeWidth={2.25} />
+                    </button>
+                    <span className="text-[13px] font-semibold text-primary">Unlisted Item</span>
+                  </div>
+
+                  {/* Unified input bar */}
+                  <div className="flex items-center gap-2 h-[44px] pl-3 pr-2 border border-border rounded-xl bg-background focus-within:border-primary transition-colors">
+                    <Tag size={15} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
                     <input
                       ref={miscNameRef}
                       value={miscName}
@@ -440,10 +463,11 @@ export default function POSPage() {
                         if (e.key === 'Escape') { setMiscMode(false); setMiscName(''); setMiscPrice(''); }
                       }}
                       placeholder="Description (e.g. Shopping bag)"
-                      className="flex-1 h-[35px] px-3 text-[13.5px] border border-border rounded-lg bg-background outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/60"
+                      className="flex-1 min-w-0 bg-transparent outline-none text-[13.5px] text-foreground placeholder:text-muted-foreground/60"
                     />
-                    <div className="relative w-[98px] shrink-0">
-                      <span className="absolute left-[10.42px] top-1/2 -translate-y-1/2 text-muted-foreground text-[13px] pointer-events-none">₵</span>
+                    <div className="h-5 w-px bg-border shrink-0" />
+                    <div className="relative w-[88px] shrink-0">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px] pointer-events-none">₵</span>
                       <input
                         ref={miscPriceRef}
                         type="number"
@@ -453,18 +477,21 @@ export default function POSPage() {
                         onChange={e => setMiscPrice(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') commitMisc(); if (e.key === 'Escape') { setMiscMode(false); setMiscName(''); setMiscPrice(''); } }}
                         placeholder="0.00"
-                        className="w-full h-[35px] pl-[25.3px] pr-3 text-[13px] border border-border rounded-lg bg-background outline-none focus:border-primary transition-colors placeholder:text-muted-foreground"
+                        className="w-full pl-[18px] pr-1 bg-transparent outline-none text-[13px] text-foreground tabular-nums placeholder:text-muted-foreground/60"
                       />
                     </div>
-                    <Button
-                      size="sm"
+                    <button
                       onClick={commitMisc}
-                      className="h-[35px] px-[14.8px] shrink-0 gap-[5.25px]"
+                      aria-label="Add misc item"
+                      className="w-9 h-9 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity"
                     >
-                      Add <CornerDownLeft size={12} />
-                    </Button>
+                      <CornerDownLeft size={15} />
+                    </button>
                   </div>
-                  <div className="flex items-center gap-3">
+                  </div>
+
+                  {/* Hints — outside the tinted surface */}
+                  <div className="flex items-center gap-3 px-0.5">
                     <span className="flex items-center gap-[3.5px] text-[10.5px] text-muted-foreground/50">
                       <Kbd>↵</Kbd> next field / add
                     </span>
@@ -473,50 +500,61 @@ export default function POSPage() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between px-1 pb-[3.5px]">
-                  <div className="flex items-center gap-[7px]">
-                    <Tag size={13} className="text-muted-foreground" />
-                    <span className="text-[12px] font-semibold text-muted-foreground">Add an unlisted item</span>
-                  </div>
-                  <button
-                    onClick={() => { setMiscMode(false); setMiscName(''); setMiscPrice(''); }}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
               </div>
             ) : rowPhase === 'qty' ? (
               /* ── Qty phase ── */
-              <div className="flex items-center gap-2">
-                <div className="flex-1 flex items-center gap-[7px] h-[38.5px] px-[13.05px] bg-muted/40 border border-border rounded-xl min-w-0">
-                  <CheckCircle2 size={14} className="text-primary shrink-0" />
-                  <span className="text-[13px] font-medium text-foreground truncate">{selProduct?.name}</span>
-                  <span className="ml-auto text-[12px] text-muted-foreground shrink-0">
-                    ₵{selProduct?.price.toFixed(2)}
-                  </span>
+              <div className="flex items-center gap-2 h-[44px] pl-3 pr-2 border border-primary rounded-xl bg-background ring-1 ring-primary/20 transition-all">
+                <CheckCircle2 size={15} className="text-primary shrink-0" />
+                <span className="flex-1 min-w-0 truncate text-[13.5px] font-medium text-foreground">{selProduct?.name}</span>
+                <span className="text-[12px] text-muted-foreground shrink-0 tabular-nums">₵{selProduct?.price.toFixed(2)}</span>
+
+                {/* Quantity stepper */}
+                <div className="flex items-center gap-0.5 bg-muted rounded-lg border border-border p-0.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setQtyInput(String(Math.max(1, (parseInt(qtyInput) || 1) - 1)))}
+                    aria-label="Decrease quantity"
+                    className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
+                  >
+                    <Minus size={13} strokeWidth={2.5} />
+                  </button>
+                  <input
+                    ref={qtyRef}
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={qtyInput}
+                    onChange={e => setQtyInput(e.target.value)}
+                    onKeyDown={onQtyKey}
+                    placeholder="1"
+                    aria-label="Quantity"
+                    className="w-9 text-center bg-transparent outline-none text-[14px] font-semibold text-foreground tabular-nums placeholder:text-muted-foreground/40 placeholder:font-normal [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setQtyInput(String((parseInt(qtyInput) || 1) + 1))}
+                    aria-label="Increase quantity"
+                    className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
+                  >
+                    <Plus size={13} strokeWidth={2.5} />
+                  </button>
                 </div>
-                <input
-                  ref={qtyRef}
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={qtyInput}
-                  onChange={e => setQtyInput(e.target.value)}
-                  onKeyDown={onQtyKey}
-                  placeholder="1"
-                  className="w-[65px] h-[39px] text-center text-[13px] border border-primary rounded-lg bg-background outline-none ring-1 ring-primary/20 shrink-0 tabular-nums placeholder:text-muted-foreground/40"
-                />
+
                 {qtyPreview > 0 && (
-                  <span className="text-[13px] font-semibold text-muted-foreground tabular-nums shrink-0">
+                  <span className="text-[12px] font-semibold text-muted-foreground tabular-nums shrink-0">
                     = ₵{qtyPreview.toFixed(2)}
                   </span>
                 )}
-                <Button size="sm" onClick={commitItem} className="h-[39px] px-[14.8px] shrink-0 gap-[5.25px]">
-                  Add <CornerDownLeft size={12} />
-                </Button>
+                <button
+                  onClick={commitItem}
+                  aria-label="Add item"
+                  className="w-9 h-9 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity"
+                >
+                  <CornerDownLeft size={15} />
+                </button>
                 <button
                   onClick={() => { setRowPhase('search'); setSelProduct(null); setQtyInput(''); }}
+                  aria-label="Change drug"
                   className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
                 >
                   <X size={14} />
@@ -524,12 +562,12 @@ export default function POSPage() {
               </div>
             ) : (
               /* ── Search phase ── */
-              <div ref={dropRef} className="relative flex items-center gap-[7px]">
+              <div ref={dropRef} className="relative">
                 <div className={cn(
-                  'flex-1 flex items-center gap-[8.75px] h-[39px] px-[13.05px] border rounded-xl bg-background transition-all',
-                  showDrop && results.length > 0
-                    ? 'border-primary/50 ring-1 ring-primary/20 rounded-b-none'
-                    : 'border-border focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20'
+                  'flex items-center gap-2 h-[44px] pl-3 pr-2 border rounded-xl bg-background transition-all',
+                  showDrop && (results.length > 0 || query.trim())
+                    ? 'border-foreground/30 ring-1 ring-foreground/15 rounded-b-none'
+                    : 'border-border focus-within:border-foreground/30 focus-within:ring-1 focus-within:ring-foreground/15'
                 )}>
                   <Search size={15} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
                   <input
@@ -539,7 +577,7 @@ export default function POSPage() {
                     onKeyDown={onSearchKey}
                     onFocus={() => query.trim() && results.length && setShowDrop(true)}
                     placeholder="Search medication… (/ for misc)"
-                    className="flex-1 bg-transparent outline-none text-[13.5px] text-foreground placeholder:text-muted-foreground/60"
+                    className="flex-1 min-w-0 bg-transparent outline-none text-[13.5px] text-foreground placeholder:text-muted-foreground/60"
                     autoComplete="off"
                     spellCheck={false}
                   />
@@ -548,23 +586,24 @@ export default function POSPage() {
                       <X size={13} />
                     </button>
                   )}
+                  <div className="h-5 w-px bg-border shrink-0" />
+                  {/* Qty ghost — activates once a drug is selected */}
+                  <div className="w-7 flex items-center justify-center shrink-0">
+                    <span className="text-[13px] text-muted-foreground/30 select-none tabular-nums">1</span>
+                  </div>
+                  {/* Add — disabled until product selected */}
+                  <button
+                    disabled
+                    aria-label="Add item"
+                    className="w-9 h-9 shrink-0 rounded-full bg-muted text-muted-foreground flex items-center justify-center cursor-not-allowed"
+                  >
+                    <CornerDownLeft size={15} />
+                  </button>
                 </div>
-
-                {/* Qty placeholder (decorative — activates once a drug is selected) */}
-                <div className="w-[65px] h-[39px] border border-border rounded-lg bg-background flex items-center justify-center shrink-0">
-                  <span className="text-[13px] text-muted-foreground/30 select-none tabular-nums">1</span>
-                </div>
-
-                {/* Add button — disabled until product selected */}
-                <Button size="sm" disabled className="h-[39px] px-[14.8px] shrink-0 gap-[5.25px] opacity-30">
-                  Add <CornerDownLeft size={12} />
-                </Button>
 
                 {/* Dropdown */}
                 {showDrop && results.length > 0 && (
-                  <div className="absolute left-0 top-[39px] z-50 border border-border border-t-0 rounded-b-xl bg-background shadow-lg overflow-hidden"
-                    style={{ right: 'calc(65px + 77px + 14px)' }}
-                  >
+                  <div className="absolute left-0 right-0 top-[44px] z-50 border border-border border-t-0 rounded-b-xl bg-background shadow-lg overflow-hidden">
                     {results.slice(0, 8).map((p, i) => {
                       const exp = getExpiry(p.expiryDate);
                       const stock = stockBadge(p);
@@ -618,10 +657,7 @@ export default function POSPage() {
 
                 {/* No results */}
                 {showDrop && query.trim() && results.length === 0 && (
-                  <div
-                    className="absolute left-0 top-[39px] z-50 border border-border border-t-0 rounded-b-xl bg-background shadow-lg px-4 py-3 flex items-center gap-2"
-                    style={{ right: 'calc(65px + 77px + 14px)' }}
-                  >
+                  <div className="absolute left-0 right-0 top-[44px] z-50 border border-border border-t-0 rounded-b-xl bg-background shadow-lg px-4 py-3 flex items-center gap-2">
                     <Search size={13} className="text-muted-foreground" />
                     <span className="text-[12px] text-muted-foreground">No results for &ldquo;{query}&rdquo; — </span>
                     <button
@@ -785,13 +821,13 @@ export default function POSPage() {
                     <input
                       autoFocus value={newCustName} onChange={e => setNewCustName(e.target.value)}
                       placeholder="Full name"
-                      className="h-8 px-3 text-[12.5px] border border-border rounded-lg bg-background outline-none focus:border-primary transition-colors"
+                      className="h-8 px-3 text-[12.5px] border border-border rounded-lg bg-background outline-none focus:border-foreground/30 transition-colors"
                     />
                     <input
                       value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') handleCreateCustomer(); if (e.key === 'Escape') { setShowNewCust(false); setNewCustName(''); setNewCustPhone(''); } }}
                       placeholder="Phone number"
-                      className="h-8 px-3 text-[12.5px] border border-border rounded-lg bg-background outline-none focus:border-primary transition-colors"
+                      className="h-8 px-3 text-[12.5px] border border-border rounded-lg bg-background outline-none focus:border-foreground/30 transition-colors"
                     />
                     <div className="flex gap-1.5">
                       <Button size="sm" onClick={handleCreateCustomer} className="flex-1 h-8 text-[12px]">Save</Button>
@@ -801,7 +837,7 @@ export default function POSPage() {
                 ) : (
                   <div className="flex items-center gap-4">
                     <div className="relative flex-1">
-                      <div className="flex items-center gap-[8.75px] h-[39px] px-[13.05px] border border-border rounded-xl bg-background focus-within:border-primary/50 transition-colors">
+                      <div className="flex items-center gap-[8.75px] h-[39px] px-[13.05px] border border-border rounded-xl bg-background focus-within:border-foreground/30 transition-colors">
                         <Search size={13} className="text-muted-foreground shrink-0" />
                         <input
                           value={custQuery}
@@ -908,7 +944,7 @@ export default function POSPage() {
                         onChange={e => setDiscountInput(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') applyDiscount(); if (e.key === 'Escape') { setShowDiscount(false); setDiscountInput(''); } }}
                         placeholder={discountMode === 'percent' ? '10' : '5.00'}
-                        className="flex-1 h-9 px-3 text-[13px] font-semibold border border-border rounded-lg bg-background outline-none focus:border-primary transition-colors"
+                        className="flex-1 h-9 px-3 text-[13px] font-semibold border border-border rounded-lg bg-background outline-none focus:border-foreground/30 transition-colors"
                       />
                       <Button size="sm" onClick={applyDiscount} className="h-9 shrink-0">Apply</Button>
                       {discountAmt > 0 && (
@@ -1042,7 +1078,7 @@ export default function POSPage() {
                       onChange={e => setCashTendered(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && canComplete) handleCompleteSale(); }}
                       placeholder="₵0.00"
-                      className="w-full h-[49px] text-center text-[21px] font-medium border border-border rounded-xl bg-muted/30 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all tabular-nums placeholder:text-muted-foreground/40"
+                      className="w-full h-[49px] text-center text-[21px] font-medium border border-border rounded-xl bg-muted/30 outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/15 transition-all tabular-nums placeholder:text-muted-foreground/40"
                     />
                     <div className="flex gap-2">
                       {[5, 10, 20, 50, 100, 200].map(bill => (
@@ -1087,7 +1123,7 @@ export default function POSPage() {
                         type="number" min="0" step="0.01" value={cashTendered}
                         onChange={e => setCashTendered(e.target.value)}
                         placeholder="₵0.00"
-                        className="w-full h-[49px] text-center text-[21px] font-medium border border-border rounded-xl bg-muted/30 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all tabular-nums placeholder:text-muted-foreground/40"
+                        className="w-full h-[49px] text-center text-[21px] font-medium border border-border rounded-xl bg-muted/30 outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/15 transition-all tabular-nums placeholder:text-muted-foreground/40"
                       />
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
@@ -1099,7 +1135,7 @@ export default function POSPage() {
                         onChange={e => setMomoAmount(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter' && canComplete) handleCompleteSale(); }}
                         placeholder={cashRcvd > 0 ? `₵${Math.max(0, grandTotal - cashRcvd).toFixed(2)}` : '₵0.00'}
-                        className="w-full h-[49px] text-center text-[21px] font-medium border border-border rounded-xl bg-muted/30 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all tabular-nums placeholder:text-muted-foreground/40"
+                        className="w-full h-[49px] text-center text-[21px] font-medium border border-border rounded-xl bg-muted/30 outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/15 transition-all tabular-nums placeholder:text-muted-foreground/40"
                       />
                     </div>
                   </div>
@@ -1156,58 +1192,84 @@ export default function POSPage() {
           {/* ── COMPLETE phase ─────────────────────────────────────────────────── */}
           {phase === 'complete' && receiptData && (
             <div className="flex flex-col h-full">
-              <div className="flex flex-col items-center justify-center py-8 px-4 border-b border-border shrink-0">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center mb-3">
-                  <CheckCircle2 size={24} className="text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <p className="text-[14px] font-bold text-foreground">Sale Complete</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">TXN #{receiptData.saleId.toString().padStart(6, '0')}</p>
-              </div>
-
-              <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-4 font-mono text-sm">
-                <div className="text-center mb-4">
-                  <p className="font-bold text-foreground">{tenant.name.toUpperCase()}</p>
-                  {tenant.address && <p className="text-[11px] text-muted-foreground">{tenant.address}</p>}
-                  {tenant.primaryPhone && <p className="text-[11px] text-muted-foreground">Tel: {tenant.primaryPhone}</p>}
-                </div>
-
-                <div className="text-[11px] text-muted-foreground border-t border-dashed border-border pt-3 mb-3 space-y-1">
-                  <div className="flex justify-between"><span>Date</span><span>{receiptData.date.toLocaleString()}</span></div>
-                  <div className="flex justify-between"><span>Payment</span><span>{receiptData.paymentMethod}</span></div>
-                  {receiptData.customer && <div className="flex justify-between"><span>Customer</span><span>{receiptData.customer.name}</span></div>}
-                </div>
-
-                <div className="border-t border-dashed border-border pt-3 mb-3 space-y-2">
-                  {receiptData.items.map((item, i) => (
-                    <div key={i} className="flex justify-between text-[11px]">
-                      <div>
-                        <p className="font-medium text-foreground">{item.name}</p>
-                        <p className="text-muted-foreground">{item.quantity} × ₵{item.price.toFixed(2)}</p>
-                      </div>
-                      <span className="font-semibold text-foreground">₵{(item.price * item.quantity).toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {receiptData.discount > 0 && (
-                  <div className="flex justify-between text-[11px] border-t border-dashed border-border pt-2 mb-2">
-                    <span className="text-muted-foreground">Discount</span>
-                    <span className="font-semibold text-foreground">-₵{receiptData.discount.toFixed(2)}</span>
+              {/* Scrollable, centered content */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col items-center gap-2 px-4 py-6">
+                {/* Success badge + message */}
+                <div className="flex flex-col items-center gap-8 px-3.5 py-6">
+                  <div className="w-[46px] h-[46px] rounded-full bg-emerald-500 flex items-center justify-center">
+                    <Check size={23} className="text-white" strokeWidth={3} />
                   </div>
-                )}
+                  <div className="flex flex-col items-center gap-1">
+                    <p className="text-[23px] font-medium text-foreground">Purchase Complete!</p>
+                    <p className="text-[13px] font-semibold text-foreground/40 pt-0.5">
+                      TXN #{receiptData.saleId.toString().padStart(6, '0')}
+                    </p>
+                  </div>
+                </div>
 
-                <div className="flex justify-between border-t-2 border-foreground pt-2">
-                  <span className="font-bold text-foreground">TOTAL</span>
-                  <span className="font-black text-foreground">₵{receiptData.total.toFixed(2)}</span>
+                {/* Receipt */}
+                <div className="w-[304px] px-3.5 py-4 flex flex-col">
+                  {/* Pharmacy */}
+                  <div className="flex flex-col gap-1 items-center">
+                    <p className="text-[12.25px] font-bold text-foreground text-center">{tenant.name.toUpperCase()}</p>
+                    {tenant.address && <p className="text-[11px] text-muted-foreground text-center">{tenant.address}</p>}
+                    {tenant.primaryPhone && <p className="text-[11px] text-muted-foreground text-center">Tel: {tenant.primaryPhone}</p>}
+                  </div>
+
+                  {/* Meta */}
+                  <div className="border-t border-dashed border-border mt-3.5 pt-3 flex flex-col gap-1">
+                    <div className="flex justify-between">
+                      <span className="text-[11px] font-medium text-muted-foreground">Date</span>
+                      <span className="text-[11px] font-medium text-foreground">{receiptData.date.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[11px] font-medium text-muted-foreground">Payment</span>
+                      <span className="text-[11px] font-medium text-foreground">{receiptData.paymentMethod}</span>
+                    </div>
+                    {receiptData.customer && (
+                      <div className="flex justify-between">
+                        <span className="text-[11px] font-medium text-muted-foreground">Customer</span>
+                        <span className="text-[11px] font-medium text-foreground">{receiptData.customer.name}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Items */}
+                  <div className="border-t border-dashed border-border mt-3 pt-3 flex flex-col gap-2.5">
+                    {receiptData.items.map((item, i) => (
+                      <div key={i} className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-medium text-foreground">{item.name}</p>
+                          <p className="text-[11px] text-muted-foreground">{item.quantity} × ₵{item.price.toFixed(2)}</p>
+                        </div>
+                        <span className="text-[11px] font-semibold text-foreground tabular-nums shrink-0">
+                          ₵{(item.price * item.quantity).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                    {receiptData.discount > 0 && (
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-[11px] font-medium text-muted-foreground">Discount</p>
+                        <span className="text-[11px] font-semibold text-foreground tabular-nums shrink-0">-₵{receiptData.discount.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Total */}
+                  <div className="border-t border-foreground mt-7 pt-4 flex items-center justify-between">
+                    <span className="text-[12.25px] font-bold text-foreground">TOTAL</span>
+                    <span className="text-[12.25px] font-black text-foreground tabular-nums">₵{receiptData.total.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="shrink-0 px-4 pb-5 pt-3 border-t border-border flex flex-col gap-2">
-                <Button onClick={() => window.print()} variant="outline" className="w-full h-11 gap-2">
-                  <Printer size={15} /> Print Receipt
+              {/* Footer actions */}
+              <div className="shrink-0 border-t border-border px-4 pt-6 pb-6 flex flex-col gap-4">
+                <Button onClick={() => window.print()} variant="outline" className="w-full h-[39px] gap-2 rounded-[8.75px] text-[12.25px]">
+                  <Printer size={14} /> Print Receipt
                 </Button>
-                <Button onClick={handleNewSale} className="w-full h-11 font-bold">
-                  New Sale
+                <Button onClick={handleNewSale} className="w-full h-[42px] font-bold rounded-xl gap-2 tracking-[0.35px]">
+                  New Sale <ArrowRight size={16} />
                 </Button>
               </div>
             </div>
@@ -1262,6 +1324,14 @@ export default function POSPage() {
       </Sheet>
 
       <style>{`
+        @keyframes miscFlapIn {
+          from { opacity: 0; transform: translateY(-6px) scaleY(0.96); }
+          to   { opacity: 1; transform: translateY(0) scaleY(1); }
+        }
+        .animate-misc-flap { animation: miscFlapIn 0.16s cubic-bezier(0.16, 1, 0.3, 1); }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-misc-flap { animation: none; }
+        }
         @media print {
           body > * { display: none !important; }
           .print-receipt { display: block !important; }

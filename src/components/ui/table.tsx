@@ -12,6 +12,9 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
     >
       <table
         data-slot="table"
+        // Default to natural (auto) column sizing. Tables that need stable
+        // columns across search/filter/pagination opt into `table-fixed` and
+        // set explicit column widths themselves (e.g. customers, stock, suppliers).
         className={cn("w-full caption-bottom text-sm", className)}
         {...props}
       />

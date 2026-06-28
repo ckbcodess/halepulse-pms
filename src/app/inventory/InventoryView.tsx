@@ -29,7 +29,7 @@ import { exportToCsv } from '@/lib/utils/exportCsv';
 import { ADJUSTMENT_REASONS } from '@/lib/validation/schemas';
 import { StatusBadge } from '@/components/inventory/StatusBadge';
 import { DatePicker } from '@/components/ui/date-picker';
-import InventoryTabs from '@/components/inventory/InventoryTabs';
+import { SearchBar } from '@/components/ui/search-bar';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetDescription,
 } from '@/components/ui/sheet';
@@ -1045,53 +1045,34 @@ export default function InventoryView() {
   return (
     <div className="flex flex-col">
       <PageHeader
-        title="Inventory"
-        description="Manage stock levels and pricing records across your pharmacy."
+        title="Stock"
+        description="Track stock levels, pricing and product details across your pharmacy."
       >
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="outline" />}>
-            More Actions
-            <ChevronDown size={13} className="text-muted-foreground" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => router.push('/inventory/quick-restock')}>
-              <Plus size={14} className="mr-2" /> Quick Restock
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/inventory/restock')}>
-              <Package size={14} className="mr-2" /> Batch Restock (CSV)
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/inventory/import')}>
-              <Upload size={14} className="mr-2" /> Import CSV
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {
-              if (products.length === 0) { toast.info('No products to export'); return; }
-              exportToCsv({
-                filename: 'inventory',
-                headers: ['ID','Name','SKU','Category','Cost Price','Markup %','Selling Price','Stock','Status'],
-                rows: products.map(p => [
-                  p.id, p.name, p.sku, p.category, p.costPrice ?? 0, p.markupPercent,
-                  ((p.costPrice ?? 0) * (1 + p.markupPercent / 100)).toFixed(2), p.stockQty,
-                  p.isActive ? 'Active' : 'Archived',
-                ]),
-              });
-              toast.success(`Exported ${products.length} product(s) as CSV`);
-            }}>
-              <Download size={14} className="mr-2" /> Export All
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button
+          variant="outline"
+          onClick={() => {
+            if (products.length === 0) { toast.info('No products to export'); return; }
+            exportToCsv({
+              filename: 'inventory',
+              headers: ['ID','Name','SKU','Category','Cost Price','Markup %','Selling Price','Stock','Status'],
+              rows: products.map(p => [
+                p.id, p.name, p.sku, p.category, p.costPrice ?? 0, p.markupPercent,
+                ((p.costPrice ?? 0) * (1 + p.markupPercent / 100)).toFixed(2), p.stockQty,
+                p.isActive ? 'Active' : 'Archived',
+              ]),
+            });
+            toast.success(`Exported ${products.length} product(s) as CSV`);
+          }}
+        >
+          <Download size={14} /> Export All
+        </Button>
         <Button variant="outline" onClick={() => { setShowImport(true); setImportResult(null); }}>
-          Import CSV
+          <Upload size={14} /> Import CSV
         </Button>
         <Button onClick={() => setShowAddProduct(true)}>
           <Plus size={14} /> Add Product
         </Button>
       </PageHeader>
-
-      {/* 32px below the page header */}
-      <div className="mt-8">
-        <InventoryTabs />
-      </div>
 
       {showImport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowImport(false)}>
@@ -1129,8 +1110,8 @@ export default function InventoryView() {
         </div>
       )}
 
-      {/* Filter Pills — Figma style; 48px section break below the tabs */}
-      <div className="mt-12 flex items-center gap-2">
+      {/* Filter Pills — Figma style */}
+      <div className="mt-8 flex items-center gap-2">
         {[
           { key: 'all' as ActiveFilter, label: 'All Data', count: summary?.totalProducts ?? 0, countBg: 'bg-[#f2f2f2]', countText: 'text-[#1b1b1b]' },
           { key: 'low' as ActiveFilter, label: 'Low Stock', count: summary?.lowStockCount ?? 0, countBg: 'bg-[#fff6dc]', countText: 'text-[#d34600]' },
@@ -1155,20 +1136,7 @@ export default function InventoryView() {
       {/* Search + Sort + Filter Toolbar; 28px below the filter pills */}
       <div className="mt-7 flex items-center gap-6">
         {/* Search */}
-        <div className="flex items-center gap-[5px] h-10 px-[13px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors w-[342px]">
-          <Search size={16} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
-          <input
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search inventory..."
-            className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-muted-foreground font-normal"
-          />
-          {searchInput && (
-            <Button variant="ghost" size="icon-xs" onClick={() => setSearchInput('')}>
-              <X size={14} />
-            </Button>
-          )}
-        </div>
+        <SearchBar value={searchInput} onChange={setSearchInput} placeholder="Search inventory..." />
 
         <div className="flex items-center gap-4">
           {/* Sort dropdown */}
@@ -1244,7 +1212,7 @@ export default function InventoryView() {
       {/* Product Table — Figma design; 28px below the search toolbar */}
       <div className="mt-7 border border-[#f1f1f1] dark:border-border rounded-[8px] overflow-hidden">
         <div className="overflow-x-auto">
-          <Table className="min-w-[900px]">
+          <Table className="min-w-[900px] table-fixed">
             <TableHeader>
               <TableRow className="bg-[#f8f8f7] dark:bg-muted/30">
                 <TableHead className="w-[44px]">
@@ -1256,9 +1224,9 @@ export default function InventoryView() {
                 </TableHead>
                 <TableHead>Item Reference</TableHead>
                 <TableHead className="w-[120px]">SKU</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-center">Current Stock</TableHead>
-                <TableHead>Unit Price</TableHead>
+                <TableHead className="w-[150px]">Type</TableHead>
+                <TableHead className="w-[170px]">Current Stock</TableHead>
+                <TableHead className="w-[130px]">Unit Price</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1310,30 +1278,26 @@ export default function InventoryView() {
                       />
                     </TableCell>
                     <TableCell className="px-4 h-[42px]">
-                      <span className="text-[14px] font-normal text-foreground capitalize">{p.name.toLowerCase()}</span>
+                      <span className="block truncate text-[14px] font-normal text-foreground capitalize">{p.name.toLowerCase()}</span>
                     </TableCell>
                     <TableCell className="px-4 h-[42px]">
-                      <span className="text-[12px] font-mono text-muted-foreground">{p.sku ?? '—'}</span>
+                      <span className="block truncate text-[12px] font-mono text-muted-foreground">{p.sku ?? '—'}</span>
                     </TableCell>
                     <TableCell className="px-4 h-[42px]">
                       <span className="text-[14px] font-normal text-foreground capitalize">{p.category}</span>
                     </TableCell>
                     <TableCell className="px-4 h-[42px]">
-                      <div className="flex items-center justify-center gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[14px] font-medium text-foreground tabular-nums w-7 text-right">
+                          {p.stockQty.toString().padStart(2, '0')}
+                        </span>
                         {isOut ? (
                           <StatusBadge status="OUT_OF_STOCK" />
                         ) : isExpired ? (
                           <StatusBadge status="EXPIRED" />
-                        ) : (
-                          <>
-                            <span className="text-[14px] font-medium text-foreground">
-                              {p.stockQty.toString().padStart(2, '0')}
-                            </span>
-                            {isLow && (
-                              <StatusBadge status="LOW_STOCK" />
-                            )}
-                          </>
-                        )}
+                        ) : isLow ? (
+                          <StatusBadge status="LOW_STOCK" />
+                        ) : null}
                       </div>
                     </TableCell>
                     <TableCell className="px-4 h-[42px]">
