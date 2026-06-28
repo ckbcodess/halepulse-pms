@@ -1,9 +1,11 @@
 'use client';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import {
-  Menu, ChevronDown, Sun, Moon, LogOut,
-  LayoutDashboard, ShoppingCart, Package, Users,
-  FileText, Settings, UserCog, KeyRound, type LucideIcon,
+  Menu, ChevronDown, Sun, Moon, LogOut, ArrowLeft,
+  LayoutDashboard, ShoppingCart, Package, Truck, Users,
+  Settings, UserCog, KeyRound, Receipt, Coins, Wallet,
+  BarChart3, type LucideIcon,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { signOut } from 'next-auth/react';
@@ -16,7 +18,6 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import BranchSwitcher from './BranchSwitcher';
 import NotificationBell from './NotificationBell';
 
 interface TopHeaderProps {
@@ -30,26 +31,59 @@ interface TopHeaderProps {
   onToggleCollapse?: () => void;
 }
 
+// Icons here MUST match the sidebar ICON_MAP (src/components/layout/Sidebar.tsx)
+// so a section shows the same glyph in the nav and the page header.
 const ROUTE_META: Record<string, { title: string; icon: LucideIcon }> = {
   '/':                 { title: 'Dashboard',       icon: LayoutDashboard },
   '/pos':              { title: 'Point of Sale',   icon: ShoppingCart },
-  '/inventory':        { title: 'Inventory',       icon: Package },
-  '/inventory/new':    { title: 'Add Product',     icon: Package },
-  '/inventory/import': { title: 'Import Products', icon: Package },
+  '/inventory':           { title: 'Stock',        icon: Package },
+  '/inventory/new':       { title: 'Add Product',  icon: Package },
+  '/inventory/suppliers': { title: 'Suppliers',    icon: Truck },
+  '/stock-value':         { title: 'Stock Value',  icon: Coins },
+  '/sales':            { title: 'Sales',           icon: Receipt },
   '/customers':        { title: 'Customers',       icon: Users },
   '/customers/new':    { title: 'Add Customer',    icon: Users },
-  '/purchases':        { title: 'Expenses',        icon: FileText },
-  '/reports':          { title: 'Reports',         icon: FileText },
-  '/settings':         { title: 'Settings',        icon: Settings },
+  '/purchases':        { title: 'Expenses',        icon: Wallet },
+  '/reports':          { title: 'Reports',         icon: BarChart3 },
+  '/team':             { title: 'Team',            icon: UserCog },
   '/users':            { title: 'Team',            icon: UserCog },
+  '/settings':         { title: 'Settings',        icon: Settings },
   '/change-password':  { title: 'Change Password', icon: KeyRound },
 };
 
+// Prefix fallbacks for sub-routes (e.g. /inventory/suppliers, /dashboard/manager)
+// so deeper pages still resolve to their section instead of defaulting to "Dashboard".
+const PREFIX_META: { prefix: string; title: string; icon: LucideIcon }[] = [
+  { prefix: '/dashboard',          title: 'Dashboard',     icon: LayoutDashboard },
+  { prefix: '/pos',                title: 'Point of Sale', icon: ShoppingCart },
+  { prefix: '/inventory/suppliers', title: 'Suppliers',    icon: Truck },
+  { prefix: '/inventory',          title: 'Stock',         icon: Package },
+  { prefix: '/stock-value', title: 'Stock Value',   icon: Coins },
+  { prefix: '/sales',       title: 'Sales',         icon: Receipt },
+  { prefix: '/customers',   title: 'Customers',     icon: Users },
+  { prefix: '/purchases',   title: 'Expenses',      icon: Wallet },
+  { prefix: '/reports',     title: 'Reports',       icon: BarChart3 },
+  { prefix: '/team',        title: 'Team',          icon: UserCog },
+  { prefix: '/settings',    title: 'Settings',      icon: Settings },
+];
+
 function getPageMeta(pathname: string): { title: string; icon: LucideIcon } {
   if (ROUTE_META[pathname]) return ROUTE_META[pathname];
-  if (pathname.startsWith('/customers/')) return { title: 'Customer Details', icon: Users };
+  const match = PREFIX_META.find(
+    m => pathname === m.prefix || pathname.startsWith(m.prefix + '/'),
+  );
+  if (match) return { title: match.title, icon: match.icon };
   return { title: 'Dashboard', icon: LayoutDashboard };
 }
+
+// Operational / bulk-task screens show a "Back to {parent}" breadcrumb in the
+// header instead of the page title + branch switcher.
+const BACK_ROUTES: Record<string, { href: string; label: string; current: string }> = {
+  '/inventory/restock':       { href: '/inventory', label: 'Stock', current: 'Restock' },
+  '/inventory/stock-take':    { href: '/inventory', label: 'Stock', current: 'Stock Take' },
+  '/inventory/transfers':     { href: '/inventory', label: 'Stock', current: 'Stock Transfer' },
+  '/pos/eod':                 { href: '/pos',       label: 'POS',   current: 'End of Day' },
+};
 
 const ROLE_LABEL: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -78,6 +112,7 @@ function ThemeToggleButton() {
 export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
   const pathname  = usePathname();
   const { title: pageTitle, icon: PageIcon } = getPageMeta(pathname);
+  const backRoute = BACK_ROUTES[pathname];
   const roleLabel = ROLE_LABEL[user.role] ?? user.role;
 
   const displayName = user.email
@@ -107,51 +142,62 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
           <Menu size={18} />
         </Button>
 
-        <div className="flex items-center gap-2">
-          <PageIcon size={20} className="text-foreground/60 flex-shrink-0" />
-          <h1 className="text-[16px] font-medium text-foreground/60 tracking-[-0.05px] leading-none whitespace-nowrap">
-            {pageTitle}
-          </h1>
-        </div>
-
-        {/* Branch context / switcher */}
-        <div className="w-px h-[17.5px] bg-border flex-shrink-0 hidden sm:block" />
-        <BranchSwitcher />
+        {backRoute ? (
+          <div className="flex items-center gap-2">
+            <Link
+              href={backRoute.href}
+              className="flex items-center gap-3 text-[14px] text-foreground opacity-60 hover:opacity-100 whitespace-nowrap transition-opacity"
+            >
+              <ArrowLeft size={14} className="flex-shrink-0" />
+              Back to {backRoute.label}
+            </Link>
+            <span className="text-[14px] text-foreground/30 select-none">/</span>
+            <span className="text-[14px] text-foreground whitespace-nowrap">{backRoute.current}</span>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <PageIcon size={14} className="text-foreground/60 flex-shrink-0" />
+              <h1 className="text-[14px] font-medium text-foreground/60 tracking-[-0.05px] leading-none whitespace-nowrap">
+                {pageTitle}
+              </h1>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Right side — matches Figma Control Panel (node 156:67) */}
-      <div className="flex items-center gap-2 py-1">
-
-        {/* Notifications */}
-        <NotificationBell />
+      {/* Right side — Figma node 411:23400 */}
+      <div className="flex items-center gap-3 py-1">
 
         {/* Theme toggle */}
         <ThemeToggleButton />
 
-        {/* Separator */}
-        <div className="w-px h-[17.5px] bg-border flex-shrink-0" />
+        {/* Notifications */}
+        <NotificationBell />
 
-        {/* User profile dropdown */}
+        {/* User profile dropdown — tinted fill card */}
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<Button variant="ghost" className="h-auto gap-[10.5px] px-[7px] py-2" />}
+            render={<button className="outline-none" aria-label="User menu" />}
           >
-            <div className="w-7 h-7 rounded-[8.75px] bg-muted flex items-center justify-center flex-shrink-0 border border-border">
-              <span className="text-[11px] font-bold text-muted-foreground leading-none">
-                {initials}
-              </span>
+            <div className="flex items-center justify-between gap-2.5 rounded-lg bg-foreground/[0.03] hover-surface p-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex size-6 items-center justify-center rounded-[10px] [background-image:linear-gradient(to_bottom,color-mix(in_oklch,var(--primary)_14%,transparent),color-mix(in_oklch,var(--primary)_6%,transparent))] flex-shrink-0">
+                  <span className="text-[10px] font-semibold text-primary leading-none">
+                    {initials}
+                  </span>
+                </div>
+                <div className="hidden sm:flex flex-col items-start min-w-0">
+                  <span className="text-[14px] font-medium text-foreground leading-[17.5px] tracking-[-0.35px] truncate">
+                    {displayName}
+                  </span>
+                  <span className="text-[12px] font-medium text-foreground/40 leading-none truncate">
+                    {roleLabel}
+                  </span>
+                </div>
+              </div>
+              <ChevronDown size={16} className="text-muted-foreground flex-shrink-0" />
             </div>
-
-            <div className="hidden sm:flex flex-col items-start min-w-0">
-              <span className="text-[13px] font-medium text-foreground leading-[16.25px] truncate">
-                {displayName}
-              </span>
-              <span className="text-[10px] text-muted-foreground/70 font-medium leading-[12.5px] truncate">
-                {roleLabel}
-              </span>
-            </div>
-
-            <ChevronDown size={14} className="text-muted-foreground hidden sm:block flex-shrink-0" />
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" sideOffset={8}>

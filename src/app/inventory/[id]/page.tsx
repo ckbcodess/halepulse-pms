@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/inventory/StatusBadge';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -201,25 +202,25 @@ export default function ProductDetailPage() {
     <div className="flex flex-col gap-6">
       {/* Back + Actions */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => router.push('/inventory')} className="text-muted-foreground hover:text-foreground">
+        <Button variant="ghost" onClick={() => router.push('/inventory')} className="text-muted-foreground hover:text-foreground">
           <ArrowLeft size={16} /> Back to Inventory
         </Button>
         <div className="flex items-center gap-2">
           {editing ? (
             <>
-              <Button variant="outline" size="sm" onClick={() => { setEditing(false); setForm({}); }} disabled={submitting}>
+              <Button variant="outline" onClick={() => { setEditing(false); setForm({}); }} disabled={submitting}>
                 <X size={14} className="mr-1" /> Cancel
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={submitting}>
+              <Button onClick={handleSave} disabled={submitting}>
                 <Save size={14} className="mr-1" /> {submitting ? 'Saving...' : 'Save Changes'}
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+              <Button variant="outline" onClick={() => setEditing(true)}>
                 <Pencil size={14} className="mr-1" /> Edit
               </Button>
-              <Button variant="outline" size="sm" onClick={handleArchive}
+              <Button variant="outline" onClick={handleArchive}
                 className={product.isActive ? 'text-rose-600 hover:text-rose-700' : 'text-emerald-600 hover:text-emerald-700'}>
                 {product.isActive ? <><Archive size={14} className="mr-1" /> Archive</> : <><RotateCcw size={14} className="mr-1" /> Restore</>}
               </Button>
@@ -270,7 +271,7 @@ export default function ProductDetailPage() {
         ) : (
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold text-foreground">{product.name}</h1>
+              <h1 className="text-2xl font-semibold text-foreground">{product.name}</h1>
               {!product.isActive && <StatusBadge status="ARCHIVED" />}
               <StatusBadge status={stockStatus === 'OUT' ? 'OUT_OF_STOCK' : stockStatus === 'LOW' ? 'LOW_STOCK' : 'IN_STOCK'} />
             </div>
@@ -300,7 +301,7 @@ export default function ProductDetailPage() {
             <InfoCard icon={DollarSign} label="Selling Price" value={`₵ ${sellingPrice.toFixed(2)}`} sub="Auto-calculated" />
             <div className="p-4 rounded-xl border border-border bg-card flex flex-col gap-1">
               <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Expiry Date</Label>
-              <Input type="date" value={form.expiryDate} onChange={e => update('expiryDate', e.target.value)} />
+              <DatePicker value={form.expiryDate} onChange={v => update('expiryDate', v)} placeholder="No expiry" />
             </div>
           </>
         ) : (

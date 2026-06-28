@@ -7,6 +7,9 @@ import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
 
 interface Branch { id: string; name: string; isHeadquarters: boolean }
 interface Product { id: number; name: string; sku: string | null; stockQty: number }
@@ -90,17 +93,14 @@ export default function TransfersPage() {
           {/* Destination */}
           <div className="space-y-1.5">
             <Label htmlFor="dest">Destination branch</Label>
-            <select
-              id="dest"
-              value={destinationBranchId}
-              onChange={(e) => setDestinationBranchId(e.target.value)}
-              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm"
-            >
-              <option value="">Select destination…</option>
-              {destinations.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}{b.isHeadquarters ? ' (HQ)' : ''}</option>
-              ))}
-            </select>
+            <Select value={destinationBranchId} onValueChange={(v) => v && setDestinationBranchId(v)}>
+              <SelectTrigger id="dest" className="w-full h-10"><SelectValue placeholder="Select destination…" /></SelectTrigger>
+              <SelectContent>
+                {destinations.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>{b.name}{b.isHeadquarters ? ' (HQ)' : ''}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Product */}

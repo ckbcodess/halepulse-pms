@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Menu as MenuIcon, Search } from 'lucide-react';
 import SuperAdminSidebar from './SuperAdminSidebar';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function SuperAdminShell({
   email,
@@ -65,15 +66,18 @@ export default function SuperAdminShell({
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search businesses, users, products…"
-                className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-input bg-muted/50 focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-input bg-muted/50 focus:outline-none focus:ring-1 focus:ring-foreground/15"
               />
             </div>
           </form>
-          {email && (
-            <div className="ml-auto text-xs text-muted-foreground truncate max-w-[20vw] hidden md:block">{email}</div>
-          )}
+          <div className="ml-auto flex items-center gap-2">
+            {email && (
+              <span className="text-xs text-muted-foreground truncate max-w-[20vw] hidden md:block">{email}</span>
+            )}
+            <ThemeToggle />
+          </div>
         </header>
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8 page-stagger">
           {children}
         </div>
       </main>

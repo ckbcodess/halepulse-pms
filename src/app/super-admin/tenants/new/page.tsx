@@ -5,6 +5,9 @@ import { Copy, Check, Building2, GitBranch } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/layout/PageHeader';
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
 
 type Kind = 'hq' | 'branch';
 
@@ -27,7 +30,6 @@ export default function RegisterBusinessPage() {
     address:        '',
     phone:          '',
     primaryColor:   '#6366f1',
-    secondaryColor: '#8b5cf6',
   });
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState('');
@@ -197,17 +199,16 @@ export default function RegisterBusinessPage() {
             {businesses.length === 0 ? (
               <p className="text-xs text-muted-foreground">No businesses registered yet — register a Head Quarters first.</p>
             ) : (
-              <select
-                value={parentId}
-                onChange={(e) => setParentId(e.target.value)}
-                className="w-full h-10 rounded-md border border-input bg-transparent px-3 text-sm"
-              >
-                {businesses.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name} {b.businessId ? `(${b.businessId})` : ''}
-                  </option>
-                ))}
-              </select>
+              <Select value={parentId} onValueChange={(v) => v && setParentId(v)}>
+                <SelectTrigger className="w-full h-10"><SelectValue placeholder="Select business…" /></SelectTrigger>
+                <SelectContent>
+                  {businesses.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name} {b.businessId ? `(${b.businessId})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
         )}
@@ -296,33 +297,27 @@ export default function RegisterBusinessPage() {
           </div>
         )}
 
-        {/* Brand colors — HQ only */}
+        {/* Brand color — HQ only. A single hex; the full palette is generated from it. */}
         {kind === 'hq' && (
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { name: 'primaryColor',   label: 'Primary Color'   },
-              { name: 'secondaryColor', label: 'Secondary Color' },
-            ].map(f => (
-              <div key={f.name} className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">{f.label}</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    name={f.name}
-                    value={form[f.name as keyof typeof form]}
-                    onChange={handleChange}
-                    className="w-10 h-10 rounded-lg border border-input bg-transparent cursor-pointer p-1"
-                  />
-                  <Input
-                    type="text"
-                    name={f.name}
-                    value={form[f.name as keyof typeof form]}
-                    onChange={handleChange}
-                    className="h-10 flex-1 font-mono"
-                  />
-                </div>
-              </div>
-            ))}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Brand Color</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                name="primaryColor"
+                value={form.primaryColor}
+                onChange={handleChange}
+                className="w-10 h-10 rounded-lg border border-input bg-transparent cursor-pointer p-1"
+              />
+              <Input
+                type="text"
+                name="primaryColor"
+                value={form.primaryColor}
+                onChange={handleChange}
+                className="h-10 flex-1 font-mono"
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground">Fine-tune later in the tenant&apos;s Branding page.</p>
           </div>
         )}
 

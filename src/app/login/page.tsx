@@ -1,6 +1,6 @@
 'use client';
 import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { signIn, getSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -27,7 +27,6 @@ function LoginContent() {
   const [error, setError]           = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const urlError = searchParams.get('error');
@@ -66,18 +65,20 @@ function LoginContent() {
 
       if (result?.ok) {
         const session = await getSession();
+        let target = '/';
         if (session?.user?.mustChangePassword) {
-          router.push('/change-password');
+          target = '/change-password';
         } else {
           const role = session?.user?.role;
-          if (role === 'SUPER_ADMIN') router.push('/super-admin');
-          else if (role === 'MANAGER') router.push('/dashboard/manager');
-          else if (role === 'PHARMACIST') router.push('/dashboard/pharmacist');
-          else if (role === 'MCA') router.push('/dashboard/mca');
-          else if (role === 'AUDIT' || role === 'NES') router.push('/dashboard/audit');
-          else router.push('/');
+          if (role === 'SUPER_ADMIN') target = '/super-admin';
+          else if (role === 'MANAGER') target = '/dashboard/manager';
+          else if (role === 'PHARMACIST') target = '/dashboard/pharmacist';
+          else if (role === 'MCA') target = '/dashboard/mca';
+          else if (role === 'AUDIT' || role === 'NES') target = '/dashboard/audit';
         }
-        router.refresh();
+        // Full-page navigation (not router.push) so the theme provider mounts
+        // fresh under the new identity instead of remounting on the client.
+        window.location.assign(target);
       } else {
         setError('Invalid Business ID, username, or password.');
         setIsSubmitting(false);

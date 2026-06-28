@@ -125,7 +125,6 @@ A comprehensive multi-tenant pharmacy management system built with Next.js 16, P
 - **Charts & Data Viz:** Recharts
 - **Notifications:** Sonner (toast notifications)
 - **Authentication UI:** next-auth + custom SessionProvider
-- **Design Tooling:** Agentation (design critique toolbar, integrated for design feedback)
 - **Animation:** tw-animate-css (Tailwind animation utilities)
 - **Utility:** culori (color space conversions for dynamic theming)
 

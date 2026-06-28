@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import type { Session } from 'next-auth';
 import Sidebar from './Sidebar';
 import TopHeader from './TopHeader';
-import { Agentation } from 'agentation';
+import ThemeDevTool from '@/components/dev/ThemeDevTool';
 
 const NO_SHELL_PREFIXES = ['/login', '/super-admin'];
 const COLLAPSE_KEY = 'sidebar-collapsed';
@@ -58,7 +58,7 @@ export default function AppShell({ children, session, menuItems }: AppShellProps
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--surface)] dark:bg-[oklch(0.02_0_0)]">
-      <Agentation />
+      <ThemeDevTool />
       {/* Backdrop overlay — mobile */}
       {sidebarOpen && (
         <div
@@ -91,7 +91,7 @@ export default function AppShell({ children, session, menuItems }: AppShellProps
 
           {/* Scrollable content */}
           <main className="flex-1 overflow-y-auto custom-scrollbar" style={{ scrollbarGutter: 'stable' }}>
-            <div className="px-5 sm:px-8 lg:px-12 pt-8 pb-10">
+            <div className="px-5 sm:px-8 lg:px-12 pt-8 pb-10 page-stagger">
               {children}
             </div>
           </main>

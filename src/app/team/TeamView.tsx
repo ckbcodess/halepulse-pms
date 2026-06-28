@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 import PageHeader from '@/components/layout/PageHeader';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
@@ -183,7 +184,7 @@ export default function TeamView() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-muted-foreground">Date of Birth</label>
-                  <Input type="date" value={form.dob} onChange={e => setForm(f => ({ ...f, dob: e.target.value }))} />
+                  <DatePicker value={form.dob} onChange={v => setForm(f => ({ ...f, dob: v }))} placeholder="Select date" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-muted-foreground">Ghana Card</label>

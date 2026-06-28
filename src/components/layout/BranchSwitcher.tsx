@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, Check, ChevronDown } from 'lucide-react';
+import { Building2, Check, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface Branch {
   id: string;
@@ -25,9 +26,24 @@ interface BranchData {
   homeBranchId: string | null;
 }
 
+interface BranchSwitcherProps {
+  /** "header" (compact pill) or "sidebar" (full brand card). */
+  variant?: 'header' | 'sidebar';
+  /** Tenant display name + logo — only used by the sidebar variant. */
+  tenantName?: string | null;
+  tenantLogoUrl?: string | null;
+  /** Collapsed sidebar — show only the avatar. */
+  collapsed?: boolean;
+}
+
 const ALL_BRANCHES = 'All Branches';
 
-export default function BranchSwitcher() {
+export default function BranchSwitcher({
+  variant = 'header',
+  tenantName,
+  tenantLogoUrl,
+  collapsed = false,
+}: BranchSwitcherProps) {
   const router = useRouter();
   const [data, setData] = useState<BranchData | null>(null);
   const [busy, setBusy] = useState(false);
@@ -61,15 +77,103 @@ export default function BranchSwitcher() {
     [load, router],
   );
 
+  const current = data
+    ? data.selectedBranchId
+      ? data.branches.find((b) => b.id === data.selectedBranchId)?.name ?? ALL_BRANCHES
+      : data.canSwitch
+        ? ALL_BRANCHES
+        : data.branches[0]?.name ?? ''
+    : '';
+
+  // Shared list of branch options for the dropdown.
+  const branchMenu = data && (
+    <DropdownMenuContent align="start" sideOffset={variant === 'sidebar' ? 6 : 8} className="min-w-[220px]">
+      <DropdownMenuLabel>Viewing branch</DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem className="cursor-pointer justify-between" onClick={() => select(null)}>
+        {ALL_BRANCHES}
+        {!data.selectedBranchId && <Check size={14} />}
+      </DropdownMenuItem>
+      {data.branches.map((b) => (
+        <DropdownMenuItem
+          key={b.id}
+          className="cursor-pointer justify-between"
+          onClick={() => select(b.id)}
+        >
+          <span className="truncate">
+            {b.name}
+            {b.isHeadquarters && <span className="ml-1.5 text-[10px] text-muted-foreground">HQ</span>}
+          </span>
+          {data.selectedBranchId === b.id && <Check size={14} />}
+        </DropdownMenuItem>
+      ))}
+    </DropdownMenuContent>
+  );
+
+  // ── Sidebar variant: brand + branch card ──────────────────────────────────
+  if (variant === 'sidebar') {
+    const initial = (tenantName || 'P').trim().charAt(0).toUpperCase() || 'P';
+
+    const avatar = (
+      <Avatar className="size-7 rounded-[12px] after:hidden shrink-0">
+        {tenantLogoUrl ? <AvatarImage src={tenantLogoUrl} className="rounded-[12px]" /> : null}
+        <AvatarFallback className="rounded-[12px] bg-[var(--primary)] [background-image:linear-gradient(in_oklch_to_bottom,var(--primary-gradient-from),var(--primary-gradient-to))] text-[var(--sidebar-primary-foreground)] text-[14px] font-medium">
+          {initial}
+        </AvatarFallback>
+      </Avatar>
+    );
+
+    if (collapsed) {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<button className="flex w-full items-center justify-center rounded-lg p-1 transition-colors hover:bg-foreground/5" disabled={busy} />}
+            aria-label="Switch branch"
+          >
+            {avatar}
+          </DropdownMenuTrigger>
+          {branchMenu}
+        </DropdownMenu>
+      );
+    }
+
+    const card = (
+      <div className="flex w-full items-center justify-between gap-2 rounded-lg bg-foreground/5 p-2 transition-colors group-hover/branch:bg-foreground/[0.08]">
+        <div className="flex min-w-0 items-center gap-2">
+          {avatar}
+          <div className="flex min-w-0 flex-col items-start">
+            <span className="max-w-[118px] truncate text-[14px] font-medium leading-[17.5px] tracking-[-0.35px] text-foreground">
+              {tenantName || 'Pharmacy'}
+            </span>
+            <span className="max-w-[118px] truncate text-[12px] leading-[17px] text-foreground/40">
+              {current || '—'}
+            </span>
+          </div>
+        </div>
+        {data?.canSwitch && <ChevronsUpDown size={14} className="shrink-0 text-muted-foreground" />}
+      </div>
+    );
+
+    // Single-branch users can't switch — render a static card.
+    if (!data?.canSwitch) {
+      return <div className="w-full">{card}</div>;
+    }
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={<button className="group/branch w-full text-left outline-none" disabled={busy} />}
+        >
+          {card}
+        </DropdownMenuTrigger>
+        {branchMenu}
+      </DropdownMenu>
+    );
+  }
+
+  // ── Header variant (default) ──────────────────────────────────────────────
   if (!data || data.branches.length === 0) return null;
 
-  const current = data.selectedBranchId
-    ? data.branches.find((b) => b.id === data.selectedBranchId)?.name ?? ALL_BRANCHES
-    : data.canSwitch
-      ? ALL_BRANCHES
-      : data.branches[0]?.name ?? '';
-
-  // Operational users (cannot switch, single branch) — static label.
   if (!data.canSwitch) {
     return (
       <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-muted-foreground">
@@ -88,28 +192,7 @@ export default function BranchSwitcher() {
         <span className="text-[12px] font-medium truncate max-w-[140px]">{current}</span>
         <ChevronDown size={13} className="text-muted-foreground flex-shrink-0" />
       </DropdownMenuTrigger>
-
-      <DropdownMenuContent align="start" sideOffset={8} className="min-w-[200px]">
-        <DropdownMenuLabel>Viewing branch</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer justify-between" onClick={() => select(null)}>
-          {ALL_BRANCHES}
-          {!data.selectedBranchId && <Check size={14} />}
-        </DropdownMenuItem>
-        {data.branches.map((b) => (
-          <DropdownMenuItem
-            key={b.id}
-            className="cursor-pointer justify-between"
-            onClick={() => select(b.id)}
-          >
-            <span className="truncate">
-              {b.name}
-              {b.isHeadquarters && <span className="ml-1.5 text-[10px] text-muted-foreground">HQ</span>}
-            </span>
-            {data.selectedBranchId === b.id && <Check size={14} />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
+      {branchMenu}
     </DropdownMenu>
   );
 }

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Activity } from 'lucide-react';
 
 export default function ChangePasswordPage() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -62,19 +63,17 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8fafa] p-8">
+    <div className="min-h-screen flex items-center justify-center bg-background p-8">
       <div className="w-full max-w-md">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-4 h-4 bg-emerald-500 rounded-sm"></div>
-          <h1 className="text-2xl font-bold text-slate-950 tracking-tight">
-            PHARM <span className="text-emerald-500 font-light">NEXT</span>
-          </h1>
+        <div className="flex items-center gap-2 mb-8">
+          <Activity size={18} strokeWidth={2.25} className="text-foreground" />
+          <h1 className="text-xl font-semibold text-foreground tracking-tight">HalePulse</h1>
         </div>
 
         <div className="bg-card rounded-lg shadow-sm border border-border p-8">
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
-              <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 text-[10px] font-bold uppercase tracking-widest">
+              <Badge variant="outline" className="border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-widest">
                 Required
               </Badge>
             </div>
@@ -91,8 +90,8 @@ export default function ChangePasswordPage() {
           )}
 
           {success ? (
-            <Alert className="border-emerald-200 bg-emerald-50">
-              <AlertDescription className="text-emerald-700 font-semibold">
+            <Alert className="border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10">
+              <AlertDescription className="text-emerald-700 dark:text-emerald-400 font-semibold">
                 Password changed successfully! Redirecting to login...
               </AlertDescription>
             </Alert>
@@ -162,7 +161,7 @@ export default function ChangePasswordPage() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-12 bg-slate-950 hover:bg-sidebar text-white font-bold mt-2"
+                className="w-full h-12 font-bold mt-2"
               >
                 {isSubmitting ? 'Updating...' : 'Update Password'}
               </Button>

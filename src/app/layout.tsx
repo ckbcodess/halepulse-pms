@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider } from '@/components/theme-provider';
-import { DynamicThemeProvider } from '@/components/dynamic-theme-provider';
+import ThemeScope from '@/components/layout/ThemeScope';
 import { Toaster } from 'sonner';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
-import { generateThemeCSS } from '@/lib/theme/theme-utils';
+import { generateAccentCSS, sanitizeBrand, DEFAULT_BRAND } from '@/lib/theme/accent';
 import SessionProvider from '@/components/SessionProvider';
 import AppShell from '@/components/layout/AppShell';
 import HeartbeatProvider from '@/components/layout/HeartbeatProvider';
@@ -14,7 +13,6 @@ import ReactQueryProvider from '@/components/providers/ReactQueryProvider';
 import { getMenuForUser } from '@/lib/menus/getMenuForUser';
 import { getImpersonation } from '@/lib/auth/getImpersonation';
 import { cn } from "@/lib/utils";
-import AgentationToolbar from '@/components/AgentationToolbar';
 import { cookies } from 'next/headers';
 
 const geist = Geist({ variable: '--font-sans', subsets: ['latin'] });
@@ -47,34 +45,30 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   // Read brand color from cookie written by the branding API when admin saves.
   // No DB query — zero latency, no Prisma errors on cold starts.
-  let baseColor = '#6366f1|stone';
+  // Super admins (not impersonating) always get the default HalePulse brand.
+  let brandColor = DEFAULT_BRAND;
   if (effectiveTenantId && !isSuperAdmin) {
     const cookieStore = await cookies();
     const brandCookie = cookieStore.get(`hp_brand_${effectiveTenantId}`);
-    if (brandCookie?.value) {
-      baseColor = brandCookie.value;
-    }
+    brandColor = sanitizeBrand(brandCookie?.value);
   }
 
   // Fetch sidebar menu items server-side so the sidebar always reflects the full MASTER_MENU
   const menuItems = await getMenuForUser(effectiveRole, effectiveTenantId);
 
-  // Generate full OKLCH palette from base color — injected server-side to prevent flash
-  const brandingCSS = generateThemeCSS(baseColor);
+  // Override only the accent tokens for both modes — injected server-side so
+  // there is no flash and no client recompute. Neutrals are static in globals.css
+  // and dark mode is just the `.dark` class toggled by next-themes.
+  const brandingCSS = generateAccentCSS(brandColor);
 
-  // Isolate dark/light mode preference per role + tenant so that:
+  // Per-tenant/admin dark-light key (ThemeScope refines this on the client for
+  // logged-out and super-admin surfaces). Isolated so:
   //   1. Super-admins don't share dark/light with tenant users
   //   2. Different tenants on the same browser don't share dark/light
   //   3. Impersonation uses the impersonated tenant's preference
   const themeStorageKey = isSuperAdmin
     ? 'theme_admin'
     : `theme_${effectiveTenantId ?? 'default'}`;
-
-  // Brand-color storage key — separate per role/tenant so a tenant's brand
-  // colour stored in localStorage never bleeds into the admin console.
-  const brandStorageKey = isSuperAdmin
-    ? 'brand_admin'
-    : `brand_${effectiveTenantId ?? 'default'}`;
 
   return (
     <html
@@ -86,19 +80,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <style dangerouslySetInnerHTML={{ __html: brandingCSS }} />
       </head>
       <body className="antialiased">
-        <AgentationToolbar />
         <ReactQueryProvider>
           <SessionProvider session={session}>
-            <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange storageKey={themeStorageKey}>
-              <DynamicThemeProvider initialBaseColor={baseColor} storageKey={brandStorageKey}>
-                <Toaster position="top-right" richColors />
-                <HeartbeatProvider>
-                  <AppShell session={session} menuItems={menuItems}>
-                    {children}
-                  </AppShell>
-                </HeartbeatProvider>
-              </DynamicThemeProvider>
-            </ThemeProvider>
+            <ThemeScope serverKey={themeStorageKey}>
+              <Toaster position="top-right" richColors />
+              <HeartbeatProvider>
+                <AppShell session={session} menuItems={menuItems}>
+                  {children}
+                </AppShell>
+              </HeartbeatProvider>
+            </ThemeScope>
           </SessionProvider>
         </ReactQueryProvider>
       </body>

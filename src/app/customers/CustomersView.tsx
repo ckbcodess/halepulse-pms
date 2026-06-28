@@ -13,11 +13,12 @@
 
 import { useState, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Phone, Award, Search, ArrowRight, Plus, X, Download, Upload } from 'lucide-react';
+import { Phone, Award, ArrowRight, Plus, Download, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { SearchBar } from '@/components/ui/search-bar';
 import PageHeader from '@/components/layout/PageHeader';
 import { exportToCsv } from '@/lib/utils/exportCsv';
 import { parseCsv } from '@/lib/utils/parseCsv';
@@ -60,9 +61,9 @@ function SkeletonRows() {
               <div className="h-4 bg-muted rounded w-32" />
             </div>
           </TableCell>
-          <TableCell className="px-6 py-4"><div className="h-4 bg-muted rounded w-28" /></TableCell>
-          <TableCell className="px-6 py-4"><div className="h-4 bg-muted rounded w-12" /></TableCell>
-          <TableCell className="px-6 py-4 text-right"><div className="h-4 bg-muted rounded w-20 ml-auto" /></TableCell>
+          <TableCell className="px-6 py-4 w-[200px]"><div className="h-4 bg-muted rounded w-28" /></TableCell>
+          <TableCell className="px-6 py-4 w-[140px]"><div className="h-4 bg-muted rounded w-12" /></TableCell>
+          <TableCell className="px-6 py-4 w-[160px] text-right"><div className="h-4 bg-muted rounded w-20 ml-auto" /></TableCell>
         </TableRow>
       ))}
     </>
@@ -164,10 +165,10 @@ export default function CustomersView() {
             onChange={handleImportFile}
             className="hidden"
           />
-          <Button variant="outline" size="sm" disabled={importing} onClick={() => fileInputRef.current?.click()}>
+          <Button variant="outline" disabled={importing} onClick={() => fileInputRef.current?.click()}>
             <Upload size={14} /> {importing ? 'Importing…' : 'Import'}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button variant="outline" onClick={handleExport}>
             <Download size={14} /> Export
           </Button>
           <Button nativeButton={false} render={<Link href="/customers/new" />}>
@@ -182,24 +183,16 @@ export default function CustomersView() {
         <div className="lg:col-span-2 flex flex-col gap-4">
 
           {/* Search — instant client-side filtering */}
-          <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors w-full max-w-[342px]">
-            <Search size={16} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search customers by name or phone..."
-              className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-muted-foreground font-normal"
-            />
-            {search && (
-              <Button variant="ghost" size="icon-xs" onClick={() => setSearch('')}>
-                <X size={14} />
-              </Button>
-            )}
-          </div>
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder="Search customers by name or phone..."
+            className="w-full max-w-[342px]"
+          />
 
           <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
             {isLoading ? (
-              <Table>
+              <Table className="table-fixed">
                 <TableBody><SkeletonRows /></TableBody>
               </Table>
             ) : filteredCustomers.length === 0 ? (
@@ -213,26 +206,26 @@ export default function CustomersView() {
                 </Link>
               </div>
             ) : (
-              <Table>
+              <Table className="table-fixed">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="px-6">Customer</TableHead>
-                    <TableHead className="px-6">Phone</TableHead>
-                    <TableHead className="px-6">Points</TableHead>
-                    <TableHead className="px-6 text-right">Join Date</TableHead>
+                    <TableHead className="px-6 w-[200px]">Phone</TableHead>
+                    <TableHead className="px-6 w-[140px]">Points</TableHead>
+                    <TableHead className="px-6 w-[160px] text-right">Join Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredCustomers.map((c) => (
                     <TableRow key={c.id} className="group">
                       <TableCell className="px-6 py-4">
-                        <Link href={`/customers/${c.id}`} className="flex items-center gap-3">
-                          <Avatar className="bg-muted">
+                        <Link href={`/customers/${c.id}`} className="flex items-center gap-3 min-w-0">
+                          <Avatar className="bg-muted shrink-0">
                             <AvatarFallback className="bg-muted text-muted-foreground text-xs font-bold">
                               {c.name[0]?.toUpperCase() ?? '?'}
                             </AvatarFallback>
                           </Avatar>
-                          <p className="font-semibold text-card-foreground group-hover:text-primary transition-colors">
+                          <p className="font-semibold text-card-foreground group-hover:text-primary transition-colors truncate">
                             {c.name}
                           </p>
                         </Link>

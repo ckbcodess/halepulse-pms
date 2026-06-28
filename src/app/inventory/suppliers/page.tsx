@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
-  Search, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-  MoreHorizontal, Pencil, Archive, Eye, X, Phone, Mail, MapPin,
+  Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
+  MoreHorizontal, Pencil, Archive, Eye, Phone, Mail, MapPin,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -14,6 +14,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SearchBar } from '@/components/ui/search-bar';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
@@ -175,7 +176,7 @@ export default function SuppliersPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Suppliers" description="Manage your wholesale suppliers and contacts.">
+      <PageHeader title="Suppliers" description="Manage the vendors you purchase stock from.">
         <Button onClick={() => setShowAdd(true)}>
           <Plus size={14} /> Add Supplier
         </Button>
@@ -183,26 +184,13 @@ export default function SuppliersPage() {
 
       {/* Search */}
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-[5px] h-[44px] px-[13px] border border-border rounded-[8px] bg-background focus-within:border-primary/40 transition-colors w-[342px]">
-          <Search size={16} className="text-muted-foreground shrink-0" strokeWidth={1.8} />
-          <input
-            value={searchInput}
-            onChange={e => setSearchInput(e.target.value)}
-            placeholder="Search suppliers..."
-            className="flex-1 bg-transparent outline-none text-[12.25px] text-foreground placeholder:text-muted-foreground font-normal"
-          />
-          {searchInput && (
-            <Button variant="ghost" size="icon-xs" onClick={() => setSearchInput('')}>
-              <X size={14} />
-            </Button>
-          )}
-        </div>
+        <SearchBar value={searchInput} onChange={setSearchInput} placeholder="Search suppliers..." />
       </div>
 
       {/* Table */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <Table className="min-w-[700px]">
+          <Table className="min-w-[700px] table-fixed">
             <TableHeader>
               <TableRow>
                 <TableHead className="px-6">Supplier</TableHead>
@@ -235,11 +223,11 @@ export default function SuppliersPage() {
               {!isLoading && suppliers.map(s => (
                 <TableRow key={s.id} className="group cursor-pointer" onClick={() => router.push(`/inventory/suppliers/${s.id}`)}>
                   <TableCell className="px-6 py-4">
-                    <p className="text-sm font-semibold text-card-foreground">{s.name}</p>
-                    {s.email && <p className="text-[10px] text-muted-foreground mt-0.5">{s.email}</p>}
+                    <p className="text-sm font-semibold text-card-foreground truncate">{s.name}</p>
+                    {s.email && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{s.email}</p>}
                   </TableCell>
-                  <TableCell className="px-6 py-4 text-xs text-muted-foreground">{s.contactName ?? '—'}</TableCell>
-                  <TableCell className="px-6 py-4 text-xs text-muted-foreground">{s.phone ?? '—'}</TableCell>
+                  <TableCell className="px-6 py-4 text-xs text-muted-foreground truncate">{s.contactName ?? '—'}</TableCell>
+                  <TableCell className="px-6 py-4 text-xs text-muted-foreground truncate">{s.phone ?? '—'}</TableCell>
                   <TableCell className="px-6 py-4">
                     <Badge variant="outline">{s.productCount}</Badge>
                   </TableCell>

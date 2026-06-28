@@ -4,6 +4,10 @@ import { useState } from 'react';
 import { Filter, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 interface Branch {
   id: string;
@@ -111,16 +115,15 @@ export default function ReportsFilters({ tab, currentParams, branches }: Props) 
             {branches.length > 1 && (
               <div className="space-y-1">
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Branch</label>
-                <select
-                  value={filters.branchId}
-                  onChange={e => set('branchId', e.target.value)}
-                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-                >
-                  <option value="">All Branches</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}{b.businessId ? ` (${b.businessId})` : ''}</option>
-                  ))}
-                </select>
+                <Select value={filters.branchId || 'all'} onValueChange={v => set('branchId', v && v !== 'all' ? v : '')}>
+                  <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Branches</SelectItem>
+                    {branches.map(b => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}{b.businessId ? ` (${b.businessId})` : ''}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 
@@ -130,11 +133,11 @@ export default function ReportsFilters({ tab, currentParams, branches }: Props) 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">From</label>
-                    <Input type="date" value={filters.from} onChange={e => set('from', e.target.value)} className="h-9 text-sm" />
+                    <DatePicker value={filters.from} onChange={v => set('from', v)} className="h-9" placeholder="From" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">To</label>
-                    <Input type="date" value={filters.to} onChange={e => set('to', e.target.value)} className="h-9 text-sm" />
+                    <DatePicker value={filters.to} onChange={v => set('to', v)} className="h-9" placeholder="To" />
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -144,21 +147,27 @@ export default function ReportsFilters({ tab, currentParams, branches }: Props) 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Payment Method</label>
-                    <select value={filters.paymentMethod} onChange={e => set('paymentMethod', e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-                      <option value="">All</option>
-                      <option value="cash">Cash</option>
-                      <option value="mobile_money">Mobile Money</option>
-                      <option value="card">Card</option>
-                      <option value="credit">Credit</option>
-                    </select>
+                    <Select value={filters.paymentMethod || 'all'} onValueChange={v => set('paymentMethod', v && v !== 'all' ? v : '')}>
+                      <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="mobile_money">Mobile Money</SelectItem>
+                        <SelectItem value="card">Card</SelectItem>
+                        <SelectItem value="credit">Credit</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</label>
-                    <select value={filters.status} onChange={e => set('status', e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-                      <option value="">All</option>
-                      <option value="completed">Completed</option>
-                      <option value="voided">Voided</option>
-                    </select>
+                    <Select value={filters.status || 'all'} onValueChange={v => set('status', v && v !== 'all' ? v : '')}>
+                      <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="voided">Voided</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -179,12 +188,15 @@ export default function ReportsFilters({ tab, currentParams, branches }: Props) 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Month</label>
-                  <select value={filters.month} onChange={e => set('month', e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-                    <option value="">Current Month</option>
-                    {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
-                      <option key={i} value={String(i + 1)}>{m}</option>
-                    ))}
-                  </select>
+                  <Select value={filters.month || 'current'} onValueChange={v => set('month', v && v !== 'current' ? v : '')}>
+                    <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="current">Current Month</SelectItem>
+                      {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
+                        <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Year</label>
@@ -199,22 +211,25 @@ export default function ReportsFilters({ tab, currentParams, branches }: Props) 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">From</label>
-                    <Input type="date" value={filters.from} onChange={e => set('from', e.target.value)} className="h-9 text-sm" />
+                    <DatePicker value={filters.from} onChange={v => set('from', v)} className="h-9" placeholder="From" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">To</label>
-                    <Input type="date" value={filters.to} onChange={e => set('to', e.target.value)} className="h-9 text-sm" />
+                    <DatePicker value={filters.to} onChange={v => set('to', v)} className="h-9" placeholder="To" />
                   </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Payment Method</label>
-                  <select value={filters.paymentMethod} onChange={e => set('paymentMethod', e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-                    <option value="">All Methods</option>
-                    <option value="cash">Cash</option>
-                    <option value="mobile_money">Mobile Money</option>
-                    <option value="card">Card</option>
-                    <option value="credit">Credit</option>
-                  </select>
+                  <Select value={filters.paymentMethod || 'all'} onValueChange={v => set('paymentMethod', v && v !== 'all' ? v : '')}>
+                    <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Methods</SelectItem>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="mobile_money">Mobile Money</SelectItem>
+                      <SelectItem value="card">Card</SelectItem>
+                      <SelectItem value="credit">Credit</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </>
             )}
@@ -225,11 +240,11 @@ export default function ReportsFilters({ tab, currentParams, branches }: Props) 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">From</label>
-                    <Input type="date" value={filters.from} onChange={e => set('from', e.target.value)} className="h-9 text-sm" />
+                    <DatePicker value={filters.from} onChange={v => set('from', v)} className="h-9" placeholder="From" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">To</label>
-                    <Input type="date" value={filters.to} onChange={e => set('to', e.target.value)} className="h-9 text-sm" />
+                    <DatePicker value={filters.to} onChange={v => set('to', v)} className="h-9" placeholder="To" />
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -242,10 +257,13 @@ export default function ReportsFilters({ tab, currentParams, branches }: Props) 
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sort By</label>
-                  <select value={filters.sortBy} onChange={e => set('sortBy', e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-                    <option value="units">Units Sold</option>
-                    <option value="revenue">Revenue</option>
-                  </select>
+                  <Select value={filters.sortBy} onValueChange={v => v && set('sortBy', v)}>
+                    <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="units">Units Sold</SelectItem>
+                      <SelectItem value="revenue">Revenue</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </>
             )}
@@ -256,11 +274,11 @@ export default function ReportsFilters({ tab, currentParams, branches }: Props) 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">From</label>
-                    <Input type="date" value={filters.from} onChange={e => set('from', e.target.value)} className="h-9 text-sm" />
+                    <DatePicker value={filters.from} onChange={v => set('from', v)} className="h-9" placeholder="From" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">To</label>
-                    <Input type="date" value={filters.to} onChange={e => set('to', e.target.value)} className="h-9 text-sm" />
+                    <DatePicker value={filters.to} onChange={v => set('to', v)} className="h-9" placeholder="To" />
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -307,13 +325,16 @@ export default function ReportsFilters({ tab, currentParams, branches }: Props) 
               <>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Expiry Window</label>
-                  <select value={filters.expiryDays} onChange={e => set('expiryDays', e.target.value)} className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-                    <option value="30">30 days</option>
-                    <option value="60">60 days</option>
-                    <option value="90">90 days</option>
-                    <option value="180">180 days</option>
-                    <option value="365">365 days</option>
-                  </select>
+                  <Select value={filters.expiryDays} onValueChange={v => v && set('expiryDays', v)}>
+                    <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30">30 days</SelectItem>
+                      <SelectItem value="60">60 days</SelectItem>
+                      <SelectItem value="90">90 days</SelectItem>
+                      <SelectItem value="180">180 days</SelectItem>
+                      <SelectItem value="365">365 days</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category</label>

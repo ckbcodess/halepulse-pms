@@ -1,6 +1,17 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
+import { SearchBar } from '@/components/ui/search-bar';
+import { FilterDropdown } from '@/components/ui/filter-dropdown';
+import PageHeader from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/button';
 
 const CATEGORIES = ['Rent', 'Fuel', 'Internet', 'Electricity', 'Repairs', 'Transport', 'Miscellaneous', 'Other'];
 
@@ -78,29 +89,30 @@ export default function PurchasesView() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">Expenses</h1>
-        <button onClick={() => setShowForm((s) => !s)} className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white">
+      <PageHeader title="Expenses" description="Track operating costs and other outgoings.">
+        <Button variant={showForm ? 'outline' : 'default'} onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Close' : 'Add Expense'}
-        </button>
-      </div>
+        </Button>
+      </PageHeader>
 
-      <div className="mb-4 rounded-lg border border-gray-200 bg-white p-3 text-sm">
-        <span className="text-gray-500">Total expenses this month: </span>
+      <div className="mb-4 rounded-lg border border-border bg-card p-3 text-sm">
+        <span className="text-muted-foreground">Total expenses this month: </span>
         <span className="font-semibold">{monthTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
       </div>
 
       {showForm && (
-        <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 grid gap-3 sm:grid-cols-2">
+        <div className="mb-4 rounded-lg border border-border bg-card p-4 grid gap-3 sm:grid-cols-2">
           <label className="text-sm">Date
-            <input type="date" className="mt-1 w-full rounded border px-2 py-1" value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })} />
+            <DatePicker className="mt-1 w-full" value={form.date}
+              onChange={(v) => setForm({ ...form, date: v })} placeholder="Select date" />
           </label>
           <label className="text-sm">Category
-            <select className="mt-1 w-full rounded border px-2 py-1" value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}>
-              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-            </select>
+            <Select value={form.category} onValueChange={(v) => v && setForm({ ...form, category: v })}>
+              <SelectTrigger className="mt-1 w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </label>
           <label className="text-sm">Amount
             <input type="number" min="0" step="0.01" className="mt-1 w-full rounded border px-2 py-1" value={form.amount}
@@ -111,60 +123,68 @@ export default function PurchasesView() {
               onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </label>
           <div className="sm:col-span-2">
-            <button disabled={saving} onClick={submit} className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-50">
+            <Button disabled={saving} onClick={submit}>
               Save Expense
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
-      <div className="mb-4 flex flex-wrap gap-2 text-sm">
-        <input type="date" className="rounded border px-2 py-1" value={filters.from}
-          onChange={(e) => setFilters({ ...filters, from: e.target.value })} />
-        <input type="date" className="rounded border px-2 py-1" value={filters.to}
-          onChange={(e) => setFilters({ ...filters, to: e.target.value })} />
-        <select className="rounded border px-2 py-1" value={filters.category}
-          onChange={(e) => setFilters({ ...filters, category: e.target.value })}>
-          <option value="all">All categories</option>
-          {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-        </select>
-        <input placeholder="Search description" className="rounded border px-2 py-1" value={filters.search}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
+      <div className="mb-4 flex flex-wrap items-center gap-6">
+        <SearchBar
+          value={filters.search}
+          onChange={(v) => setFilters({ ...filters, search: v })}
+          placeholder="Search description..."
+        />
+        <div className="flex flex-wrap items-center gap-4">
+          <DatePicker className="h-10 w-auto" value={filters.from}
+            onChange={(v) => setFilters({ ...filters, from: v })} placeholder="From" />
+          <DatePicker className="h-10 w-auto" value={filters.to}
+            onChange={(v) => setFilters({ ...filters, to: v })} placeholder="To" />
+          <FilterDropdown
+            value={filters.category}
+            onChange={(v) => setFilters({ ...filters, category: v })}
+            options={[
+              { value: 'all', label: 'All categories' },
+              ...CATEGORIES.map((c) => ({ value: c, label: c })),
+            ]}
+          />
+        </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50 text-left text-gray-600">
-            <tr>
-              <th className="px-3 py-2">Date</th>
-              <th className="px-3 py-2">Category</th>
-              <th className="px-3 py-2 text-right">Amount</th>
-              <th className="px-3 py-2">Description</th>
-              <th className="px-3 py-2">Added By</th>
-              <th className="px-3 py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Added By</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {loading ? (
-              <tr><td colSpan={6} className="px-3 py-6 text-center text-gray-400">Loading…</td></tr>
+              <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">Loading…</TableCell></TableRow>
             ) : expenses.length === 0 ? (
-              <tr><td colSpan={6} className="px-3 py-6 text-center text-gray-400">No expenses</td></tr>
+              <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">No expenses</TableCell></TableRow>
             ) : expenses.map((e) => (
-              <tr key={e.id} className="border-t border-gray-100">
-                <td className="px-3 py-2">{new Date(e.date).toLocaleDateString()}</td>
-                <td className="px-3 py-2">{e.category}</td>
-                <td className="px-3 py-2 text-right">{e.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                <td className="px-3 py-2 text-gray-600">{e.description ?? '—'}</td>
-                <td className="px-3 py-2 text-xs text-gray-500">
+              <TableRow key={e.id}>
+                <TableCell>{new Date(e.date).toLocaleDateString()}</TableCell>
+                <TableCell>{e.category}</TableCell>
+                <TableCell className="text-right">{e.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                <TableCell className="text-muted-foreground">{e.description ?? '—'}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">
                   {e.roleAccount ?? '—'}{e.assignedPerson ? ` · ${e.assignedPerson}` : ''}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  <button onClick={() => del(e.id)} className="text-red-600 text-xs">Delete</button>
-                </td>
-              </tr>
+                </TableCell>
+                <TableCell className="text-right">
+                  <button onClick={() => del(e.id)} className="text-destructive text-xs">Delete</button>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
