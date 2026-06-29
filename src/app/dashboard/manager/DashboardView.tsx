@@ -17,6 +17,7 @@ import {
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
+import AiBriefing from '@/components/dashboard/AiBriefing';
 import { Button } from '@/components/ui/button';
 import { Calligraph } from 'calligraph';
 import {
@@ -218,6 +219,9 @@ export default function DashboardView({
         title={`${getGreeting()}, ${firstName}`}
         description={getFormattedDate()}
       />
+
+      {/* ── AI Daily Briefing ── */}
+      <AiBriefing />
 
       {/* ── Filter bar ── */}
       {range && (
