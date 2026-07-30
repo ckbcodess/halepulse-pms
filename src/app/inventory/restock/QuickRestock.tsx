@@ -136,12 +136,12 @@ export default function QuickRestock() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Add product */}
-      <div className="relative">
+      <div className="relative flex justify-end">
         <Button variant="outline" onClick={() => setShowSearch(s => !s)}>
           <Plus size={14} /> Add Item
         </Button>
         {showSearch && (
-          <div className="absolute z-50 mt-2 w-96 bg-card border border-border rounded-xl shadow-lg overflow-hidden">
+          <div className="absolute right-0 top-full z-50 mt-2 w-96 bg-card border border-border rounded-xl shadow-lg overflow-hidden">
             <div className="p-2 border-b border-border flex items-center gap-2">
               <Search size={14} className="text-muted-foreground" />
               <input

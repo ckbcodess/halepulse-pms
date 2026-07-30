@@ -1,7 +1,7 @@
 'use client';
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { signIn, getSession } from 'next-auth/react';
+import { signIn, signOut, useSession, getSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ function GoogleIcon() {
 }
 
 function LoginContent() {
+  const { status } = useSession();
   const [businessId, setBusinessId] = useState('');
   const [username, setUsername]     = useState('');
   const [password, setPassword]     = useState('');
@@ -28,6 +29,17 @@ function LoginContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const searchParams = useSearchParams();
+  const isLoggingInRef = useRef(false);
+  const initialCheckDoneRef = useRef(false);
+
+  // Automatically sign out any pre-existing session on initial mount ONLY
+  useEffect(() => {
+    if (initialCheckDoneRef.current) return;
+    if (status === 'authenticated' && !isLoggingInRef.current) {
+      initialCheckDoneRef.current = true;
+      signOut({ redirect: false });
+    }
+  }, [status]);
 
   const urlError = searchParams.get('error');
   const urlErrorMessage = urlError === 'NotProvisioned'
@@ -42,6 +54,7 @@ function LoginContent() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    isLoggingInRef.current = true;
     setIsSubmitting(true);
     setError('');
 

@@ -1,35 +1,44 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { TrendingUp, Package, Calendar, BarChart2, Wallet, Repeat, CalendarRange } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const TABS = [
-  { key: 'sales', label: 'Sales Summary', icon: TrendingUp },
-  { key: 'monthly', label: 'Monthly', icon: CalendarRange },
-  { key: 'payments', label: 'Payments', icon: Wallet },
-  { key: 'products', label: 'Top Products', icon: BarChart2 },
-  { key: 'frequency', label: 'Frequency', icon: Repeat },
-  { key: 'inventory', label: 'Inventory', icon: Package },
-  { key: 'expiry', label: 'Expiry', icon: Calendar },
+  { key: 'sales', label: 'Sales & Finance' },
+  { key: 'inventory', label: 'Inventory Health' },
+  { key: 'products', label: 'Product Performance' },
 ];
 
-export function ReportsTabs({ tab, range }: { tab: string; range: string }) {
+export default function ReportsTabs({ tab }: { tab: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const handleTabChange = (key: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', key);
+    router.push(`/reports?${params.toString()}`);
+  };
 
   return (
-    <Tabs
-      value={tab}
-      onValueChange={(value) => router.push(`/reports?tab=${value}&range=${range}`)}
-    >
-      <TabsList className="w-full">
-        {TABS.map((t) => (
-          <TabsTrigger key={t.key} value={t.key}>
-            <t.icon size={14} />
-            {t.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <div className="flex items-center gap-1 border-b border-border mb-6 overflow-x-auto scrollbar-none">
+      {TABS.map(({ key, label }) => {
+        const isActive = tab === key;
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => handleTabChange(key)}
+            className={`
+              relative px-3 pb-2.5 pt-0.5 text-[13px] font-semibold transition-colors whitespace-nowrap focus:outline-none
+              ${isActive
+                ? 'text-foreground after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-foreground after:rounded-t-full'
+                : 'text-muted-foreground hover:text-foreground'
+              }
+            `}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
   );
 }

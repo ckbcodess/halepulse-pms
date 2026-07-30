@@ -5,8 +5,9 @@ import type { Session } from 'next-auth';
 import Sidebar from './Sidebar';
 import TopHeader from './TopHeader';
 import ThemeDevTool from '@/components/dev/ThemeDevTool';
+import { SurfaceProvider } from '@/lib/surface-context';
 
-const NO_SHELL_PREFIXES = ['/login', '/super-admin'];
+const NO_SHELL_PREFIXES = ['/login', '/sp-login', '/super-admin'];
 const COLLAPSE_KEY = 'sidebar-collapsed';
 
 interface MenuItem {
@@ -57,47 +58,49 @@ export default function AppShell({ children, session, menuItems }: AppShellProps
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--surface)] dark:bg-[oklch(0.02_0_0)]">
-      <ThemeDevTool />
-      {/* Backdrop overlay — mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-30 lg:hidden animate-in fade-in duration-150"
-          onClick={closeSidebar}
-        />
-      )}
-
-      {/* Sidebar */}
-      <Sidebar
-        user={session.user}
-        menuItems={menuItems}
-        isOpen={sidebarOpen}
-        onClose={closeSidebar}
-        collapsed={collapsed}
-        onToggleCollapse={toggleCollapse}
-      />
-
-      {/* Main content area — floating card on card background */}
-      <div className="flex-1 flex flex-col p-2.5 lg:p-3.5 overflow-hidden min-w-0 bg-[var(--surface)]">
-        <div className="flex-1 flex flex-col bg-white dark:bg-card rounded-2xl border border-border overflow-hidden min-h-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
-
-          {/* Top header inside the card */}
-          <TopHeader
-            user={session.user}
-            onMenuToggle={toggleSidebar}
-            collapsed={collapsed}
-            onToggleCollapse={toggleCollapse}
+    <SurfaceProvider value={1}>
+      <div className="flex h-screen overflow-hidden bg-[var(--surface)] dark:bg-[oklch(0.02_0_0)]">
+        <ThemeDevTool />
+        {/* Backdrop overlay — mobile */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-30 lg:hidden animate-in fade-in duration-150"
+            onClick={closeSidebar}
           />
+        )}
 
-          {/* Scrollable content */}
-          <main className="flex-1 overflow-y-auto custom-scrollbar" style={{ scrollbarGutter: 'stable' }}>
-            <div className="px-5 sm:px-8 lg:px-12 pt-8 pb-10 page-stagger">
-              {children}
-            </div>
-          </main>
+        {/* Sidebar */}
+        <Sidebar
+          user={session.user}
+          menuItems={menuItems}
+          isOpen={sidebarOpen}
+          onClose={closeSidebar}
+          collapsed={collapsed}
+          onToggleCollapse={toggleCollapse}
+        />
 
+        {/* Main content area — floating card on card background */}
+        <div className="flex-1 flex flex-col p-2.5 lg:p-3.5 overflow-hidden min-w-0 bg-[var(--surface)]">
+          <div className="flex-1 flex flex-col bg-white dark:bg-card rounded-2xl border border-border overflow-hidden min-h-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
+
+            {/* Top header inside the card */}
+            <TopHeader
+              user={session.user}
+              onMenuToggle={toggleSidebar}
+              collapsed={collapsed}
+              onToggleCollapse={toggleCollapse}
+            />
+
+            {/* Scrollable content */}
+            <main className="flex-1 overflow-y-auto custom-scrollbar shell-fade-bottom" style={{ scrollbarGutter: 'stable' }}>
+              <div className="px-5 sm:px-8 lg:px-12 pt-8 pb-10 page-stagger">
+                {children}
+              </div>
+            </main>
+
+          </div>
         </div>
       </div>
-    </div>
+    </SurfaceProvider>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 
 export default function MonthlyAiSummary({ data }: { data: unknown }) {
@@ -28,21 +29,23 @@ export default function MonthlyAiSummary({ data }: { data: unknown }) {
   };
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+    <Card className="gap-0">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 pb-4">
+        <CardTitle className="text-base font-medium text-foreground flex items-center gap-2">
           <Sparkles size={16} className="text-primary" /> AI Insights
-        </h3>
+        </CardTitle>
         <Button size="sm" variant="outline" onClick={generate} disabled={loading}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           {summary ? 'Regenerate' : 'Generate summary'}
         </Button>
-      </div>
-      {summary ? (
-        <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{summary}</div>
-      ) : (
-        <p className="text-sm text-muted-foreground">Generate a plain-English summary of this month&apos;s performance.</p>
-      )}
-    </div>
+      </CardHeader>
+      <CardContent className="pt-6">
+        {summary ? (
+          <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{summary}</div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Generate a plain-English summary of this month&apos;s performance.</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

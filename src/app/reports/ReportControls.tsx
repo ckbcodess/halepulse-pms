@@ -1,42 +1,26 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-} from '@/components/ui/select';
-
-const REPORT_TYPES = [
-  { key: 'sales',     label: 'Sales Summary' },
-  { key: 'products',  label: 'Top Products' },
-  { key: 'frequency', label: 'Purchase Frequency' },
-  { key: 'payments',  label: 'Payments' },
-  { key: 'inventory', label: 'Inventory / Low Stock' },
-  { key: 'expiry',    label: 'Expiring Soon' },
-  { key: 'monthly',   label: 'Monthly Summary' },
-  { key: 'valuation', label: 'Stock Valuation' },
-];
 
 // Export is available for the types the export API can produce.
-const EXPORTABLE = ['sales', 'products', 'frequency', 'payments', 'inventory', 'expiry'];
+const EXPORTABLE = ['sales', 'products', 'frequency', 'payments', 'inventory', 'expiry', 'valuation'];
 
 export default function ReportControls({
   type, from, to,
 }: { type: string; from: string; to: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [localFrom, setLocalFrom] = useState(from);
   const [localTo, setLocalTo] = useState(to);
 
-  const apply = (next: { type?: string; from?: string; to?: string }) => {
-    const t = next.type ?? type;
-    const f = next.from ?? localFrom;
-    const tt = next.to ?? localTo;
-    const qs = new URLSearchParams({ tab: t });
-    if (f) qs.set('from', f);
-    if (tt) qs.set('to', tt);
-    router.push(`/reports?${qs.toString()}`);
+  const apply = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (localFrom) params.set('from', localFrom);
+    if (localTo) params.set('to', localTo);
+    router.push(`/reports?${params.toString()}`);
   };
 
   const exportHref = `/api/reports/export?type=${type}` +
@@ -47,46 +31,48 @@ export default function ReportControls({
   const isSnapshot = type === 'valuation';
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-end gap-3">
-      {/* Report type */}
-      <div className="flex flex-col gap-1.5 sm:w-64">
-        <label className="text-xs font-semibold text-muted-foreground">Report Type</label>
-        <Select value={type} onValueChange={(v) => v && apply({ type: v })}>
-          <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {REPORT_TYPES.map((r) => <SelectItem key={r.key} value={r.key}>{r.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between py-2 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        {!isSnapshot && (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">From</span>
+              <div className="relative flex items-center">
+                <input
+                  type="date"
+                  value={localFrom}
+                  onChange={(e) => setLocalFrom(e.target.value)}
+                  className="h-9 px-3 bg-background dark:bg-input/30 border border-border dark:border-input rounded-lg text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30 transition-colors cursor-pointer hover:bg-muted/40"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">To</span>
+              <div className="relative flex items-center">
+                <input
+                  type="date"
+                  value={localTo}
+                  onChange={(e) => setLocalTo(e.target.value)}
+                  className="h-9 px-3 bg-background dark:bg-input/30 border border-border dark:border-input rounded-lg text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30 transition-colors cursor-pointer hover:bg-muted/40"
+                />
+              </div>
+            </div>
+
+            <Button onClick={apply} size="sm" className="h-9 px-4 text-xs font-semibold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-colors">
+              Apply
+            </Button>
+          </>
+        )}
       </div>
 
-      {/* Date range — hidden for point-in-time snapshot reports */}
-      {!isSnapshot && (
-        <>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">From</label>
-            <input
-              type="date"
-              value={localFrom}
-              onChange={(e) => setLocalFrom(e.target.value)}
-              className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">To</label>
-            <input
-              type="date"
-              value={localTo}
-              onChange={(e) => setLocalTo(e.target.value)}
-              className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
-            />
-          </div>
-
-          <Button onClick={() => apply({})} className="h-10">Apply</Button>
-        </>
-      )}
-
       {EXPORTABLE.includes(type) && (
-        <Button variant="outline" className="h-10 sm:ml-auto" nativeButton={false} render={<a href={exportHref} />}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 px-3.5 text-xs font-semibold rounded-lg shadow-xs flex items-center gap-2"
+          nativeButton={false}
+          render={<a href={exportHref} />}
+        >
           <Download size={14} /> Export CSV
         </Button>
       )}
