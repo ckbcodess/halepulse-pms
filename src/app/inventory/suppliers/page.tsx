@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -188,72 +189,96 @@ export default function SuppliersPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <Table className="min-w-[700px] table-fixed">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="px-6">Supplier</TableHead>
-                <TableHead className="px-6 w-36">Contact</TableHead>
-                <TableHead className="px-6 w-28">Phone</TableHead>
-                <TableHead className="px-6 w-28">Products</TableHead>
-                <TableHead className="px-6 w-20 text-right">Actions</TableHead>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <Table className="table-fixed">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="px-6">Supplier</TableHead>
+              <TableHead className="px-6 w-[200px]">Contact</TableHead>
+              <TableHead className="px-6 w-[160px]">Phone</TableHead>
+              <TableHead className="px-6 w-[120px]">Products</TableHead>
+              <TableHead className="px-6 w-[100px] text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && Array.from({ length: 5 }).map((_, i) => (
+              <TableRow key={i} className="animate-pulse">
+                <TableCell className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-muted rounded-full shrink-0" />
+                    <div className="flex flex-col gap-1.5 flex-1">
+                      <div className="h-4 bg-muted rounded w-36" />
+                      <div className="h-3 bg-muted rounded w-24" />
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="px-6 py-4"><div className="h-4 bg-muted rounded w-28" /></TableCell>
+                <TableCell className="px-6 py-4"><div className="h-4 bg-muted rounded w-24" /></TableCell>
+                <TableCell className="px-6 py-4"><div className="h-4 bg-muted rounded w-10" /></TableCell>
+                <TableCell className="px-6 py-4 text-right"><div className="h-4 bg-muted rounded w-8 ml-auto" /></TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i} className="animate-pulse">
-                  <TableCell className="px-6 py-4"><div className="h-4 bg-muted rounded-md w-40" /></TableCell>
-                  <TableCell className="px-6 py-4"><div className="h-3 bg-muted rounded-md w-24" /></TableCell>
-                  <TableCell className="px-6 py-4"><div className="h-3 bg-muted rounded-md w-20" /></TableCell>
-                  <TableCell className="px-6 py-4"><div className="h-3 bg-muted rounded-md w-12" /></TableCell>
-                  <TableCell className="px-6 py-4"><div className="h-3 bg-muted rounded-md w-8 ml-auto" /></TableCell>
-                </TableRow>
-              ))}
+            ))}
 
-              {!isLoading && suppliers.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="px-6 py-24 text-center">
-                    <p className="text-base font-semibold text-card-foreground mb-1">No suppliers found</p>
-                    <p className="text-sm text-muted-foreground">Add your first supplier to get started.</p>
-                  </TableCell>
-                </TableRow>
-              )}
+            {!isLoading && suppliers.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="px-6 py-16 text-center">
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <Avatar className="size-12 mb-2 opacity-30">
+                      <AvatarFallback>?</AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm font-medium text-foreground mb-1">No suppliers found</p>
+                    <p className="text-xs text-muted-foreground">Add your first supplier to get started.</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
 
-              {!isLoading && suppliers.map(s => (
-                <TableRow key={s.id} className="group cursor-pointer" onClick={() => router.push(`/inventory/suppliers/${s.id}`)}>
-                  <TableCell className="px-6 py-4">
-                    <p className="text-sm font-semibold text-card-foreground truncate">{s.name}</p>
-                    {s.email && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{s.email}</p>}
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-xs text-muted-foreground truncate">{s.contactName ?? '—'}</TableCell>
-                  <TableCell className="px-6 py-4 text-xs text-muted-foreground truncate">{s.phone ?? '—'}</TableCell>
-                  <TableCell className="px-6 py-4">
-                    <Badge variant="outline">{s.productCount}</Badge>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
-                        <MoreHorizontal size={16} className="text-muted-foreground" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
-                        <DropdownMenuItem onClick={() => router.push(`/inventory/suppliers/${s.id}`)}>
-                          <Eye size={14} className="mr-2" /> View Profile
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/inventory/suppliers/${s.id}?edit=true`)}>
-                          <Pencil size={14} className="mr-2" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleArchive(s)} className={s.isActive ? 'text-rose-600' : 'text-emerald-600'}>
-                          <Archive size={14} className="mr-2" /> {s.isActive ? 'Archive' : 'Restore'}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            {!isLoading && suppliers.map(s => (
+              <TableRow key={s.id} className="group cursor-pointer" onClick={() => router.push(`/inventory/suppliers/${s.id}`)}>
+                <TableCell className="px-6 py-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar className="bg-muted shrink-0 size-9">
+                      <AvatarFallback className="bg-muted text-muted-foreground text-xs font-bold">
+                        {s.name[0]?.toUpperCase() ?? '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-card-foreground group-hover:text-primary transition-colors truncate">
+                        {s.name}
+                      </p>
+                      {s.email && (
+                        <p className="text-xs text-muted-foreground truncate">{s.email}</p>
+                      )}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="px-6 py-4 text-sm text-muted-foreground truncate">{s.contactName ?? '—'}</TableCell>
+                <TableCell className="px-6 py-4 text-sm text-muted-foreground truncate">{s.phone ?? '—'}</TableCell>
+                <TableCell className="px-6 py-4">
+                  <Badge variant="outline" className="font-semibold">{s.productCount}</Badge>
+                </TableCell>
+                <TableCell className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
+                      <MoreHorizontal size={16} className="text-muted-foreground" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem onClick={() => router.push(`/inventory/suppliers/${s.id}`)}>
+                        <Eye size={14} className="mr-2" /> View Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push(`/inventory/suppliers/${s.id}?edit=true`)}>
+                        <Pencil size={14} className="mr-2" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleArchive(s)} className={s.isActive ? 'text-rose-600' : 'text-emerald-600'}>
+                        <Archive size={14} className="mr-2" /> {s.isActive ? 'Archive' : 'Restore'}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
 
         {!isLoading && total > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-border bg-muted/30">

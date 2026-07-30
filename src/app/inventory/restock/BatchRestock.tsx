@@ -680,7 +680,7 @@ export default function BatchRestock() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10">
+                    <TableHead className="w-12 pl-5 pr-2 align-middle">
                       <Checkbox
                         checked={filteredItems.every(i => i.included || !i.matchedProduct)}
                         onCheckedChange={(checked) => {
@@ -705,7 +705,7 @@ export default function BatchRestock() {
                     const isMatch = item.matchedProduct !== null;
                     return (
                       <TableRow key={realIdx} className={`${!isMatch ? 'bg-amber-50/50 dark:bg-amber-950/10' : item.included ? '' : 'opacity-40'}`}>
-                        <TableCell className="px-4 py-3">
+                        <TableCell className="w-12 pl-5 pr-2 py-3 align-middle">
                           <Checkbox
                             checked={item.included}
                             disabled={!isMatch}

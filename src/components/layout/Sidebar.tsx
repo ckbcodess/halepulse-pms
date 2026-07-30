@@ -183,7 +183,7 @@ export default function Sidebar({
             <PanelLeftOpen
               size={16}
               strokeWidth={1.7}
-              className="relative text-muted-foreground opacity-0 transition-opacity duration-150 group-hover/logo:opacity-100"
+              className="relative text-foreground opacity-0 transition-opacity duration-150 group-hover/logo:opacity-100"
             />
           </button>
         ) : (

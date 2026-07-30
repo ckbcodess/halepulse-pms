@@ -1215,7 +1215,7 @@ export default function InventoryView() {
           <Table className="min-w-[900px] table-fixed">
             <TableHeader>
               <TableRow className="bg-[#f8f8f7] dark:bg-muted/30">
-                <TableHead className="w-[44px]">
+                <TableHead className="w-[52px] pl-5 pr-2 align-middle">
                   <Checkbox
                     checked={allSelected}
                     indeterminate={someSelected && !allSelected}
@@ -1232,7 +1232,7 @@ export default function InventoryView() {
             <TableBody>
               {isLoading && Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i} className="animate-pulse">
-                  <TableCell className="px-4 h-[42px]"><div className="w-[12px] h-[12px] bg-muted rounded-[2px]" /></TableCell>
+                  <TableCell className="w-[52px] pl-5 pr-2 h-[42px] align-middle"><div className="w-[14px] h-[14px] bg-muted rounded-[3px]" /></TableCell>
                   <TableCell className="px-4 h-[42px]"><div className="h-3.5 bg-muted rounded w-40" /></TableCell>
                   <TableCell className="px-4 h-[42px]"><div className="h-3.5 bg-muted rounded w-20" /></TableCell>
                   <TableCell className="px-4 h-[42px]"><div className="h-3.5 bg-muted rounded w-24" /></TableCell>
@@ -1271,7 +1271,7 @@ export default function InventoryView() {
                     }`}
                     onClick={() => setSelectedProductId(p.id)}
                   >
-                    <TableCell className="px-4 h-[42px]" onClick={e => e.stopPropagation()}>
+                    <TableCell className="w-[52px] pl-5 pr-2 h-[42px] align-middle" onClick={e => e.stopPropagation()}>
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={() => toggleSelect(p.id)}

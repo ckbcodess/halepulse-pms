@@ -93,17 +93,34 @@ export async function GET(request: NextRequest) {
         ['Payment Method', 'Count', 'Total Collected'],
         pays.map((p) => [p.paymentMethod, p._count, (p._sum.amount ?? 0).toFixed(2)]),
       );
-    } else if (type === 'inventory') {
+    } else if (type === 'inventory' || type === 'valuation') {
       const products = await prisma.product.findMany({
         where: { tenantId: ctx.tenantId, isActive: true },
         orderBy: { name: 'asc' },
         select: { name: true, category: true, sku: true, stockQty: true, lowStockThreshold: true, costPrice: true, price: true, expiryDate: true },
       });
       csv = toCsv(
-        ['Product', 'Category', 'SKU', 'Stock', 'Low Stock Threshold', 'Status', 'Cost', 'Selling', 'Expiry'],
+        ['Product', 'Category', 'SKU', 'Stock', 'Status', 'Cost Price', 'Selling Price', 'Cost Value', 'Selling Value', 'Potential Profit', 'Expiry Date'],
         products.map((p) => {
           const status = p.stockQty <= 0 ? 'OUT' : p.stockQty <= p.lowStockThreshold ? 'LOW' : 'OK';
-          return [p.name, p.category, p.sku ?? '', p.stockQty, p.lowStockThreshold, status, (p.costPrice ?? 0).toFixed(2), p.price.toFixed(2), p.expiryDate ? p.expiryDate.toISOString().slice(0, 10) : ''];
+          const cost = p.costPrice ?? 0;
+          const selling = p.price;
+          const costVal = cost * p.stockQty;
+          const sellingVal = selling * p.stockQty;
+          const profit = sellingVal - costVal;
+          return [
+            p.name,
+            p.category ?? '',
+            p.sku ?? '',
+            p.stockQty,
+            status,
+            cost.toFixed(2),
+            selling.toFixed(2),
+            costVal.toFixed(2),
+            sellingVal.toFixed(2),
+            profit.toFixed(2),
+            p.expiryDate ? p.expiryDate.toISOString().slice(0, 10) : '',
+          ];
         }),
       );
     } else if (type === 'expiry') {

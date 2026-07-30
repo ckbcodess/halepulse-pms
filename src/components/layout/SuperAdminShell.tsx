@@ -77,7 +77,7 @@ export default function SuperAdminShell({
             <ThemeToggle />
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8 page-stagger">
+        <div className="flex-1 overflow-y-auto custom-scrollbar shell-fade-bottom p-4 sm:p-6 lg:p-8 page-stagger">
           {children}
         </div>
       </main>
