@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sparkles, ArrowUp, Loader2, RefreshCw } from 'lucide-react';
+import { ThinkingOrb } from 'thinking-orbs';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import {
   MessageScrollerProvider,
@@ -214,8 +215,8 @@ export default function AiCompanionPanel() {
 
                 {sending && (
                   <div className="flex justify-start">
-                    <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-foreground/[0.05] px-3.5 py-2.5">
-                      <Loader2 size={14} className="animate-spin text-muted-foreground" />
+                    <div className="flex items-center gap-2.5 rounded-2xl rounded-bl-sm bg-foreground/[0.05] pl-2.5 pr-3.5 py-2">
+                      <ThinkingOrb state="working" size={20} theme="auto" aria-label="Thinking" />
                       <span className="text-xs text-muted-foreground">Thinking…</span>
                     </div>
                   </div>
