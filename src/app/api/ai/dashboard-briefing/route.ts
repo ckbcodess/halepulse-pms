@@ -79,22 +79,37 @@ export async function GET() {
     }
 
     const system = [
-      'You are a pharmacy operations assistant writing a short daily briefing for a pharmacy manager in Ghana.',
-      'Write 3-4 short sentences, plain English, warm but professional. No headings, no bullet lists, no markdown.',
-      'Lead with what matters most today. End with ONE clear, specific action to take.',
-      'Use Ghana Cedi (GHS) when amounts are given. Only mention numbers present in the data.',
+      'You are a pharmacy operations assistant writing a glanceable daily briefing for a pharmacy manager in Ghana.',
+      'Respond ONLY with a JSON object, no prose around it, in this exact shape:',
+      '{"points": ["...", "..."], "action": "..."}',
+      'Rules: "points" is 2 to 3 items, each a SHORT status line of at most ~12 words. "action" is ONE specific next step.',
+      'Plain text only. NO emojis, NO markdown, NO bold, NO headings. Lead with what matters most.',
+      'Only mention numbers present in the data. Use Ghana Cedi (GHS) when stating amounts.',
       showFinancials ? '' : 'IMPORTANT: This reader is NOT permitted to see revenue or money figures. Do NOT mention any cedi amounts, revenue, or sales value — focus on stock, expiries, and operations only.',
     ].filter(Boolean).join(' ');
 
-    const prompt = `Here is today's pharmacy data:\n\n${facts.map(f => `- ${f}`).join('\n')}\n\nWrite the daily briefing.`;
+    const prompt = `Here is today's pharmacy data:\n\n${facts.map(f => `- ${f}`).join('\n')}\n\nWrite the briefing as JSON.`;
 
     const result = await callAi({ system, prompt, maxTokens: 400 });
 
     await logAiCall({ tenantId, userId: ctx.userId, feature: 'dashboard_briefing', result });
 
+    // Parse the structured response; fall back to plain text if the model strays.
+    let points: string[] = [];
+    let action = '';
+    try {
+      const jsonStr = result.text.slice(result.text.indexOf('{'), result.text.lastIndexOf('}') + 1);
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed.points)) points = parsed.points.filter((p: unknown) => typeof p === 'string').slice(0, 3);
+      if (typeof parsed.action === 'string') action = parsed.action;
+    } catch {
+      points = [result.text.trim()];
+    }
+
     return NextResponse.json({
       configured: true,
-      briefing: result.text,
+      points,
+      action,
       generatedAt: new Date().toISOString(),
     });
   } catch (err: any) {

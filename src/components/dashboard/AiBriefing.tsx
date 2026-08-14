@@ -1,18 +1,20 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Sparkles, RefreshCw, Loader2 } from 'lucide-react';
+import { Sparkles, RefreshCw, Loader2, ArrowRight } from 'lucide-react';
 
 interface BriefingResponse {
   configured: boolean;
-  briefing?: string;
+  points?: string[];
+  action?: string;
   generatedAt?: string;
   error?: string;
 }
 
 export default function AiBriefing() {
   const [loading, setLoading] = useState(true);
-  const [briefing, setBriefing] = useState<string | null>(null);
+  const [points, setPoints] = useState<string[]>([]);
+  const [action, setAction] = useState<string>('');
   const [notConfigured, setNotConfigured] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +26,8 @@ export default function AiBriefing() {
       const data: BriefingResponse = await res.json();
       if (data.configured === false) { setNotConfigured(true); return; }
       if (!res.ok) throw new Error(data.error || 'Failed to load briefing');
-      setBriefing(data.briefing ?? null);
+      setPoints(data.points ?? []);
+      setAction(data.action ?? '');
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -44,7 +47,7 @@ export default function AiBriefing() {
           <Sparkles size={18} className="text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-1.5">
+          <div className="flex items-center justify-between gap-2 mb-2">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               Daily Briefing
               <span className="text-[10px] font-bold uppercase tracking-wider text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded">AI</span>
@@ -69,7 +72,22 @@ export default function AiBriefing() {
               <button onClick={load} className="text-primary hover:underline">Try again</button>
             </p>
           ) : (
-            <p className="text-sm text-foreground/90 leading-relaxed">{briefing}</p>
+            <div className="space-y-2.5">
+              <ul className="space-y-1.5">
+                {points.map((p, i) => (
+                  <li key={i} className="flex gap-2 text-sm text-foreground/90 leading-snug">
+                    <span className="mt-[7px] size-1.5 rounded-full bg-primary/60 shrink-0" />
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+              {action && (
+                <div className="flex items-start gap-2 pt-1 text-sm font-medium text-foreground">
+                  <ArrowRight size={15} className="text-primary mt-0.5 shrink-0" />
+                  <span>{action}</span>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
