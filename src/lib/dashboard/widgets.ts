@@ -36,3 +36,22 @@ export async function getHiddenWidgets(tenantId: string | null | undefined, role
     return new Set();
   }
 }
+
+/**
+ * The widget keys that expose this pharmacy's money figures. If ANY of these
+ * is hidden for a role, that role is treated as not permitted to see revenue.
+ */
+export const FINANCIAL_WIDGET_KEYS = ['kpi_sales_today', 'monthly_revenue', 'todays_report'] as const;
+
+/**
+ * Single source of truth for "may this role see this pharmacy's money figures?"
+ *
+ * Used by the dashboard briefing, the AI companion chat, and (in Phase 2) the
+ * data tools, so the money-visibility rule is defined in exactly one place and
+ * can never drift between features. Never throws — defaults to visible on error,
+ * matching getHiddenWidgets.
+ */
+export async function canSeeFinancials(tenantId: string | null | undefined, role: string): Promise<boolean> {
+  const hidden = await getHiddenWidgets(tenantId, role);
+  return FINANCIAL_WIDGET_KEYS.every((k) => !hidden.has(k));
+}

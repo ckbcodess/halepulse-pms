@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/auth/getTenantContext';
 import { branchWhere } from '@/lib/auth/branchScope';
 import { callAi, isAiConfigured, logAiCall } from '@/lib/ai/client';
-import { getHiddenWidgets } from '@/lib/dashboard/widgets';
+import { canSeeFinancials } from '@/lib/dashboard/widgets';
 
 const money = (n: number) => `GHS ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -23,8 +23,7 @@ export async function GET() {
     const tenantId = ctx.tenantId;
 
     // Role visibility — if sensitive widgets are hidden for this role, omit money talk.
-    const hidden = await getHiddenWidgets(tenantId, ctx.role);
-    const showFinancials = !hidden.has('kpi_sales_today') && !hidden.has('monthly_revenue') && !hidden.has('todays_report');
+    const showFinancials = await canSeeFinancials(tenantId, ctx.role);
 
     // ── Date boundaries ──
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);

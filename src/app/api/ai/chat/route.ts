@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/auth/getTenantContext';
 import { callAiChat, isAiConfigured, logAiCall, type AiMessage } from '@/lib/ai/client';
+import { canSeeFinancials } from '@/lib/dashboard/widgets';
 
 /**
  * The AI companion chat.
@@ -57,11 +58,12 @@ export async function POST(req: Request) {
     }
 
     // Who is asking — gives the model something to anchor its answers to.
-    const [tenant, branch] = await Promise.all([
+    const [tenant, branch, showFinancials] = await Promise.all([
       prisma.tenant.findUnique({ where: { id: ctx.tenantId }, select: { name: true } }),
       ctx.branchId
         ? prisma.branch.findUnique({ where: { id: ctx.branchId }, select: { name: true } })
         : Promise.resolve(null),
+      canSeeFinancials(ctx.tenantId, ctx.role),
     ]);
 
     const roleLabel = ROLE_LABEL[ctx.role] ?? ctx.role;
@@ -75,6 +77,9 @@ export async function POST(req: Request) {
       '',
       'You can help with: how to use HalePulse, pharmacy operations and stock management, general business advice, drafting messages, and answering general questions.',
       'You CANNOT yet read this pharmacy\'s live sales, stock, or customer records. If asked something that needs live data ("what did we sell today?"), say plainly that you cannot see their data yet and point them to the right screen in HalePulse instead. Never invent figures.',
+      // Money-visibility rule (shared with the dashboard briefing). General pricing
+      // or margin advice is fine; THIS pharmacy's own revenue figures are not.
+      showFinancials ? '' : 'This user is NOT permitted to see this pharmacy\'s revenue, sales totals, or money figures. Never state or estimate this pharmacy\'s specific cedi amounts, revenue, or takings, even if asked directly — tell them their role does not have access to money figures. General, non-pharmacy-specific business or pricing advice is still fine.',
       '',
       'Style: concise and direct — usually 1 to 4 short sentences. Use a short list only when genuinely listing steps or options.',
       'Plain text. No markdown formatting, no bold, no headings, no emojis.',
