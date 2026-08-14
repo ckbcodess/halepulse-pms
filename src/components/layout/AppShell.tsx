@@ -5,6 +5,7 @@ import type { Session } from 'next-auth';
 import Sidebar from './Sidebar';
 import TopHeader from './TopHeader';
 import ThemeDevTool from '@/components/dev/ThemeDevTool';
+import AiCompanionPanel from '@/components/ai/AiCompanionPanel';
 
 const NO_SHELL_PREFIXES = ['/login', '/super-admin'];
 const COLLAPSE_KEY = 'sidebar-collapsed';
@@ -59,6 +60,7 @@ export default function AppShell({ children, session, menuItems }: AppShellProps
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--surface)] dark:bg-[oklch(0.02_0_0)]">
       <ThemeDevTool />
+      <AiCompanionPanel />
       {/* Backdrop overlay — mobile */}
       {sidebarOpen && (
         <div

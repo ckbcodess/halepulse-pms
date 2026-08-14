@@ -48,19 +48,61 @@ export interface AiResult {
   outputTokens: number;
 }
 
+/** A single turn in a conversation. Provider-neutral. */
+export interface AiMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export async function callAi(opts: {
   system: string;
   prompt: string;
   maxTokens?: number;
   model?: string;
 }): Promise<AiResult> {
+  return callAiChat({
+    system: opts.system,
+    messages: [{ role: 'user', content: opts.prompt }],
+    maxTokens: opts.maxTokens,
+    model: opts.model,
+  });
+}
+
+/**
+ * Multi-turn variant of callAi — takes the whole conversation instead of a
+ * single prompt. Both transports need the turns to start with a user message
+ * and to alternate, so the history is normalised before it goes out.
+ */
+export async function callAiChat(opts: {
+  system: string;
+  messages: AiMessage[];
+  maxTokens?: number;
+  model?: string;
+}): Promise<AiResult> {
   const provider = resolveProvider();
   if (!provider) throw new AiNotConfiguredError();
-  return provider === 'anthropic' ? callAnthropic(opts) : callOpenAiCompatible(opts);
+  const messages = normaliseTurns(opts.messages);
+  if (!messages.length) throw new Error('No messages to send.');
+  const args = { ...opts, messages };
+  return provider === 'anthropic' ? callAnthropic(args) : callOpenAiCompatible(args);
+}
+
+/** Drops empties, merges same-role neighbours, and trims any leading assistant turn. */
+function normaliseTurns(messages: AiMessage[]): AiMessage[] {
+  const out: AiMessage[] = [];
+  for (const m of messages) {
+    const content = (m.content ?? '').trim();
+    if (!content) continue;
+    if (!out.length && m.role !== 'user') continue;
+    const last = out[out.length - 1];
+    if (last && last.role === m.role) last.content += `\n\n${content}`;
+    else out.push({ role: m.role, content });
+  }
+  return out;
 }
 
 // ── OpenAI-compatible transport (Gemini / OpenRouter / Groq / Ollama / …) ─────
-async function callOpenAiCompatible(opts: { system: string; prompt: string; maxTokens?: number; model?: string }): Promise<AiResult> {
+async function callOpenAiCompatible(opts: { system: string; messages: AiMessage[]; maxTokens?: number; model?: string }): Promise<AiResult> {
   const apiKey = process.env.AI_API_KEY;
   const baseUrl = (process.env.AI_BASE_URL ?? '').replace(/\/$/, '');
   const model = opts.model ?? process.env.AI_MODEL;
@@ -73,10 +115,7 @@ async function callOpenAiCompatible(opts: { system: string; prompt: string; maxT
     body: JSON.stringify({
       model,
       max_tokens: opts.maxTokens ?? 1024,
-      messages: [
-        { role: 'system', content: opts.system },
-        { role: 'user', content: opts.prompt },
-      ],
+      messages: [{ role: 'system', content: opts.system }, ...opts.messages],
     }),
   });
   if (!res.ok) {
@@ -93,7 +132,7 @@ async function callOpenAiCompatible(opts: { system: string; prompt: string; maxT
 }
 
 // ── Anthropic Messages API transport ──────────────────────────────────────────
-async function callAnthropic(opts: { system: string; prompt: string; maxTokens?: number; model?: string }): Promise<AiResult> {
+async function callAnthropic(opts: { system: string; messages: AiMessage[]; maxTokens?: number; model?: string }): Promise<AiResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new AiNotConfiguredError();
   const model = opts.model ?? process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6';
@@ -105,7 +144,7 @@ async function callAnthropic(opts: { system: string; prompt: string; maxTokens?:
       model,
       max_tokens: opts.maxTokens ?? 1024,
       system: opts.system,
-      messages: [{ role: 'user', content: opts.prompt }],
+      messages: opts.messages,
     }),
   });
   if (!res.ok) {

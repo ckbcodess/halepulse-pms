@@ -2,7 +2,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Menu, ChevronDown, Sun, Moon, LogOut, ArrowLeft,
+  Menu, ChevronDown, Sun, Moon, LogOut, ArrowLeft, Sparkles,
   LayoutDashboard, ShoppingCart, Package, Truck, Users,
   Settings, UserCog, KeyRound, Receipt, Coins, Wallet,
   BarChart3, type LucideIcon,
@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import NotificationBell from './NotificationBell';
+import { useAiPanelStore } from '@/lib/ai/panelStore';
 
 interface TopHeaderProps {
   user: {
@@ -94,6 +95,20 @@ const ROLE_LABEL: Record<string, string> = {
   NES:         'Audit',
 };
 
+function AskAiButton() {
+  const togglePanel = useAiPanelStore((s) => s.togglePanel);
+  return (
+    <button
+      onClick={togglePanel}
+      aria-label="Ask AI"
+      className="flex items-center gap-1.5 rounded-lg border border-border bg-foreground/[0.02] px-2.5 h-8 text-[13px] font-medium text-foreground/70 hover:text-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors"
+    >
+      <Sparkles size={14} className="text-primary" />
+      <span className="hidden sm:inline">Ask AI</span>
+    </button>
+  );
+}
+
 function ThemeToggleButton() {
   const { setTheme, theme } = useTheme();
   return (
@@ -168,6 +183,9 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
 
       {/* Right side — Figma node 411:23400 */}
       <div className="flex items-center gap-3 py-1">
+
+        {/* Ask AI companion */}
+        <AskAiButton />
 
         {/* Theme toggle */}
         <ThemeToggleButton />
