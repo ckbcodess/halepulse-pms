@@ -215,8 +215,8 @@ export default function AiCompanionPanel() {
 
                 {sending && (
                   <div className="flex justify-start">
-                    <div className="flex items-center gap-2.5 rounded-2xl rounded-bl-sm bg-foreground/[0.05] pl-2.5 pr-3.5 py-2">
-                      <ThinkingOrb state="working" size={20} theme="auto" aria-label="Thinking" />
+                    <div className="flex items-center gap-3 rounded-2xl rounded-bl-sm bg-foreground/[0.05] pl-2.5 pr-4 py-2">
+                      <ThinkingOrb state="composing" size={64} theme="auto" aria-label="Thinking" />
                       <span className="text-xs text-muted-foreground">Thinking…</span>
                     </div>
                   </div>
