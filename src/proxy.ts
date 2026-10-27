@@ -7,13 +7,18 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── Always allow: NextAuth internals, login pages, static assets ──────────
+  // PWA assets (service worker, manifest, icons) MUST be publicly fetchable —
+  // redirecting them to /login would stop the app installing/working offline.
   if (
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/sp-login') ||
     pathname.startsWith('/change-password') ||
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/favicon.ico')
+    pathname.startsWith('/favicon.ico') ||
+    pathname === '/sw.js' ||
+    pathname === '/manifest.webmanifest' ||
+    pathname.startsWith('/icons/')
   ) {
     return NextResponse.next();
   }
@@ -65,5 +70,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|icons/).*)'],
 };
