@@ -11,6 +11,7 @@ export async function proxy(request: NextRequest) {
   // redirecting them to /login would stop the app installing/working offline.
   if (
     pathname.startsWith('/api/auth') ||
+    pathname === '/api/ping' ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/sp-login') ||
     pathname.startsWith('/change-password') ||

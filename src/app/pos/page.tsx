@@ -380,8 +380,15 @@ export default function POSPage() {
       toast.success('Sale completed!');
     } catch (e: any) {
       const msg = e?.message || '';
-      // Lost the network mid-sale → queue it rather than lose the sale.
-      if (/failed to fetch|networkerror|load failed|fetch failed/i.test(msg)) {
+      // A failed server-action fetch throws a TypeError ("Failed to fetch" /
+      // "Load failed" / "NetworkError"). Those — and anything that smells of a
+      // dropped connection — must queue the sale, never error out. Only a real
+      // server-side business rejection (a deliberate Error message) surfaces.
+      const isConnectivity =
+        e instanceof TypeError ||
+        (typeof navigator !== 'undefined' && !navigator.onLine) ||
+        /failed to fetch|network|load failed|fetch failed|connection|timed? ?out|aborted/i.test(msg);
+      if (isConnectivity) {
         try { await queueOffline(); }
         catch { toast.error('Could not save the sale offline'); }
       } else {
