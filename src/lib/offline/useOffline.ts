@@ -21,6 +21,25 @@ export interface OfflineState {
   refresh: () => Promise<void>;
 }
 
+/** Connectivity only — no sync side-effects. For a global status indicator
+ *  that can safely mount on every page (unlike useOffline, which drives the
+ *  POS catalogue + outbox sync). */
+export function useOnlineStatus(): boolean {
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    setOnline(navigator.onLine);
+    const on  = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => {
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+    };
+  }, []);
+  return online;
+}
+
 export function useOffline(): OfflineState {
   const [online, setOnline]   = useState(true);
   const [pending, setPending] = useState(0);
