@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { ChevronDown, ChevronRight, Printer, Loader2 } from 'lucide-react';
 import { exportToCsv } from '@/lib/utils/exportCsv';
 import {
-  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell,
 } from '@/components/ui/table';
 import { DatePicker } from '@/components/ui/date-picker';
 import { SearchBar } from '@/components/ui/search-bar';
@@ -233,33 +233,42 @@ export default function SalesView() {
                               <Printer size={13} /> Reprint Receipt
                             </button>
                           </div>
-                          <table className="w-full text-xs">
-                            <thead className="text-muted-foreground border-b border-border">
-                              <tr>
-                                <th className="text-left py-1.5">Item</th>
-                                <th className="text-center py-1.5">Qty</th>
-                                <th className="text-right py-1.5">Price</th>
-                                <th className="text-right py-1.5">Total</th>
-                              </tr>
-                            </thead>
-                            <tbody>
+                          <Table className="w-full text-xs">
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="text-left py-1.5 h-auto text-xs">Item</TableHead>
+                                <TableHead className="text-center py-1.5 h-auto text-xs">Qty</TableHead>
+                                <TableHead className="text-right py-1.5 h-auto text-xs">Price</TableHead>
+                                <TableHead className="text-right py-1.5 h-auto text-xs">Total</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
                               {detail.items.map((it, i) => (
-                                <tr key={i} className="border-b border-border/50">
-                                  <td className="py-1.5">{it.name}</td>
-                                  <td className="py-1.5 text-center">{it.quantity}</td>
-                                  <td className="py-1.5 text-right">{money(it.price)}</td>
-                                  <td className="py-1.5 text-right">{money(it.lineTotal)}</td>
-                                </tr>
+                                <TableRow key={i}>
+                                  <TableCell className="py-1.5 text-xs">{it.name}</TableCell>
+                                  <TableCell className="py-1.5 text-center text-xs">{it.quantity}</TableCell>
+                                  <TableCell className="py-1.5 text-right text-xs">{money(it.price)}</TableCell>
+                                  <TableCell className="py-1.5 text-right text-xs">{money(it.lineTotal)}</TableCell>
+                                </TableRow>
                               ))}
-                            </tbody>
-                            <tfoot>
-                              <tr><td colSpan={3} className="py-1 text-right text-muted-foreground">Subtotal</td><td className="py-1 text-right">{money(detail.subtotal)}</td></tr>
+                            </TableBody>
+                            <TableFooter className="bg-transparent border-t-0 font-normal">
+                              <TableRow className="hover:bg-transparent">
+                                <TableCell colSpan={3} className="py-1 text-right text-muted-foreground text-xs">Subtotal</TableCell>
+                                <TableCell className="py-1 text-right text-xs">{money(detail.subtotal)}</TableCell>
+                              </TableRow>
                               {detail.discount > 0 && (
-                                <tr><td colSpan={3} className="py-1 text-right text-muted-foreground">Discount</td><td className="py-1 text-right">-{money(detail.discount)}</td></tr>
+                                <TableRow className="hover:bg-transparent">
+                                  <TableCell colSpan={3} className="py-1 text-right text-muted-foreground text-xs">Discount</TableCell>
+                                  <TableCell className="py-1 text-right text-xs">-{money(detail.discount)}</TableCell>
+                                </TableRow>
                               )}
-                              <tr><td colSpan={3} className="py-1 text-right font-bold">Total</td><td className="py-1 text-right font-bold">{money(detail.totalAmount)}</td></tr>
-                            </tfoot>
-                          </table>
+                              <TableRow className="hover:bg-transparent font-bold">
+                                <TableCell colSpan={3} className="py-1 text-right text-foreground text-xs font-bold">Total</TableCell>
+                                <TableCell className="py-1 text-right text-foreground text-xs font-bold">{money(detail.totalAmount)}</TableCell>
+                              </TableRow>
+                            </TableFooter>
+                          </Table>
                           <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
                             <span>Payment: <strong className="text-foreground">{detail.paymentType}</strong></span>
                             {detail.customerName && <span>Customer: <strong className="text-foreground">{detail.customerName}</strong></span>}

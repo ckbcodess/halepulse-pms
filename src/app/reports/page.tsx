@@ -3,17 +3,21 @@ import { getTenantContext } from '@/lib/auth/getTenantContext';
 import { branchWhere } from '@/lib/auth/branchScope';
 import {
   TrendingUp, Package, Calendar, AlertCircle,
-  ShoppingBag, ArrowUpRight, Download, BarChart2, FileText
+  ShoppingBag, ArrowUpRight, Download, BarChart2, FileText, ArrowRightLeft
 } from 'lucide-react';
 import Link from 'next/link';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+  Card, CardHeader, CardTitle, CardDescription, CardContent
+} from '@/components/ui/card';
+import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table';
 import MonthlyAiSummary from './MonthlyAiSummary';
 import ReportControls from './ReportControls';
+import ReportsTabs from './ReportsTabs';
 
 export default async function ReportsPage({
   searchParams,
@@ -107,7 +111,6 @@ export default async function ReportsPage({
     : { _sum: { quantity: 'desc' as const } };
 
   // ── Sales data ───────────────────────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [salesSummary, totalRevenue, recentSales, topProducts, lowStockProducts, expiringProducts] =
     await Promise.all([
       prisma.sale.findMany({
@@ -185,7 +188,7 @@ export default async function ReportsPage({
   };
   if (params.paymentMethod) paymentWhereBase.paymentMethod = params.paymentMethod;
 
-  const paymentBreakdown = tab === 'payments'
+  const paymentBreakdown = tab === 'sales'
     ? await prisma.salePayment.groupBy({
         by: ['paymentMethod'],
         _sum: { amount: true },
@@ -202,7 +205,7 @@ export default async function ReportsPage({
   if (Object.keys(saleItemProductFilter).length > 0) {
     frequencyWhere.product = saleItemProductFilter;
   }
-  const frequency = tab === 'frequency'
+  const frequency = tab === 'products'
     ? await prisma.saleItem.groupBy({
         by: ['productId'],
         _count: { _all: true },
@@ -239,16 +242,13 @@ export default async function ReportsPage({
     stockCost: number; stockSelling: number;
   } = null;
 
-  if (tab === 'monthly') {
+  if (tab === 'sales') {
     const [thisRev, lastRev, topQty, topCust, methodRev, stockProducts] = await Promise.all([
       prisma.sale.aggregate({ _sum: { totalAmount: true }, _count: true, where: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: monthStart, lte: monthEnd } } }),
       prisma.sale.aggregate({ _sum: { totalAmount: true }, where: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: prevMonthStart, lte: prevMonthEnd } } }),
       prisma.saleItem.groupBy({ by: ['productId'], _sum: { quantity: true, price: true }, orderBy: { _sum: { quantity: 'desc' } }, take: 10, where: { sale: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: monthStart, lte: monthEnd } } } }),
       prisma.sale.groupBy({ by: ['customerId'], _count: true, _sum: { totalAmount: true }, orderBy: { _count: { customerId: 'desc' } }, take: 10, where: { ...saleFilter, status: { not: 'voided' }, createdAt: { gte: monthStart, lte: monthEnd }, customerId: { not: null } } }),
       prisma.salePayment.groupBy({ by: ['paymentMethod'], _sum: { amount: true }, where: { ...saleFilter, createdAt: { gte: monthStart, lte: monthEnd }, sale: { status: { not: 'voided' } } } }),
-      // Stock value is sourced from the Product table (same as the Stock Valuation
-      // report) — the old StockItem ledger was only partially populated and badly
-      // under-reported. Keep this in sync with the `valuation` tab below.
       prisma.product.findMany({ where: { tenantId, isActive: true }, select: { stockQty: true, costPrice: true, price: true } }),
     ]);
 
@@ -276,15 +276,12 @@ export default async function ReportsPage({
   }
 
   // ── Stock Valuation tab ──────────────────────────────────────────────────────
-  // Point-in-time snapshot. Sourced from the Product table (same as the dashboard,
-  // inventory and POS) — the old StockItem ledger under-reported, so we deliberately
-  // ignore the date range here. Kept consistent with the Monthly tab's stock value.
   let valuation: null | {
     rows: { id: number; name: string; category: string; quantity: number; costPrice: number; sellingPrice: number; costValue: number; sellingValue: number; profit: number }[];
     totalProducts: number; totalQty: number; totalCost: number; totalSelling: number; totalProfit: number;
   } = null;
 
-  if (tab === 'valuation') {
+  if (tab === 'inventory') {
     const valProducts = await prisma.product.findMany({
       where: { tenantId, isActive: true },
       select: { id: true, name: true, category: true, stockQty: true, costPrice: true, price: true },
@@ -312,26 +309,6 @@ export default async function ReportsPage({
     };
   }
 
-  // Branches for filter panel
-  const branches = await prisma.branch.findMany({
-    where: { tenantId },
-    select: { id: true, name: true, businessId: true },
-    orderBy: { name: 'asc' },
-  });
-
-  const ranges = [
-    { value: '7', label: '7 days' },
-    { value: '30', label: '30 days' },
-    { value: '90', label: '90 days' },
-  ];
-
-  const currentParamsObj: Record<string, string> = {};
-  for (const [k, v] of Object.entries(params)) {
-    if (v) currentParamsObj[k] = v;
-  }
-  if (!currentParamsObj.tab) currentParamsObj.tab = tab;
-  if (!currentParamsObj.range) currentParamsObj.range = range;
-
   const expiryDays = parseInt(params.expiryDays ?? '90', 10);
 
   return (
@@ -341,393 +318,173 @@ export default async function ReportsPage({
         description="Pick a report type and date range, view the details, then export."
       />
 
-      {/* Simple controls: report type + date range + export */}
+      <ReportsTabs tab={tab} />
+
       <ReportControls
         type={tab}
         from={params.from ?? rangeStart.toISOString().slice(0, 10)}
         to={params.to ?? rangeEnd.toISOString().slice(0, 10)}
       />
 
-      {/* ── SALES SUMMARY ──────────────────────────────────────────────────────── */}
+      {/* ── SALES & FINANCE TAB ───────────────────────────────────────────────── */}
       {tab === 'sales' && (
         <div className="space-y-6">
-          {/* KPI cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* KPI Stat Cards (Dashboard StatCard style) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Total Revenue', value: `₵${revenue.toFixed(2)}`, sub: `Last ${range} days`, icon: TrendingUp, color: 'text-primary' },
-              { label: 'Transactions', value: txCount.toString(), sub: `Last ${range} days`, icon: ShoppingBag, color: 'text-emerald-600' },
-              { label: 'Avg Sale Value', value: `₵${avgSale.toFixed(2)}`, sub: 'Per transaction', icon: ArrowUpRight, color: 'text-amber-600' },
+              { label: 'Total Revenue', value: `₵${revenue.toFixed(2)}`, sub: `Last ${range} days`, change: null },
+              { label: 'Transactions', value: txCount.toLocaleString(), sub: `Last ${range} days`, change: null },
+              { label: 'Avg Sale Value', value: `₵${avgSale.toFixed(2)}`, sub: 'Per transaction', change: null },
+              { 
+                label: 'MoM Change', 
+                value: monthly?.changePct !== undefined && monthly.changePct !== null 
+                  ? `${monthly.changePct >= 0 ? '+' : ''}${monthly.changePct.toFixed(1)}%` 
+                  : '—', 
+                sub: monthly ? `Last Mo: ₵${monthly.lastRevenue.toFixed(0)}` : 'No comparison data',
+                change: monthly?.changePct ?? null
+              },
             ].map((kpi, i) => (
-              <div key={i} className="bg-card border border-border rounded-2xl p-6">
-                <kpi.icon size={18} className={`${kpi.color} mb-3`} />
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{kpi.label}</p>
-                <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
-                <p className="text-xs text-muted-foreground mt-1">{kpi.sub}</p>
-              </div>
+              <Card key={i} className="p-6 py-6 gap-0">
+                <div className="flex items-center gap-1.5 mb-4">
+                  <p className="text-sm text-muted-foreground">{kpi.label}</p>
+                </div>
+                <div className="flex items-end justify-between gap-2">
+                  <p className="text-3xl font-medium text-card-foreground leading-none tracking-tight">
+                    {kpi.value}
+                  </p>
+                  {kpi.change !== null && (
+                    <span
+                      className={`text-xs font-medium px-2 py-0.5 rounded-md ${
+                        kpi.change >= 0
+                          ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600'
+                          : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600'
+                      }`}
+                    >
+                      {kpi.change >= 0 ? '+' : ''}
+                      {kpi.change.toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">{kpi.sub}</p>
+              </Card>
             ))}
           </div>
 
-          {/* Daily bar chart */}
-          <div className="bg-card border border-border rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base font-semibold text-foreground">Daily Revenue</h3>
-              <span className="text-xs text-muted-foreground">Last {Math.min(dailyData.length, 14)} days</span>
-            </div>
-            {dailyData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-                <BarChart2 size={32} className="mb-2 opacity-30" />
-                <p className="text-sm">No sales data for this period</p>
+          {/* Daily Revenue Chart Card */}
+          <Card className="gap-0">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 pb-4">
+              <div>
+                <CardTitle className="text-base font-medium text-foreground">Daily Revenue</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">Last {Math.min(dailyData.length, 14)} days</CardDescription>
               </div>
-            ) : (
-              <div className="flex items-end gap-2 h-40 overflow-x-auto pb-2">
-                {dailyData.map(([day, total]) => (
-                  <div key={day} className="flex flex-col items-center gap-1 flex-1 min-w-[36px]">
-                    <span className="text-[10px] text-muted-foreground font-medium">₵{total >= 1000 ? `${(total/1000).toFixed(1)}k` : total.toFixed(0)}</span>
-                    <div
-                      className="w-full bg-primary dark:bg-primary rounded-t-md transition-all hover:bg-primary dark:hover:bg-primary"
-                      style={{ height: `${Math.max((total / maxDay) * 100, 4)}%` }}
-                    />
-                    <span className="text-[9px] text-muted-foreground font-medium">{day}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Recent transactions */}
-          <div className="bg-card border border-border rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="text-base font-semibold text-foreground">Recent Transactions</h3>
-              <span className="text-xs text-muted-foreground">{recentSales.length} shown</span>
-            </div>
-            <div className="divide-y divide-border">
-              {recentSales.length === 0 ? (
-                <p className="px-6 py-10 text-center text-sm text-muted-foreground">No transactions yet.</p>
-              ) : recentSales.map(sale => (
-                <div key={sale.id} className="flex items-center justify-between px-6 py-4 hover:bg-muted dark:hover:bg-white/[0.02]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-muted dark:bg-sidebar flex items-center justify-center text-sm font-bold text-muted-foreground">
-                      {(sale.customer?.name ?? 'W')[0]}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{sale.customer?.name ?? 'Walk-in'}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(sale.createdAt).toLocaleString()} · {sale.items.length} items</p>
-                    </div>
-                  </div>
-                  <span className="font-semibold text-foreground">₵{sale.totalAmount.toFixed(2)}</span>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {dailyData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                  <BarChart2 size={32} className="mb-2 opacity-30" />
+                  <p className="text-sm">No sales data for this period</p>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+              ) : (
+                <div className="flex items-end gap-2 h-40 overflow-x-auto pb-2">
+                  {dailyData.map(([day, total]) => (
+                    <div key={day} className="flex flex-col items-center gap-1 flex-1 min-w-[36px]">
+                      <span className="text-[10px] text-muted-foreground font-medium">₵{total >= 1000 ? `${(total/1000).toFixed(1)}k` : total.toFixed(0)}</span>
+                      <div
+                        className="w-full bg-primary rounded-t-md transition-all hover:bg-primary/90"
+                        style={{ height: `${Math.max((total / maxDay) * 100, 4)}%` }}
+                      />
+                      <span className="text-[9px] text-muted-foreground font-medium">{day}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* ── MONTHLY SUMMARY ────────────────────────────────────────────────────── */}
-      {tab === 'monthly' && monthly && (
-        <div className="space-y-6">
-          <MonthlyAiSummary data={monthly} />
-          {/* Revenue vs last month */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">This Month</p>
-              <p className="text-2xl font-bold text-foreground">₵{monthly.thisRevenue.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground mt-1">{monthly.saleCount} sales</p>
-            </div>
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Last Month</p>
-              <p className="text-2xl font-bold text-foreground">₵{monthly.lastRevenue.toFixed(2)}</p>
-            </div>
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Change</p>
-              <p className={`text-2xl font-bold ${monthly.changePct === null ? 'text-muted-foreground' : monthly.changePct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {monthly.changePct === null ? '—' : `${monthly.changePct >= 0 ? '+' : ''}${monthly.changePct.toFixed(1)}%`}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">₵{(monthly.thisRevenue - monthly.lastRevenue).toFixed(2)} vs last</p>
-            </div>
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Stock Value</p>
-              <p className="text-2xl font-bold text-foreground">₵{monthly.stockSelling.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Cost ₵{monthly.stockCost.toFixed(2)}</p>
-            </div>
-          </div>
+          {/* Total Collected Payment Breakdown Card */}
+          <Card className="gap-0">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 pb-4">
+              <div>
+                <CardTitle className="text-base font-medium text-foreground">Total collected</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">Last {range} days · excludes voided sales</CardDescription>
+              </div>
+              <span className="text-2xl font-semibold text-card-foreground">₵{paymentTotal.toFixed(2)}</span>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="flex h-3 rounded-full overflow-hidden bg-muted my-3">
+                {['cash', 'mobile_money', 'card', 'credit'].map((m, i) => {
+                  const amt = paymentBreakdown.find((p) => p.paymentMethod === m)?._sum.amount ?? 0;
+                  const pct = paymentTotal > 0 ? (amt / paymentTotal) * 100 : 0;
+                  const colors = ['bg-primary', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
+                  return pct > 0 ? (
+                    <div 
+                      key={m} 
+                      className={`${colors[i]} transition-all duration-500`} 
+                      style={{ width: `${pct}%` }} 
+                      title={`${PAYMENT_LABEL[m]} ${pct.toFixed(1)}%`} 
+                    />
+                  ) : null;
+                })}
+              </div>
+
+              <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 pt-4 border-t border-border/40">
+                {['cash', 'mobile_money', 'card', 'credit'].map((m, i) => {
+                  const row = paymentBreakdown.find((p) => p.paymentMethod === m);
+                  const amt = row?._sum.amount ?? 0;
+                  const pct = paymentTotal > 0 ? (amt / paymentTotal) * 100 : 0;
+                  const bulletColors = ['bg-primary', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
+                  return (
+                    <div key={m} className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${bulletColors[i]}`} />
+                      <span className="text-xs font-semibold text-foreground">{PAYMENT_LABEL[m]}</span>
+                      <span className="text-xs text-muted-foreground">({pct.toFixed(1)}% · ₵{amt.toFixed(2)})</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Top products */}
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              <div className="px-6 py-4 border-b border-border"><h3 className="text-base font-semibold text-foreground">Top Products (this month)</h3></div>
-              {monthly.topProducts.length === 0 ? (
-                <p className="px-6 py-8 text-center text-sm text-muted-foreground">No sales yet this month.</p>
-              ) : (
-                <Table>
-                  <TableHeader><TableRow><TableHead>Product</TableHead><TableHead className="text-right">Units</TableHead><TableHead className="text-right">Revenue</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {monthly.topProducts.map((p, i) => (
-                      <TableRow key={i}><TableCell className="font-medium text-foreground">{p.name}</TableCell><TableCell className="text-right">{p.quantity}</TableCell><TableCell className="text-right">₵{p.revenue.toFixed(2)}</TableCell></TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
+            {/* AI Summary */}
+            {monthly && <MonthlyAiSummary data={monthly} />}
 
-            {/* Top customers */}
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              <div className="px-6 py-4 border-b border-border"><h3 className="text-base font-semibold text-foreground">Top Customers (this month)</h3></div>
-              {monthly.topCustomers.length === 0 ? (
-                <p className="px-6 py-8 text-center text-sm text-muted-foreground">No customer sales yet this month.</p>
-              ) : (
-                <Table>
-                  <TableHeader><TableRow><TableHead>Customer</TableHead><TableHead className="text-right">Visits</TableHead><TableHead className="text-right">Spent</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {monthly.topCustomers.map((c, i) => (
-                      <TableRow key={i}><TableCell className="font-medium text-foreground">{c.name}</TableCell><TableCell className="text-right">{c.visits}</TableCell><TableCell className="text-right">₵{c.spent.toFixed(2)}</TableCell></TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-          </div>
-
-          {/* Revenue by method this month */}
-          <div className="bg-card border border-border rounded-2xl p-6">
-            <h3 className="text-base font-semibold text-foreground mb-4">Revenue by Payment Method</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {['cash', 'mobile_money', 'card', 'credit'].map((m) => (
-                <div key={m}>
-                  <p className="text-xs text-muted-foreground">{PAYMENT_LABEL[m]}</p>
-                  <p className="text-lg font-bold text-foreground">₵{(monthly!.byMethod.find(x => x.method === m)?.amount ?? 0).toFixed(2)}</p>
+            {/* Recent transactions */}
+            <Card className="gap-0">
+              <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 pb-4">
+                <div>
+                  <CardTitle className="text-base font-medium text-foreground">Recent Transactions</CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground">{recentSales.length} shown</CardDescription>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── PAYMENTS BREAKDOWN ─────────────────────────────────────────────────── */}
-      {tab === 'payments' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {['cash', 'mobile_money', 'card', 'credit'].map((m) => {
-              const row = paymentBreakdown.find((p) => p.paymentMethod === m);
-              const amt = row?._sum.amount ?? 0;
-              const pct = paymentTotal > 0 ? (amt / paymentTotal) * 100 : 0;
-              return (
-                <div key={m} className="bg-card border border-border rounded-2xl p-6">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{PAYMENT_LABEL[m]}</p>
-                  <p className="text-2xl font-bold text-foreground">₵{amt.toFixed(2)}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{pct.toFixed(1)}% · {row?._count ?? 0} payments</p>
-                </div>
-              );
-            })}
-          </div>
-          <div className="bg-card border border-border rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-base font-semibold text-foreground">Total collected</h3>
-              <span className="text-lg font-bold text-foreground">₵{paymentTotal.toFixed(2)}</span>
-            </div>
-            <div className="flex h-3 rounded-full overflow-hidden bg-muted">
-              {['cash', 'mobile_money', 'card', 'credit'].map((m, i) => {
-                const amt = paymentBreakdown.find((p) => p.paymentMethod === m)?._sum.amount ?? 0;
-                const pct = paymentTotal > 0 ? (amt / paymentTotal) * 100 : 0;
-                const colors = ['bg-primary', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
-                return pct > 0 ? <div key={m} className={colors[i]} style={{ width: `${pct}%` }} title={`${PAYMENT_LABEL[m]} ${pct.toFixed(1)}%`} /> : null;
-              })}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">Last {range} days · excludes voided sales</p>
-          </div>
-        </div>
-      )}
-
-      {/* ── PURCHASE FREQUENCY ─────────────────────────────────────────────────── */}
-      {tab === 'frequency' && (
-        <div className="bg-card border border-border rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-border">
-            <h3 className="text-base font-semibold text-foreground">Most Frequently Sold</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Ranked by number of transactions in the last {range} days</p>
-          </div>
-          {frequency.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <Package size={32} className="mb-2 opacity-30" />
-              <p className="text-sm">No sales data for this period</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10">#</TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Transactions</TableHead>
-                  <TableHead className="text-right">Units</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {frequency.map((f, i) => {
-                  const p = freqMap.get(f.productId);
-                  return (
-                    <TableRow key={f.productId}>
-                      <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                      <TableCell className="font-medium text-foreground">{p?.name ?? `Product #${f.productId}`}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{p?.category ?? '—'}</TableCell>
-                      <TableCell className="text-right font-bold">{f._count._all}</TableCell>
-                      <TableCell className="text-right">{f._sum.quantity ?? 0}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </div>
-      )}
-
-      {/* ── TOP PRODUCTS ───────────────────────────────────────────────────────── */}
-      {tab === 'products' && (
-        <div className="bg-card border border-border rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-border">
-            <h3 className="text-base font-semibold text-foreground">Top Selling Products</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Ranked by {params.sortBy === 'revenue' ? 'revenue' : 'units sold'} in the last {range} days</p>
-          </div>
-          {topProducts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <Package size={32} className="mb-2 opacity-30" />
-              <p className="text-sm">No sales data for this period</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {topProducts.map((tp, i) => {
-                const product = productMap.get(tp.productId);
-                const maxQty = (topProducts[0]?._sum?.quantity ?? 1) || 1;
-                const pct = (((tp._sum?.quantity ?? 0) as number) / maxQty) * 100;
-                return (
-                  <div key={tp.productId} className="px-6 py-4">
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm font-bold text-muted-foreground w-5">{i + 1}</span>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">{product?.name ?? `Product #${tp.productId}`}</p>
-                            <p className="text-xs text-muted-foreground">{product?.category ?? '—'}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-bold text-foreground">{(tp._sum?.quantity ?? 0) as number} units</p>
-                            <p className="text-xs text-muted-foreground">₵{((tp._sum?.price ?? 0) as number).toFixed(2)} revenue</p>
-                          </div>
-                        </div>
-                        <div className="h-1.5 bg-muted dark:bg-sidebar rounded-full overflow-hidden">
-                          <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
-                        </div>
+              </CardHeader>
+              <CardContent className="p-0 divide-y divide-border/40">
+                {recentSales.length === 0 ? (
+                  <p className="px-6 py-10 text-center text-sm text-muted-foreground">No transactions yet.</p>
+                ) : recentSales.map(sale => (
+                  <div key={sale.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                        {(sale.customer?.name ?? 'W')[0]}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{sale.customer?.name ?? 'Walk-in'}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(sale.createdAt).toLocaleString()} · {sale.items.length} items</p>
                       </div>
                     </div>
+                    <span className="font-semibold text-foreground text-sm">₵{sale.totalAmount.toFixed(2)}</span>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                ))}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
-      {/* ── INVENTORY REPORT ───────────────────────────────────────────────────── */}
-      {tab === 'inventory' && (
+      {/* ── INVENTORY HEALTH TAB ──────────────────────────────────────────────── */}
+      {tab === 'inventory' && valuation && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-6">
-              <AlertCircle size={20} className="text-amber-600 dark:text-amber-400 mb-3" />
-              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Low Stock</p>
-              <p className="text-3xl font-bold text-amber-900 dark:text-amber-300">{lowStockProducts.length}</p>
-              <p className="text-xs text-amber-600/70 dark:text-amber-400/60 mt-1">Products at or below threshold</p>
-            </div>
-            <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-2xl p-6">
-              <Calendar size={20} className="text-rose-600 dark:text-rose-400 mb-3" />
-              <p className="text-xs font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wider mb-1">Expiring Soon</p>
-              <p className="text-3xl font-bold text-rose-900 dark:text-rose-300">{expiringProducts.length}</p>
-              <p className="text-xs text-rose-600/70 dark:text-rose-400/60 mt-1">Products expiring within {expiryDays} days</p>
-            </div>
-          </div>
-
-          <div className="bg-card border border-border rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-border">
-              <h3 className="text-base font-semibold text-foreground">Low Stock Products</h3>
-            </div>
-            {lowStockProducts.length === 0 ? (
-              <p className="px-6 py-10 text-center text-sm text-muted-foreground">All products have healthy stock levels.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Stock</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lowStockProducts.map(p => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium text-foreground">{p.name}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{p.category}</TableCell>
-                      <TableCell className="text-right">
-                        <span className={`text-sm font-bold ${p.stockQty <= 5 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                          {p.stockQty}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── EXPIRY REPORT ──────────────────────────────────────────────────────── */}
-      {tab === 'expiry' && (
-        <div className="bg-card border border-border rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-border">
-            <h3 className="text-base font-semibold text-foreground">Expiring Within {expiryDays} Days</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">{expiringProducts.length} products require attention</p>
-          </div>
-          {expiringProducts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <Package size={32} className="mb-2 opacity-30" />
-              <p className="text-sm">No products expiring in the next {expiryDays} days</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead className="text-right">Expires</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {expiringProducts.map(p => {
-                  const daysLeft = Math.ceil((new Date(p.expiryDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                  const urgent = daysLeft <= 30;
-                  return (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium text-foreground">{p.name}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{p.category}</TableCell>
-                      <TableCell className="text-foreground">{p.stockQty}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Badge variant={urgent ? 'destructive' : 'warning'}>{daysLeft}d left</Badge>
-                          <span className="text-xs text-muted-foreground">{new Date(p.expiryDate!).toLocaleDateString()}</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </div>
-      )}
-
-      {/* ── STOCK VALUATION ────────────────────────────────────────────────────── */}
-      {tab === 'valuation' && valuation && (
-        <div className="space-y-6">
-          {/* KPI cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Main Stock Value KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
               { label: 'Total Products', value: valuation.totalProducts.toLocaleString() },
               { label: 'Total Quantity', value: valuation.totalQty.toLocaleString() },
@@ -735,55 +492,268 @@ export default async function ReportsPage({
               { label: 'Total Selling Value', value: `₵${valuation.totalSelling.toFixed(2)}` },
               { label: 'Potential Profit', value: `₵${valuation.totalProfit.toFixed(2)}` },
             ].map((kpi, i) => (
-              <div key={i} className="bg-card border border-border rounded-2xl p-6">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{kpi.label}</p>
-                <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
-              </div>
+              <Card key={i} className="p-6 py-6 gap-0">
+                <p className="text-sm text-muted-foreground mb-4">{kpi.label}</p>
+                <p className="text-3xl font-medium text-card-foreground leading-none tracking-tight">{kpi.value}</p>
+              </Card>
             ))}
           </div>
 
-          {/* Valuation table */}
-          <div className="bg-card border border-border rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-border">
-              <h3 className="text-base font-semibold text-foreground">Stock Valuation</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Point-in-time snapshot of active products · sorted by selling value</p>
-            </div>
-            {valuation.rows.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                <Package size={32} className="mb-2 opacity-30" />
-                <p className="text-sm">No stock items</p>
+          {/* Quick Alert Stats Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card className="p-6 py-6 gap-0">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-muted-foreground">Low Stock Alerts</p>
+                <AlertCircle size={18} className="text-amber-500" />
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead className="text-right">Cost Price</TableHead>
-                    <TableHead className="text-right">Selling Price</TableHead>
-                    <TableHead className="text-right">Cost Value</TableHead>
-                    <TableHead className="text-right">Selling Value</TableHead>
-                    <TableHead className="text-right">Profit</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {valuation.rows.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium text-foreground">{r.name}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{r.category || '—'}</TableCell>
-                      <TableCell className="text-right">{r.quantity}</TableCell>
-                      <TableCell className="text-right">₵{r.costPrice.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">₵{r.sellingPrice.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">₵{r.costValue.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">₵{r.sellingValue.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-semibold">₵{r.profit.toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+              <div className="flex items-end gap-2">
+                <p className="text-3xl font-medium text-card-foreground leading-none tracking-tight">{lowStockProducts.length}</p>
+                {lowStockProducts.length > 0 && <span className="w-2.5 h-2.5 rounded-full bg-amber-500 mb-1" />}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Products at or below threshold (10 units)</p>
+            </Card>
+
+            <Card className="p-6 py-6 gap-0">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-muted-foreground">Expiring Soon</p>
+                <Calendar size={18} className="text-rose-500" />
+              </div>
+              <div className="flex items-end gap-2">
+                <p className="text-3xl font-medium text-card-foreground leading-none tracking-tight">{expiringProducts.length}</p>
+                {expiringProducts.length > 0 && <span className="w-2.5 h-2.5 rounded-full bg-rose-500 mb-1" />}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Products expiring within {expiryDays} days</p>
+            </Card>
           </div>
+
+          {/* Stock Valuation Table Card */}
+          <Card className="gap-0">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 pb-4">
+              <div>
+                <CardTitle className="text-base font-medium text-foreground">Stock Valuation</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">Point-in-time snapshot of active products · sorted by selling value</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {valuation.rows.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                  <Package size={32} className="mb-2 opacity-30" />
+                  <p className="text-sm">No stock items</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Cost Price</TableHead>
+                      <TableHead className="text-right">Selling Price</TableHead>
+                      <TableHead className="text-right">Cost Value</TableHead>
+                      <TableHead className="text-right">Selling Value</TableHead>
+                      <TableHead className="text-right">Profit</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {valuation.rows.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium text-foreground">{r.name}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{r.category || '—'}</TableCell>
+                        <TableCell className="text-right">{r.quantity}</TableCell>
+                        <TableCell className="text-right">₵{r.costPrice.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">₵{r.sellingPrice.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">₵{r.costValue.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">₵{r.sellingValue.toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-semibold">₵{r.profit.toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Sub Alert Tables Side-by-Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Low Stock Alerts */}
+            <Card className="gap-0">
+              <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 pb-4">
+                <div>
+                  <CardTitle className="text-base font-medium text-foreground flex items-center gap-2">
+                    <AlertCircle size={16} className="text-amber-500" /> Low Stock Details
+                  </CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground">{lowStockProducts.length} items requiring restock</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {lowStockProducts.length === 0 ? (
+                  <p className="px-6 py-8 text-center text-sm text-muted-foreground">All products have healthy stock levels.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead className="text-right">Stock</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {lowStockProducts.map(p => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium text-foreground">{p.name}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{p.category}</TableCell>
+                          <TableCell className="text-right">
+                            <span className={`text-sm font-bold ${p.stockQty <= 5 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                              {p.stockQty}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Expiring Soon */}
+            <Card className="gap-0">
+              <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 pb-4">
+                <div>
+                  <CardTitle className="text-base font-medium text-foreground flex items-center gap-2">
+                    <Calendar size={16} className="text-rose-500" /> Expiry Log
+                  </CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground">{expiringProducts.length} items within {expiryDays} days</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {expiringProducts.length === 0 ? (
+                  <p className="px-6 py-8 text-center text-sm text-muted-foreground">No expiring items in the next {expiryDays} days.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Stock</TableHead>
+                        <TableHead className="text-right">Expires</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {expiringProducts.map(p => {
+                        const daysLeft = Math.ceil((new Date(p.expiryDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                        const urgent = daysLeft <= 30;
+                        return (
+                          <TableRow key={p.id}>
+                            <TableCell className="font-medium text-foreground">{p.name}</TableCell>
+                            <TableCell className="text-foreground">{p.stockQty}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Badge variant={urgent ? 'destructive' : 'warning'}>{daysLeft}d left</Badge>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ── PRODUCT PERFORMANCE TAB ───────────────────────────────────────────── */}
+      {tab === 'products' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Selling Products */}
+          <Card className="gap-0">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 pb-4">
+              <div>
+                <CardTitle className="text-base font-medium text-foreground">Top Selling Products</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">Ranked by {params.sortBy === 'revenue' ? 'revenue' : 'units sold'} in the last {range} days</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {topProducts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                  <Package size={32} className="mb-2 opacity-30" />
+                  <p className="text-sm">No sales data for this period</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border/40">
+                  {topProducts.map((tp, i) => {
+                    const product = productMap.get(tp.productId);
+                    const maxQty = (topProducts[0]?._sum?.quantity ?? 1) || 1;
+                    const pct = (((tp._sum?.quantity ?? 0) as number) / maxQty) * 100;
+                    return (
+                      <div key={tp.productId} className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm font-bold text-muted-foreground w-5">{i + 1}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div>
+                                <p className="text-sm font-medium text-foreground">{product?.name ?? `Product #${tp.productId}`}</p>
+                                <p className="text-xs text-muted-foreground">{product?.category ?? '—'}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-bold text-foreground">{(tp._sum?.quantity ?? 0) as number} units</p>
+                                <p className="text-xs text-muted-foreground">₵{((tp._sum?.price ?? 0) as number).toFixed(2)} revenue</p>
+                              </div>
+                            </div>
+                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Purchase Frequency */}
+          <Card className="gap-0">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 pb-4">
+              <div>
+                <CardTitle className="text-base font-medium text-foreground">Most Frequently Sold</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">Ranked by number of transactions in the last {range} days</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {frequency.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                  <Package size={32} className="mb-2 opacity-30" />
+                  <p className="text-sm">No sales data for this period</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">#</TableHead>
+                      <TableHead>Product</TableHead>
+                      <TableHead className="text-right">Transactions</TableHead>
+                      <TableHead className="text-right">Units</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {frequency.map((f, i) => {
+                      const p = freqMap.get(f.productId);
+                      return (
+                        <TableRow key={f.productId}>
+                          <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                          <TableCell className="font-medium text-foreground">{p?.name ?? `Product #${f.productId}`}</TableCell>
+                          <TableCell className="text-right font-bold">{f._count._all}</TableCell>
+                          <TableCell className="text-right">{f._sum.quantity ?? 0}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
