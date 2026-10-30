@@ -37,6 +37,46 @@ export async function getProducts(search?: string) {
   });
 }
 
+/**
+ * Full branch catalogue for the offline mirror (IndexedDB). Scoped to the
+ * caller's tenant, so the device only ever caches its own data. Returns the
+ * complete product list (not the top-N that getProducts returns), plus
+ * customers and tenant info needed to run the POS and print receipts offline.
+ */
+export async function getCatalogueSnapshot() {
+  const { tenantId } = await getTenantContext();
+
+  const [products, customers, tenant] = await Promise.all([
+    prisma.product.findMany({
+      where: { tenantId },
+      select: {
+        id: true, name: true, price: true, stockQty: true,
+        category: true, expiryDate: true, brand: true, lowStockThreshold: true,
+      },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.customer.findMany({
+      where: { tenantId },
+      select: { id: true, name: true, phone: true, loyaltyPoints: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { name: true, address: true, primaryPhone: true, primaryEmail: true },
+    }),
+  ]);
+
+  return {
+    products: products.map(p => ({
+      ...p,
+      expiryDate: p.expiryDate ? p.expiryDate.toISOString() : null,
+    })),
+    customers,
+    tenant: tenant ?? { name: 'Pharmacy', address: '', primaryPhone: '', primaryEmail: '' },
+    syncedAt: new Date().toISOString(),
+  };
+}
+
 export async function updateProduct(id: number, data: { price: number; stockQty: number }) {
   const { tenantId, userId } = await getTenantContext();
   const parsed = updateProductSchema.parse({ id, ...data });

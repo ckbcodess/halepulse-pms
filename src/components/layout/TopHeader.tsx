@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import NotificationBell from './NotificationBell';
+import ConnectionStatus from './ConnectionStatus';
 
 interface TopHeaderProps {
   user: {
@@ -168,6 +169,9 @@ export default function TopHeader({ user, onMenuToggle }: TopHeaderProps) {
 
       {/* Right side — Figma node 411:23400 */}
       <div className="flex items-center gap-3 py-1">
+
+        {/* Connectivity indicator (global) */}
+        <ConnectionStatus />
 
         {/* Theme toggle */}
         <ThemeToggleButton />

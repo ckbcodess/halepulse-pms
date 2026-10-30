@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import ThemeScope from '@/components/layout/ThemeScope';
@@ -21,6 +21,13 @@ const geistMono = Geist_Mono({ variable: '--font-mono', subsets: ['latin'] });
 export const metadata: Metadata = {
   title:       'HalePulse',
   description: 'Multi-tenant pharmacy management system',
+  manifest:    '/manifest.webmanifest',
+  appleWebApp: { capable: true, title: 'HalePulse', statusBarStyle: 'default' },
+  icons:       { apple: '/icons/apple-touch-icon.png' },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#6366f1',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

@@ -66,3 +66,7 @@ scripts/backups/
 # Playwright test artifacts
 /test-results/
 /playwright-report/
+
+# Serwist-generated service worker (built from src/app/sw.ts)
+public/sw.js
+public/swe-worker-*.js

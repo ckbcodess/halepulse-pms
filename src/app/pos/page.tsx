@@ -1,16 +1,19 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { processSale, createCustomer } from '@/app/actions';
 import {
-  getProducts, getCustomers, processSale, getTenantInfo, createCustomer,
-} from '@/app/actions';
+  loadProducts, loadCustomers, loadTenant, queueSale,
+} from '@/lib/offline/sync';
+import { useOffline } from '@/lib/offline/useOffline';
+import type { QueuedSale } from '@/lib/offline/db';
 import { useCartStore } from '@/lib/store';
 import type { CartItem } from '@/lib/store';
 import {
   Search, X, Plus, Minus, Trash2, UserCheck,
   Printer, AlertTriangle, CheckCircle2, Check, Percent, Tag,
   PauseCircle, PlayCircle, CornerDownLeft, ChevronRight, ArrowRight,
-  Wallet, CreditCard, Package, Clock,
+  Wallet, CreditCard, Package, Clock, WifiOff, CloudUpload, Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -91,6 +94,9 @@ export default function POSPage() {
 
   const [phase, setPhase] = useState<POSPhase>('entry');
 
+  // Offline/online state + auto-sync (Phase 2+3)
+  const offline = useOffline();
+
   // Search row
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
@@ -132,6 +138,7 @@ export default function POSPage() {
   const [receiptData, setReceiptData] = useState<{
     items: CartItem[]; total: number; customer: Customer | null;
     saleId: number; date: Date; discount: number; paymentMethod: string;
+    offline?: boolean;
   } | null>(null);
 
   // Tenant
@@ -168,14 +175,16 @@ export default function POSPage() {
 
   // ─── Effects ────────────────────────────────────────────────────────────────
 
-  useEffect(() => { getTenantInfo().then(setTenant).catch(() => {}); }, []);
+  // loadTenant/loadProducts/loadCustomers are read-through: server when online,
+  // the local IndexedDB mirror when offline (or when the server call fails).
+  useEffect(() => { loadTenant().then(setTenant).catch(() => {}); }, [offline.online]);
 
   useEffect(() => {
     if (!query.trim() || miscMode) { setResults([]); setShowDrop(false); return; }
     const t = setTimeout(async () => {
       try {
-        const data = await getProducts(query.trim());
-        setResults(data);
+        const data = await loadProducts(query.trim());
+        setResults(data as Product[]);
         setHlIdx(0);
         setShowDrop(true);
       } catch { setResults([]); }
@@ -187,8 +196,8 @@ export default function POSPage() {
     if (custQuery.length < 2) { setCustResults([]); setCustDropOpen(false); return; }
     const t = setTimeout(async () => {
       try {
-        const data = await getCustomers(custQuery);
-        setCustResults(data);
+        const data = await loadCustomers(custQuery);
+        setCustResults(data as Customer[]);
         setCustDropOpen(true);
       } catch { setCustResults([]); }
     }, 250);
@@ -302,35 +311,89 @@ export default function POSPage() {
   const handleCompleteSale = async () => {
     if (!canComplete || processing) return;
     setProcessing(true);
-    try {
-      const regular = items.filter(i => !i.isMisc);
-      const misc = items.filter(i => i.isMisc);
-      const payments: { method: string; amount: number }[] = [];
-      if (payMethod === 'Split') {
-        const momoPart = Math.min(momoRcvd, grandTotal);
-        const cashPart = Math.round((grandTotal - momoPart) * 100) / 100;
-        if (momoPart > 0) payments.push({ method: 'mobile_money', amount: momoPart });
-        if (cashPart > 0) payments.push({ method: 'cash', amount: cashPart });
-      } else if (payMethod === 'MoMo') {
-        payments.push({ method: 'mobile_money', amount: grandTotal });
-      } else {
-        payments.push({ method: 'cash', amount: grandTotal });
-      }
-      const sale = await processSale(
-        regular.map(i => ({ id: i.id, quantity: i.quantity })),
-        customer?.id, undefined, discountAmt, payMethod,
-        misc.map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
-        payments,
-      );
-      setReceiptData({ items: [...items], total: grandTotal, customer, saleId: sale.id, date: new Date(), discount: discountAmt, paymentMethod: payMethod });
+
+    const regular = items.filter(i => !i.isMisc);
+    const misc = items.filter(i => i.isMisc);
+    const payments: { method: string; amount: number }[] = [];
+    if (payMethod === 'Split') {
+      const momoPart = Math.min(momoRcvd, grandTotal);
+      const cashPart = Math.round((grandTotal - momoPart) * 100) / 100;
+      if (momoPart > 0) payments.push({ method: 'mobile_money', amount: momoPart });
+      if (cashPart > 0) payments.push({ method: 'cash', amount: cashPart });
+    } else if (payMethod === 'MoMo') {
+      payments.push({ method: 'mobile_money', amount: grandTotal });
+    } else {
+      payments.push({ method: 'cash', amount: grandTotal });
+    }
+
+    // One idempotency key per sale — reused if the sale is queued offline and
+    // later replayed, so the server never double-charges the same transaction.
+    const clientToken  = crypto.randomUUID();
+    const regularArgs  = regular.map(i => ({ id: i.id, quantity: i.quantity }));
+    const miscArgs     = misc.map(i => ({ name: i.name, price: i.price, quantity: i.quantity }));
+    const snapItems    = [...items];
+    const snapTotal    = grandTotal;
+    const snapCustomer = customer;
+
+    const finishUI = (wasOffline: boolean, saleId: number) => {
+      setReceiptData({
+        items: snapItems, total: snapTotal, customer: snapCustomer,
+        saleId, date: new Date(), discount: discountAmt, paymentMethod: payMethod,
+        offline: wasOffline,
+      });
       clearCart(); resetCheckout();
       setCustomer(null); setCustQuery('');
       setDiscount(null);
       setCashTendered(''); setMomoAmount(''); setPayMethod('Cash');
       setPhase('complete');
+    };
+
+    const queueOffline = async () => {
+      const queued: QueuedSale = {
+        clientToken,
+        createdAt:   new Date().toISOString(),
+        status:      'pending',
+        items:       regularArgs,
+        customerId:  snapCustomer?.id ?? null,
+        discount:    discountAmt,
+        paymentType: payMethod,
+        miscItems:   miscArgs,
+        payments,
+        display: {
+          items:        snapItems.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, isMisc: i.isMisc })),
+          total:        snapTotal,
+          customerName: snapCustomer?.name ?? null,
+        },
+      };
+      await queueSale(queued);
+      await offline.refresh();
+      finishUI(true, 0);
+      toast.success('Saved offline — will sync when back online');
+    };
+
+    try {
+      if (!offline.online) { await queueOffline(); return; }
+      const sale = await processSale(
+        regularArgs, snapCustomer?.id, clientToken, discountAmt, payMethod, miscArgs, payments,
+      );
+      finishUI(false, sale.id);
       toast.success('Sale completed!');
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to process sale');
+      const msg = e?.message || '';
+      // A failed server-action fetch throws a TypeError ("Failed to fetch" /
+      // "Load failed" / "NetworkError"). Those — and anything that smells of a
+      // dropped connection — must queue the sale, never error out. Only a real
+      // server-side business rejection (a deliberate Error message) surfaces.
+      const isConnectivity =
+        e instanceof TypeError ||
+        (typeof navigator !== 'undefined' && !navigator.onLine) ||
+        /failed to fetch|network|load failed|fetch failed|connection|timed? ?out|aborted/i.test(msg);
+      if (isConnectivity) {
+        try { await queueOffline(); }
+        catch { toast.error('Could not save the sale offline'); }
+      } else {
+        toast.error(msg || 'Failed to process sale');
+      }
     } finally { setProcessing(false); }
   };
 
@@ -382,7 +445,29 @@ export default function POSPage() {
 
           {/* Header */}
           <div className="flex items-center justify-between px-[17.5px] border-b border-border h-[64px] shrink-0">
-            <h2 className="text-[16px] font-medium leading-[30px] text-foreground">New Sale</h2>
+            <div className="flex items-center gap-2 min-w-0">
+              <h2 className="text-[16px] font-medium leading-[30px] text-foreground">New Sale</h2>
+              {!offline.online && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[11px] font-medium px-2 py-0.5">
+                  <WifiOff size={12} /> Offline
+                </span>
+              )}
+              {offline.online && offline.syncing && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted text-muted-foreground text-[11px] font-medium px-2 py-0.5">
+                  <Loader2 size={12} className="animate-spin" /> Syncing…
+                </span>
+              )}
+              {offline.pending > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 text-[11px] font-medium px-2 py-0.5">
+                  <CloudUpload size={12} /> {offline.pending} to sync
+                </span>
+              )}
+              {offline.failed > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 text-[11px] font-medium px-2 py-0.5">
+                  <AlertTriangle size={12} /> {offline.failed} failed
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-[5.25px]">
               <Button
                 variant="outline"
@@ -1196,14 +1281,27 @@ export default function POSPage() {
               <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col items-center gap-2 px-4 py-6">
                 {/* Success badge + message */}
                 <div className="flex flex-col items-center gap-8 px-3.5 py-6">
-                  <div className="w-[46px] h-[46px] rounded-full bg-emerald-500 flex items-center justify-center">
-                    <Check size={23} className="text-white" strokeWidth={3} />
+                  <div className={cn(
+                    "w-[46px] h-[46px] rounded-full flex items-center justify-center",
+                    receiptData.offline ? "bg-amber-500" : "bg-emerald-500",
+                  )}>
+                    {receiptData.offline
+                      ? <CloudUpload size={23} className="text-white" strokeWidth={2.5} />
+                      : <Check size={23} className="text-white" strokeWidth={3} />}
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <p className="text-[23px] font-medium text-foreground">Purchase Complete!</p>
-                    <p className="text-[13px] font-semibold text-foreground/40 pt-0.5">
-                      TXN #{receiptData.saleId.toString().padStart(6, '0')}
+                    <p className="text-[23px] font-medium text-foreground">
+                      {receiptData.offline ? 'Saved Offline' : 'Purchase Complete!'}
                     </p>
+                    {receiptData.offline ? (
+                      <p className="text-[12px] font-medium text-amber-600 dark:text-amber-400 pt-0.5 text-center max-w-[260px]">
+                        Will sync automatically when the internet is back
+                      </p>
+                    ) : (
+                      <p className="text-[13px] font-semibold text-foreground/40 pt-0.5">
+                        TXN #{receiptData.saleId.toString().padStart(6, '0')}
+                      </p>
+                    )}
                   </div>
                 </div>
 
